@@ -1,0 +1,732 @@
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import type { AgentScope } from '@bpmn/agent-tools';
+import { replaceBpmnType, type BpmnComponentDefinition } from '@bpmn/semantic-core';
+import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '@bpmn/rules';
+import {
+  createTokenSimulation,
+  describeSimulation,
+  resolveClick,
+  type TokenSimulation,
+} from '@bpmn/simulate';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
+import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-js.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
+import { BpmnCanvas } from './BpmnCanvas';
+import { BpmnZoomControls } from './BpmnZoomControls';
+import { DEFAULT_BPMN_XML } from './defaultBpmnXml';
+import { ArchitectPanel } from './architect/ArchitectPanel';
+import { applyAssistantResult } from './architect/applyAssistant';
+import { resolveAgentContext } from './architect/agentScope';
+import { ElementInspector, InspectorLintFooter } from './inspector/ElementInspector';
+import { fetchAiStatus, runAssistant, type ChatTurn } from '../../lib/api';
+import { modelBoundsFromViewbox, prepareDiagramSvg } from '../../lib/exportDiagram';
+import { attachBoundary, canDeleteElement, canReplaceWithBpmnJs, deleteSelection, replaceElement } from './inspector/inspectorOps';
+import type { FlowKind } from './inspector/inspectorModel';
+import { isEditorChromeKeyTarget, selectableElement } from './inspector/selectable';
+import { pickCatalogItem } from './palette/createFromCatalog';
+import { semanticGeometryModule } from './palette/semanticGeometry';
+import { ContinueWith } from './palette/ContinueWith';
+import { gfxAnchor } from './palette/modelerServices';
+import { PaletteRail } from './palette/PaletteRail';
+import { isSequenceFlowSource } from './palette/contextFilter';
+import type { PaletteCatalogView } from './palette/catalogPresentation';
+import type { ResolvedCatalogItem } from './palette/contextFilter';
+import type { DiagramElement } from './diagramElement';
+import { createSemanticEditor, type SemanticEditor } from './semantic/session';
+import { simulationLock, simulationLockModule } from './simulate/simulationLock';
+import { createTokenView, type TokenView } from './simulate/tokenView';
+import { isCompactViewport, useCompactViewport } from './compactViewport';
+import { EditorOnboarding } from './EditorOnboarding';
+import { readEditorOnboardingSeen } from './onboardingStorage';
+import { applyFit, COMPACT_FIT_PADDING, DESKTOP_FIT_PADDING } from './fitViewport';
+import { bindKeyboardToHost, isCopyKey, isPasteKey, type EditorKeyboard } from './hostKeyboard';
+import { createSelectMarqueeModule } from './selectMarquee';
+
+type BpmnEditorProps = {
+  processId: string;
+  xml: string;
+  simulating?: boolean;
+  onChange?: (xml: string) => void;
+  onSimStatus?: (status: string) => void;
+};
+
+export type BpmnEditorHandle = {
+  getXml: () => Promise<string | undefined>;
+  getDiagramSvg: () => Promise<string | undefined>;
+  resetToStarter: () => Promise<void>;
+  resetSimulation: () => void;
+};
+
+type Viewbox = { x: number; y: number; width: number; height: number; scale?: number };
+
+type CanvasService = {
+  zoom: (scale?: string | number, center?: string) => number;
+  resized: () => void;
+  getRootElement: () => DiagramElement;
+  viewbox: (next?: Viewbox) => Viewbox & {
+    inner?: { x: number; y: number; width: number; height: number };
+    outer?: { width: number; height: number };
+  };
+};
+
+type ZoomScrollService = { stepZoom: (delta: number) => void };
+
+type HandTool = {
+  toggle: () => void;
+  isActive: () => boolean;
+};
+
+type Dragging = { cancel: () => void };
+
+type SelectionService = {
+  get: () => DiagramElement[];
+  select: (el: unknown) => void;
+};
+
+type EventBus = {
+  on: (event: string | string[], cb: (payload?: unknown) => void) => void;
+  off: (event: string | string[], cb: (payload?: unknown) => void) => void;
+};
+
+type Modeling = { updateLabel: (element: unknown, name: string) => void };
+
+function usableXml(xml: string) {
+  return /bpmn:startEvent|<startEvent/i.test(xml) ? xml : DEFAULT_BPMN_XML;
+}
+
+function readViewbox(canvas: CanvasService): Viewbox | undefined {
+  try {
+    if (!canvas.getRootElement()) return undefined;
+    return canvas.viewbox();
+  } catch {
+    return undefined;
+  }
+}
+
+function tryResized(canvas: CanvasService) {
+  try {
+    canvas.resized();
+  } catch {
+    /* bpmn-js throws root-0 when import left the canvas without a diagram */
+  }
+}
+
+function fitRemaining(canvas: CanvasService, host: HTMLElement | null) {
+  applyFit(
+    canvas,
+    isCompactViewport(window.innerWidth) ? COMPACT_FIT_PADDING : DESKTOP_FIT_PADDING,
+    host,
+  );
+}
+
+type MovedShape = { id: string; x?: number; y?: number; width?: number; height?: number };
+
+function movedShape(payload: unknown): MovedShape | undefined {
+  const ctx = (payload as { context?: { shape?: MovedShape; shapes?: MovedShape[] } } | undefined)?.context;
+  if (ctx?.shape?.id) return ctx.shape;
+  if (ctx?.shapes?.length === 1 && ctx.shapes[0]?.id) return ctx.shapes[0];
+  return undefined;
+}
+
+export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function BpmnEditor(
+  { processId, xml, simulating = false, onChange, onSimStatus },
+  ref,
+) {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const modelerRef = useRef<BpmnModeler | null>(null);
+  const sessionRef = useRef<SemanticEditor | null>(null);
+  const simRef = useRef<TokenSimulation | null>(null);
+  const tokenViewRef = useRef<TokenView | null>(null);
+  const simulatingRef = useRef(simulating);
+  const onChangeRef = useRef(onChange);
+  const onSimStatusRef = useRef(onSimStatus);
+  const xmlRef = useRef(xml);
+  const [scale, setScale] = useState(1);
+  const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const toolRef = useRef(tool);
+  const [catalogView, setCatalogView] = useState<PaletteCatalogView | null>(null);
+  const [query, setQuery] = useState('');
+  const [selection, setSelection] = useState<DiagramElement | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lockRev, setLockRev] = useState(0);
+  const [canDelete, setCanDelete] = useState(false);
+  const [hasParticipant, setHasParticipant] = useState(false);
+  const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const [onboarding, setOnboarding] = useState(() => !readEditorOnboardingSeen());
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  const compact = useCompactViewport();
+
+  onChangeRef.current = onChange;
+  onSimStatusRef.current = onSimStatus;
+  xmlRef.current = xml;
+  simulatingRef.current = simulating;
+  toolRef.current = tool;
+  simulationLock.on = simulating;
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void fetchAiStatus(ac.signal)
+      .then((info) => {
+        if (!ac.signal.aborted) setAiConfigured(info.configured);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setAiConfigured(null);
+      });
+    return () => ac.abort();
+  }, []);
+
+  const publishSim = useCallback(() => {
+    const session = sessionRef.current;
+    const sim = simRef.current;
+    if (!session || !sim) {
+      onSimStatusRef.current?.('');
+      return;
+    }
+    const process = session.process();
+    const snap = sim.snapshot();
+    tokenViewRef.current?.sync(process, snap);
+    onSimStatusRef.current?.(describeSimulation(process, snap));
+    setHint(describeSimulation(process, snap));
+  }, []);
+
+  const refreshSelection = useCallback(() => {
+    const modeler = modelerRef.current;
+    const host = overlayRef.current;
+    if (!modeler) return;
+    const selected = (modeler.get('selection') as SelectionService).get();
+    const ids = selected.map((el) => el.id).filter(Boolean);
+    const next = selected.map(selectableElement).find((el): el is DiagramElement => !!el) ?? null;
+    setSelectedIds(ids);
+    setSelection(next);
+    setCanDelete(next ? canDeleteElement(modeler, next) : false);
+    const registry = modeler.get('elementRegistry') as { filter: (fn: (el: DiagramElement) => boolean) => unknown[] };
+    setHasParticipant(registry.filter((el) => el.type === 'bpmn:Participant').length > 0);
+    if (next && isSequenceFlowSource(next) && host) {
+      setAnchor(gfxAnchor(modeler, next, host));
+    } else {
+      setAnchor(null);
+    }
+  }, []);
+
+  const emit = useCallback((next: string) => {
+    onChangeRef.current?.(next);
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    getXml: async () => sessionRef.current?.xml(),
+    getDiagramSvg: async () => {
+      const modeler = modelerRef.current;
+      if (!modeler) return undefined;
+      const { svg } = await modeler.saveSVG();
+      const canvas = modeler.get('canvas') as CanvasService;
+      return prepareDiagramSvg(svg, modelBoundsFromViewbox(canvas.viewbox()));
+    },
+    resetToStarter: async () => {
+      const xml = await sessionRef.current?.adoptXml(DEFAULT_BPMN_XML);
+      if (xml) emit(xml);
+    },
+    resetSimulation: () => {
+      simRef.current?.reset();
+      publishSim();
+    },
+  }));
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    const modeler = new BpmnModeler({
+      container: el,
+      keyboard: { bind: false },
+      additionalModules: [semanticGeometryModule, simulationLockModule, createSelectMarqueeModule(() => toolRef.current)],
+      /* Default bpmn-js measures external labels at 11px while CSS paints 12px (“Start” → “Star”). */
+      textRenderer: {
+        defaultStyle: { fontFamily: 'Arial, sans-serif', fontSize: 12 },
+        externalStyle: { fontSize: 12 },
+      },
+    });
+    bindKeyboardToHost(modeler.get('keyboard') as EditorKeyboard, el);
+    modelerRef.current = modeler;
+    tokenViewRef.current = createTokenView(modeler);
+
+    const canvas = modeler.get('canvas') as CanvasService;
+    const eventBus = modeler.get('eventBus') as EventBus;
+    let muted = false;
+    let fitted = false;
+    let lastGoodXml = usableXml(xmlRef.current);
+
+    const writer = {
+      importXml: async (next: string, selectId?: string | string[]) => {
+        muted = true;
+        try {
+          const vb = fitted ? readViewbox(canvas) : undefined;
+          await modeler.importXML(next);
+          tryResized(canvas);
+          if (vb) canvas.viewbox(vb);
+          else {
+            fitRemaining(canvas, overlayRef.current);
+            requestAnimationFrame(() => fitRemaining(canvas, overlayRef.current));
+            fitted = true;
+          }
+          if (selectId) {
+            const registry = modeler.get('elementRegistry') as { get: (id: string) => DiagramElement | undefined };
+            const ids = Array.isArray(selectId) ? selectId : [selectId];
+            const shapes = ids.map((id) => registry.get(id)).filter((shape): shape is DiagramElement => !!shape);
+            if (shapes.length) (modeler.get('selection') as SelectionService).select(shapes);
+          }
+          refreshSelection();
+          if (simulatingRef.current) publishSim();
+          lastGoodXml = next;
+        } catch (error) {
+          console.error('BPMN XML import failed', error instanceof Error ? error.message : error);
+          if (next !== lastGoodXml) {
+            try {
+              await modeler.importXML(lastGoodXml);
+              tryResized(canvas);
+              fitRemaining(canvas, overlayRef.current);
+              fitted = true;
+            } catch (restoreError) {
+              console.error('BPMN XML restore failed', restoreError);
+            }
+          }
+          throw error;
+        } finally {
+          muted = false;
+        }
+      },
+      updateLabel: (id: string, name: string) => {
+        muted = true;
+        try {
+          const shape = (modeler.get('elementRegistry') as { get: (id: string) => DiagramElement | undefined }).get(id);
+          if (shape) (modeler.get('modeling') as Modeling).updateLabel(shape, name);
+        } finally {
+          muted = false;
+        }
+      },
+    };
+
+    let cancelled = false;
+    void createSemanticEditor(writer, usableXml(xmlRef.current)).then((session) => {
+      if (cancelled) return;
+      sessionRef.current = session;
+      if (simulatingRef.current) {
+        simRef.current = createTokenSimulation(session.process());
+        publishSim();
+      }
+
+      let dropBusy = false;
+      const snapMoved = (payload?: unknown) => {
+        if (muted || dropBusy || simulatingRef.current) return;
+        const shape = movedShape(payload);
+        dropBusy = true;
+        const done = shape
+          ? session.drop(shape.id, {
+              x: (shape.x ?? 0) + (shape.width ?? 0) / 2,
+              y: (shape.y ?? 0) + (shape.height ?? 0) / 2,
+            })
+          : session.bootstrap();
+        void done.then(emit).finally(() => {
+          dropBusy = false;
+        });
+      };
+      eventBus.on('commandStack.shape.move.executed', snapMoved);
+      eventBus.on('commandStack.elements.move.executed', snapMoved);
+
+      const onLabel = (payload?: unknown) => {
+        if (muted || simulatingRef.current) return;
+        const ctx = (payload as { context?: { element?: { id?: string }; newLabel?: string } } | undefined)?.context;
+        const id = ctx?.element?.id;
+        if (!id) return;
+        try {
+          emit(session.rename(id, ctx?.newLabel ?? ''));
+        } catch {
+          /* flow/gateway labels that the kernel cannot rename stay on the canvas until the next layout */
+        }
+      };
+      eventBus.on('commandStack.element.updateLabel.executed', onLabel);
+
+      void session.bootstrap().catch((error: Error) => {
+        console.error('Failed to import BPMN XML', error);
+      });
+    });
+
+    const onViewbox = (payload?: unknown) => {
+      const next = (payload as { viewbox?: { scale?: number } } | undefined)?.viewbox?.scale;
+      if (typeof next === 'number') setScale(next);
+      refreshSelection();
+    };
+    eventBus.on('canvas.viewbox.changed', onViewbox);
+    eventBus.on('selection.changed', refreshSelection);
+    eventBus.on('elements.changed', refreshSelection);
+
+    const clearHint = () => {
+      if (!simulatingRef.current) setHint(null);
+    };
+    eventBus.on(['create.end', 'create.ended', 'create.cancel'], clearHint);
+
+    const onSimClick = (payload?: unknown) => {
+      if (!simulatingRef.current) return;
+      const session = sessionRef.current;
+      const sim = simRef.current;
+      const id = (payload as { element?: { id?: string } } | undefined)?.element?.id;
+      if (!session || !sim || !id) return;
+      const process = session.process();
+      const target = resolveClick(process, sim.snapshot(), id);
+      if (!target) {
+        setHint(describeSimulation(process, sim.snapshot()));
+        return;
+      }
+      try {
+        sim.signal(target.nodeId, target.flowId);
+        publishSim();
+      } catch (err) {
+        setHint(err instanceof Error ? err.message : describeSimulation(process, sim.snapshot()));
+      }
+    };
+    eventBus.on('element.click', onSimClick);
+
+    const observer = new ResizeObserver(() => tryResized(canvas));
+    observer.observe(el);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      tokenViewRef.current?.clear();
+      tokenViewRef.current = null;
+      simRef.current = null;
+      modeler.destroy();
+      modelerRef.current = null;
+      sessionRef.current = null;
+    };
+  }, [processId, refreshSelection, emit, publishSim]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isEditorChromeKeyTarget(event.target)) return;
+        setCatalogView(null);
+        setHint(null);
+        const dragging = modelerRef.current?.get('dragging') as Dragging | undefined;
+        dragging?.cancel();
+        return;
+      }
+      if (isEditorChromeKeyTarget(event.target) || simulatingRef.current) return;
+      const modeler = modelerRef.current;
+      const session = sessionRef.current;
+      if (!modeler || !session) return;
+      if (isCopyKey(event)) {
+        const ids = (modeler.get('selection') as SelectionService).get().map((el) => el.id).filter(Boolean);
+        if (!session.copy(ids)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (isPasteKey(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const selected = (modeler.get('selection') as SelectionService).get();
+        const afterId = selected.length === 1 ? selectableElement(selected[0])?.id : undefined;
+        void session.paste(afterId).then((xml) => {
+          if (xml) emit(xml);
+        }).catch((error: Error) => {
+          setHint(error.message);
+        });
+        return;
+      }
+      if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+      const selected = (modeler.get('selection') as SelectionService).get();
+      const target = selected.map(selectableElement).find((el): el is DiagramElement => !!el);
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void (async () => {
+        try {
+          emit(await session.remove(target.id));
+        } catch {
+          deleteSelection(modeler);
+          const result = await modeler.saveXML({ format: true });
+          if (result.xml) emit(await session.adoptXml(result.xml));
+        }
+      })();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [emit]);
+
+  useEffect(() => {
+    simulationLock.on = simulating;
+    const session = sessionRef.current;
+    if (!simulating || !session) {
+      simRef.current = null;
+      tokenViewRef.current?.clear();
+      onSimStatusRef.current?.('');
+      if (!simulating) setHint(null);
+      return;
+    }
+    simRef.current = createTokenSimulation(session.process());
+    publishSim();
+    return () => {
+      simulationLock.on = false;
+    };
+  }, [simulating, processId, publishSim]);
+
+  const zoomIn = useCallback(() => {
+    (modelerRef.current?.get('zoomScroll') as ZoomScrollService | undefined)?.stepZoom(1);
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    (modelerRef.current?.get('zoomScroll') as ZoomScrollService | undefined)?.stepZoom(-1);
+  }, []);
+
+  const fit = useCallback(() => {
+    const canvas = modelerRef.current?.get('canvas') as CanvasService | undefined;
+    if (!canvas) return;
+    try {
+      fitRemaining(canvas, overlayRef.current);
+    } catch {
+      tryResized(canvas);
+    }
+  }, []);
+
+  useEffect(() => {
+    const canvas = modelerRef.current?.get('canvas') as CanvasService | undefined;
+    if (!canvas) return;
+    try {
+      fitRemaining(canvas, overlayRef.current);
+    } catch {
+      tryResized(canvas);
+    }
+  }, [compact]);
+
+  const reset = useCallback(() => {
+    (modelerRef.current?.get('canvas') as CanvasService | undefined)?.zoom(1);
+  }, []);
+
+  const handleTool = useCallback((next: 'select' | 'pan') => {
+    if (next === 'pan') setCatalogView(null);
+    toolRef.current = next;
+    setTool(next);
+    const modeler = modelerRef.current;
+    if (!modeler) return;
+    const hand = modeler.get('handTool') as HandTool;
+    const dragging = modeler.get('dragging') as Dragging;
+    dragging.cancel();
+    if (hand.isActive()) hand.toggle();
+  }, []);
+
+  const handleArchitect = useCallback(
+    async (message: string, history: ChatTurn[], scope: AgentScope, signal: AbortSignal) => {
+      const session = sessionRef.current;
+      if (!session || simulatingRef.current) throw new Error('Editor is not ready');
+      const graph = session.process();
+      const data = await runAssistant({
+        message,
+        history,
+        process: graph,
+        processName: graph.name,
+        scope,
+        signal,
+      });
+      if (signal.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+      const result = await applyAssistantResult(session, data, scope);
+      if (signal.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+      if (result.applied) emit(result.xml);
+      return result;
+    },
+    [emit],
+  );
+
+  const handlePick = useCallback(
+    async (item: BpmnComponentDefinition) => {
+      const session = sessionRef.current;
+      if (!session || simulatingRef.current) return;
+      const result = await pickCatalogItem(item, selection, {
+        create: async (catalogId, afterId) => {
+          const { xml: next } = await session.create(catalogId, afterId);
+          emit(next);
+          return true;
+        },
+      });
+      setCatalogView(null);
+      setQuery('');
+      setHint(result?.hint ?? null);
+    },
+    [selection, emit],
+  );
+
+  const continueSource = selection && isSequenceFlowSource(selection) ? selection : null;
+
+  const replaceWorks = useCallback(
+    (def: BpmnComponentDefinition) => {
+      const session = sessionRef.current;
+      if (!session || !selection) return false;
+      if (def.bpmnType === 'bpmn:SequenceFlow') return true;
+      try {
+        replaceBpmnType(session.process(), selection.id, def.bpmnType);
+        return true;
+      } catch {
+        const modeler = modelerRef.current;
+        return modeler ? canReplaceWithBpmnJs(modeler, selection, def) : false;
+      }
+    },
+    [selection],
+  );
+
+  const lint = useMemo(
+    () => lintProcess(usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE }),
+    [xml],
+  );
+
+  const agentCtx = useMemo(() => {
+    const session = sessionRef.current;
+    if (!session) return { branchLocked: false, selectionIds: selectedIds };
+    return resolveAgentContext(session.process(), selectedIds);
+  }, [selectedIds, xml, lockRev]);
+
+  return (
+    <div className={`bpmn-stage bpmn-editor-stage flex${simulating ? ' is-simulating' : ''}${tool === 'pan' ? ' is-pan' : ''}`}>
+      <PaletteRail
+        tool={tool}
+        catalogView={catalogView}
+        query={query}
+        selection={selection}
+        hasParticipant={hasParticipant}
+        onTool={handleTool}
+        onOpenCatalog={(view) => {
+          const modeler = modelerRef.current;
+          const hand = modeler?.get('handTool') as HandTool | undefined;
+          const dragging = modeler?.get('dragging') as Dragging | undefined;
+          dragging?.cancel();
+          if (hand?.isActive()) hand.toggle();
+          toolRef.current = 'select';
+          setTool('select');
+          setQuery('');
+          setCatalogView(view);
+        }}
+        onQueryChange={setQuery}
+        onCloseCatalog={() => {
+          setCatalogView(null);
+          setQuery('');
+        }}
+        onPick={(entry: ResolvedCatalogItem) => {
+          if (!entry.enabled) return;
+          void handlePick(entry.item);
+        }}
+      />
+      <div ref={overlayRef} className="bpmn-canvas-host">
+        <BpmnCanvas ref={canvasRef} />
+        <BpmnZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onFit={fit} onReset={reset} />
+        {continueSource && anchor && !simulating ? (
+          <ContinueWith
+            key={continueSource.id}
+            source={continueSource}
+            hasParticipant={hasParticipant}
+            anchor={anchor}
+            onPick={(item) => void handlePick(item)}
+          />
+        ) : null}
+        {onboarding && !simulating ? (
+          <EditorOnboarding onDismiss={() => setOnboarding(false)} />
+        ) : hint ? (
+          <div className="palette-hint">{hint}</div>
+        ) : null}
+      </div>
+      <aside className="element-inspector" aria-label="Process inspector">
+        {selection ? (
+          <ElementInspector
+            framed={false}
+            element={selection}
+            canDelete={canDelete && !simulating}
+            lint={lint}
+            replaceWorks={replaceWorks}
+            onRename={(name) => {
+              if (simulating) return;
+              const next = sessionRef.current?.rename(selection.id, name);
+              if (next) emit(next);
+            }}
+            onChangeTo={(def) => {
+              if (simulating) return;
+              const session = sessionRef.current;
+              if (!session) return;
+              void session
+                .replace(selection.id, def)
+                .then(emit)
+                .catch(() => {
+                  const modeler = modelerRef.current;
+                  if (!modeler) return;
+                  replaceElement(modeler, selection.id, def);
+                  void modeler.saveXML({ format: true }).then((result) => {
+                    if (result.xml) void session.adoptXml(result.xml).then(emit);
+                  });
+                });
+            }}
+            onDelete={() => {
+              if (simulating) return;
+              const session = sessionRef.current;
+              const modeler = modelerRef.current;
+              if (!session || !modeler) return;
+              void session
+                .remove(selection.id)
+                .then(emit)
+                .catch(() => {
+                  deleteSelection(modeler);
+                  void modeler.saveXML({ format: true }).then((result) => {
+                    if (result.xml) void session.adoptXml(result.xml).then(emit);
+                  });
+                });
+            }}
+            onFlowKind={(kind: FlowKind) => {
+              if (simulating) return;
+              void sessionRef.current?.setFlowKind(selection.id, kind).then(emit);
+            }}
+            onCondition={(flowId, body) => {
+              if (simulating) return;
+              void sessionRef.current?.setCondition(flowId, body).then(emit);
+            }}
+            onDefaultOutgoing={(flowId) => {
+              if (simulating) return;
+              void sessionRef.current?.setFlowKind(flowId, 'default').then(emit);
+            }}
+            onAttach={(def) => {
+              if (simulating) return;
+              const session = sessionRef.current;
+              if (!session) return;
+              void session
+                .create(def.id, selection.id)
+                .then((result) => emit(result.xml))
+                .catch(() => {
+                  const modeler = modelerRef.current;
+                  if (!modeler) return;
+                  attachBoundary(modeler, selection.id, def);
+                  void modeler.saveXML({ format: true }).then((result) => {
+                    if (result.xml) void session.adoptXml(result.xml).then(emit);
+                  });
+                });
+            }}
+          />
+        ) : (
+          <InspectorLintFooter lint={lint} />
+        )}
+      </aside>
+      <ArchitectPanel
+        disabled={simulating}
+        configured={aiConfigured}
+        context={agentCtx}
+        onProtectBranch={
+          agentCtx.branchId && !simulating
+            ? (locked) => {
+                const id = agentCtx.branchId;
+                if (!id) return;
+                sessionRef.current?.setBranchLocked(id, locked);
+                setLockRev((n) => n + 1);
+              }
+            : undefined
+        }
+        onApply={handleArchitect}
+      />
+    </div>
+  );
+});

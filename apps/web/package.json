@@ -1,0 +1,35 @@
+{
+  "name": "@bpmn/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bpmn/agent-tools": "workspace:*",
+    "@bpmn/bpmn-adapter": "workspace:*",
+    "@bpmn/domain": "workspace:*",
+    "@bpmn/layout-engine": "workspace:*",
+    "@bpmn/rules": "workspace:*",
+    "@bpmn/semantic-core": "workspace:*",
+    "@bpmn/simulate": "workspace:*",
+    "bpmn-js": "^18.6.2",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "svg2pdf.js": "^2.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^5.0.4",
+    "tailwindcss": "^4.1.14",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
+  }
+}
