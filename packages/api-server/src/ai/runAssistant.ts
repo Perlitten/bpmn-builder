@@ -1,5 +1,7 @@
 import {
   ToolPlanError,
+  collaborationRequested,
+  constrainToolPlan,
   executePlan,
   isSemanticProcess,
   parseAgentScope,
@@ -7,6 +9,7 @@ import {
   processView,
   scopePromptLines,
   toolSystemPrompt,
+  userFacingAssistantMessage,
   type AgentScope,
   type ToolCall,
 } from '../../../agent-tools/src/index.js';
@@ -128,11 +131,11 @@ export async function runAssistant(
       temperature: 0.2,
       signal: input.signal,
     })) as Record<string, unknown>;
-    message =
-      typeof raw.message === 'string' && raw.message.trim()
-        ? raw.message.trim()
-        : 'No semantic edits. Say what to add next.';
-    tools = llmTools(raw);
+    tools = constrainToolPlan(message, llmTools(raw));
+    message = userFacingAssistantMessage(
+      typeof raw.message === 'string' ? raw.message : '',
+      { collaboration: collaborationRequested(message) },
+    );
   }
 
   const plan = executePlan(previousProcess, tools, { scope });
