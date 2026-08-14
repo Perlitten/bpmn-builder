@@ -43,7 +43,7 @@ describe('pickCatalogItem', () => {
 
   it('does not start a free-form create for unimplemented types', async () => {
     const create = vi.fn(async () => true);
-    const result = await pickCatalogItem(def('gateway.complex'), { id: 'A', type: 'bpmn:Task' }, { create });
+    const result = await pickCatalogItem(def('boundary.compensation'), { id: 'A', type: 'bpmn:Task' }, { create });
     expect(create).not.toHaveBeenCalled();
     expect(result?.hint).toMatch(/not in the semantic first slice/i);
   });
@@ -75,6 +75,47 @@ describe('pickCatalogItem', () => {
     const result = await pickCatalogItem(def('flow.message'), null, { create });
     expect(create).toHaveBeenCalledWith('flow.message', undefined);
     expect(result).toBeUndefined();
+  });
+
+  it('creates a task into a selected lane when canCreate allows a lane parent', async () => {
+    const create = vi.fn(async () => true);
+    const lane = { id: 'Lane_1', type: 'bpmn:Lane' };
+    await pickCatalogItem(def('activity.task'), lane, { create });
+    expect(create).toHaveBeenCalledWith('activity.task', 'Lane_1');
+
+    create.mockClear();
+    await pickCatalogItem(def('activity.userTask'), lane, { create });
+    expect(create).toHaveBeenCalledWith('activity.userTask', 'Lane_1');
+
+    create.mockClear();
+    await pickCatalogItem(def('participant.lane'), lane, { create });
+    expect(create).toHaveBeenCalledWith('participant.lane', 'Lane_1');
+  });
+
+  it('does not start unimplemented catalog types from a selected lane', async () => {
+    const create = vi.fn(async () => true);
+    const result = await pickCatalogItem(def('boundary.compensation'), { id: 'Lane_1', type: 'bpmn:Lane' }, { create });
+    expect(create).not.toHaveBeenCalled();
+    expect(result?.hint).toMatch(/not in the semantic first slice/i);
+  });
+
+  it('creates conditional / default flow via setFlowKind, not global connect', async () => {
+    const create = vi.fn(async () => true);
+    const fromTask = await pickCatalogItem(def('flow.conditional'), { id: 'Activity_1', type: 'bpmn:Task' }, { create });
+    expect(create).toHaveBeenCalledWith('flow.conditional', 'Activity_1');
+    expect(fromTask).toBeUndefined();
+
+    create.mockClear();
+    const fromFlow = await pickCatalogItem(def('flow.default'), { id: 'SequenceFlow_1', type: 'bpmn:SequenceFlow' }, {
+      create,
+    });
+    expect(create).toHaveBeenCalledWith('flow.default', 'SequenceFlow_1');
+    expect(fromFlow).toBeUndefined();
+
+    create.mockClear();
+    const idle = await pickCatalogItem(def('flow.conditional'), null, { create });
+    expect(create).not.toHaveBeenCalled();
+    expect(idle?.hint).toMatch(/sequence flow or a source/i);
   });
 
   it('hints sequence flow instead of starting global connect', async () => {

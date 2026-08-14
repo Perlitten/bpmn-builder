@@ -15,7 +15,6 @@ import {
 } from '../../../agent-tools/src/index.js';
 import { xmlToProcess } from '../../../bpmn-adapter/src/index.js';
 import { createProcess, type Process } from '../../../semantic-core/src/index.js';
-import { greetingReply, isGreetingMessage } from './greeting.js';
 import { assistantTimeoutError, isTimeoutError, whenAborted } from './timeout.js';
 import type { AiModelClient, ChatTurn } from './types.js';
 
@@ -103,14 +102,6 @@ export async function runAssistant(
   if (Array.isArray(input.tools) && input.tools.length > 0) {
     tools = parseToolPlan(input.tools);
     if (!message) message = `Applied ${tools.map((t) => t.name).join(', ')}.`;
-  } else if (isGreetingMessage(message)) {
-    return {
-      message: greetingReply(message),
-      tools: [],
-      results: [],
-      process: previousProcess,
-      previousProcess,
-    };
   } else {
     if (!ai) throw new Error('AI agent is not configured.');
     const history = (input.history || [])

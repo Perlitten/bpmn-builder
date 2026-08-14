@@ -95,11 +95,12 @@ describe('Architect chrome markup', () => {
     expect(list).not.toMatch(/event\.key === 'Enter' && \(event\.metaKey \|\| event\.ctrlKey\)/);
   });
 
-  it('answers a greeting locally instead of the 30s Architect timeout path', () => {
+  it('sends greetings through the same Architect request path', () => {
     const src = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
-    expect(src).toMatch(/isGreetingMessage/);
-    expect(src).toMatch(/greetingReply/);
-    expect(src).toMatch(/if \(isGreetingMessage\(value\)\)/);
+    expect(src).not.toMatch(/isGreetingMessage/);
+    expect(src).not.toMatch(/greetingReply/);
+    expect(src).toMatch(/mergeTimeoutSignal/);
+    expect(src).toMatch(/ASSISTANT_TIMEOUT_MS/);
   });
 
   it('lets list Architect create be cancelled', () => {

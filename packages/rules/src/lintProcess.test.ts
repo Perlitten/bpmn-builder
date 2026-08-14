@@ -1,6 +1,9 @@
 import { layoutProcess, type LayoutResult } from '@bpmn/layout-engine';
 import {
+  addSubProcess,
   addTask,
+  attachBoundaryTimer,
+  createEventSubprocess,
   createProcess,
   splitExclusive,
   type Process,
@@ -247,5 +250,222 @@ describe('lintProcess', () => {
     expect(result.warnings.filter((f) => f.layer === 2)).toEqual([]);
     expect(result.scores.execution).toBe(100);
     expect(formatScores(result)).toContain('Execution 100');
+  });
+
+  it('does not treat a boundary timer or event subprocess as sequence-flow orphans', () => {
+    let p = createProcess();
+    p = addSubProcess(p, { name: 'Assess', id: 'Sub_Assess' }).process;
+    p = attachBoundaryTimer(p, { on: 'Sub_Assess', name: 'After 48h' }).process;
+    p = createEventSubprocess(p, { name: 'Escalation handler', id: 'EvSub_Escalation' }).process;
+    const boundary = p.nodes.find((n) => n.type === 'boundaryEvent')!;
+    expect(boundary.attachedTo).toBe('Sub_Assess');
+    expect(p.nodes.find((n) => n.id === 'EvSub_Escalation')?.triggeredByEvent).toBe(true);
+
+    const result = lintProcess(p);
+    expect(result.errors).toEqual([]);
+    expect(result.scores.bpmn).toBe(100);
+    expect(result.errors.some((f) => /is not connected/.test(f.message))).toBe(false);
+  });
+
+  it('reads attachedToRef / triggeredByEvent from XML the same way', () => {
+    const result = lintProcess(
+      xml(`
+        <bpmn:startEvent id="StartEvent_1" name="Start" />
+        <bpmn:subProcess id="Sub_Assess" name="Assess">
+          <bpmn:startEvent id="Sub_Start" />
+          <bpmn:endEvent id="Sub_End" />
+          <bpmn:sequenceFlow id="Sub_Flow" sourceRef="Sub_Start" targetRef="Sub_End" />
+        </bpmn:subProcess>
+        <bpmn:boundaryEvent id="Bnd_Timer" name="After 48h" attachedToRef="Sub_Assess">
+          <bpmn:timerEventDefinition />
+        </bpmn:boundaryEvent>
+        <bpmn:endEvent id="Bnd_End" name="Timed out" />
+        <bpmn:sequenceFlow id="Bnd_Flow" sourceRef="Bnd_Timer" targetRef="Bnd_End" />
+        <bpmn:subProcess id="EvSub_Escalation" name="Escalation handler" triggeredByEvent="true">
+          <bpmn:startEvent id="Ev_Start" name="Error">
+            <bpmn:errorEventDefinition />
+          </bpmn:startEvent>
+          <bpmn:task id="Ev_Task" name="Handle escalation" />
+          <bpmn:endEvent id="Ev_End" />
+          <bpmn:sequenceFlow id="Ev_F1" sourceRef="Ev_Start" targetRef="Ev_Task" />
+          <bpmn:sequenceFlow id="Ev_F2" sourceRef="Ev_Task" targetRef="Ev_End" />
+        </bpmn:subProcess>
+        <bpmn:endEvent id="EndEvent_1" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="StartEvent_1" targetRef="Sub_Assess" />
+        <bpmn:sequenceFlow id="F2" sourceRef="Sub_Assess" targetRef="EndEvent_1" />
+      `),
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.scores.bpmn).toBe(100);
+    expect(result.errors.some((f) => f.elementId === 'Bnd_Timer' || f.elementId === 'EvSub_Escalation')).toBe(false);
+  });
+
+  it('still flags an unattached or outgoing-less boundary, and a subprocess that is not event-triggered', () => {
+    const result = lintProcess(
+      xml(`
+        <bpmn:startEvent id="S" name="Start" />
+        <bpmn:task id="T1" name="Review request" />
+        <bpmn:boundaryEvent id="B1" name="After 48h" />
+        <bpmn:boundaryEvent id="B2" name="On error" attachedToRef="T1" />
+        <bpmn:subProcess id="Sub_Orphan" name="Nested work" />
+        <bpmn:endEvent id="E" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="T1" />
+        <bpmn:sequenceFlow id="F2" sourceRef="T1" targetRef="E" />
+      `),
+    );
+    const dangling = result.errors.filter((f) => f.id === 'bpmn.dangling');
+    expect(dangling).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          elementId: 'B1',
+          message: 'Boundary event “After 48h” is not attached to an activity',
+        }),
+        expect.objectContaining({
+          elementId: 'B1',
+          message: 'Boundary event “After 48h” has no outgoing sequence flow',
+        }),
+        expect.objectContaining({
+          elementId: 'B2',
+          message: 'Boundary event “On error” has no outgoing sequence flow',
+        }),
+        expect.objectContaining({
+          elementId: 'Sub_Orphan',
+          message: 'Subprocess “Nested work” is not connected',
+        }),
+      ]),
+    );
+    expect(dangling.some((f) => f.elementId === 'T1')).toBe(false);
+  });
+
+  it('does not treat boundary timers, message starts, or event subprocesses as execution hits', () => {
+    const src = xml(`
+      <bpmn:startEvent id="Start_Msg" name="Claim submitted">
+        <bpmn:messageEventDefinition messageRef="Msg_Claim" />
+      </bpmn:startEvent>
+      <bpmn:subProcess id="Sub_Assess" name="Assess damage">
+        <bpmn:startEvent id="Sub_Start" />
+        <bpmn:endEvent id="Sub_End" />
+        <bpmn:sequenceFlow id="Sub_Flow" sourceRef="Sub_Start" targetRef="Sub_End" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="Bnd_Timer" name="After 48h" cancelActivity="false" attachedToRef="Sub_Assess">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration>PT48H</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:endEvent id="Bnd_End" name="Timed out" />
+      <bpmn:sequenceFlow id="Bnd_Flow" sourceRef="Bnd_Timer" targetRef="Bnd_End" />
+      <bpmn:subProcess id="EvSub_Escalation" name="Escalation handler" triggeredByEvent="true">
+        <bpmn:startEvent id="Ev_Start" name="Error caught">
+          <bpmn:errorEventDefinition />
+        </bpmn:startEvent>
+        <bpmn:endEvent id="Ev_End" />
+        <bpmn:sequenceFlow id="Ev_F1" sourceRef="Ev_Start" targetRef="Ev_End" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_1" name="Claim settled" />
+      <bpmn:sequenceFlow id="F1" sourceRef="Start_Msg" targetRef="Sub_Assess" />
+      <bpmn:sequenceFlow id="F2" sourceRef="Sub_Assess" targetRef="EndEvent_1" />
+    `);
+    const xmlResult = lintProcess(src);
+    const ids = ['Start_Msg', 'Bnd_Timer', 'EvSub_Escalation', 'Ev_Start'];
+    expect(xmlResult.warnings.filter((f) => f.layer === 2 && ids.includes(f.elementId ?? ''))).toEqual([]);
+    expect(xmlResult.style.some((f) => f.elementId === 'EvSub_Escalation')).toBe(false);
+    expect(xmlResult.scores.execution).toBe(100);
+
+    let p = createProcess();
+    p = addSubProcess(p, { name: 'Assess damage', id: 'Sub_Assess' }).process;
+    p = attachBoundaryTimer(p, { on: 'Sub_Assess', name: 'After 48h', interrupting: false }).process;
+    p = createEventSubprocess(p, { name: 'Escalation handler', id: 'EvSub_Escalation' }).process;
+    const start = p.nodes.find((n) => n.type === 'start' && !n.eventDefinition)!;
+    p = {
+      ...p,
+      nodes: p.nodes.map((n) =>
+        n.id === start.id ? { ...n, name: 'Claim submitted', eventDefinition: 'MessageEventDefinition' } : n,
+      ),
+    };
+    const graphResult = lintProcess(p);
+    expect(graphResult.warnings.filter((f) => f.layer === 2 && ids.includes(f.elementId ?? ''))).toEqual([]);
+    expect(graphResult.style.some((f) => f.id === 'style.task-verb' && f.elementId === 'EvSub_Escalation')).toBe(
+      false,
+    );
+    expect(graphResult.scores.execution).toBe(xmlResult.scores.execution);
+  });
+
+  it('still flags a Camunda 8 gap on ad-hoc, not on a boundary timer in the same model', () => {
+    const result = lintProcess(
+      xml(`
+        <bpmn:startEvent id="S" name="Start" />
+        <bpmn:adHocSubProcess id="A1" name="Handle extras">
+          <bpmn:task id="AdHoc_Inner" name="Call garage" />
+        </bpmn:adHocSubProcess>
+        <bpmn:boundaryEvent id="Bnd_Timer" name="After 48h" attachedToRef="A1">
+          <bpmn:timerEventDefinition />
+        </bpmn:boundaryEvent>
+        <bpmn:endEvent id="BE" name="Timed out" />
+        <bpmn:endEvent id="E" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="A1" />
+        <bpmn:sequenceFlow id="F2" sourceRef="A1" targetRef="E" />
+        <bpmn:sequenceFlow id="F3" sourceRef="Bnd_Timer" targetRef="BE" />
+      `),
+    );
+    expect(result.warnings.filter((f) => f.layer === 2)).toEqual([
+      expect.objectContaining({ id: 'execution.partial', layer: 2, elementId: 'A1' }),
+    ]);
+    expect(result.scores.execution).toBe(85);
+    expect(result.errors.some((f) => f.elementId === 'AdHoc_Inner')).toBe(false);
+    expect(result.errors.some((f) => f.elementId === 'A1' || f.elementId === 'Bnd_Timer')).toBe(false);
+  });
+
+  it('does not treat compensation or link as sequence-flow orphans', () => {
+    const result = lintProcess(
+      xml(`
+        <bpmn:startEvent id="S" name="Start" />
+        <bpmn:task id="T1" name="Book hotel" />
+        <bpmn:boundaryEvent id="Bnd_Comp" name="Undo hotel" attachedToRef="T1">
+          <bpmn:compensateEventDefinition />
+        </bpmn:boundaryEvent>
+        <bpmn:task id="Undo_Hotel" name="Cancel hotel" isForCompensation="true" />
+        <bpmn:association id="As_Comp" sourceRef="Bnd_Comp" targetRef="Undo_Hotel" associationDirection="One" />
+        <bpmn:intermediateThrowEvent id="Throw_Link" name="to review">
+          <bpmn:linkEventDefinition name="review" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateCatchEvent id="Catch_Link" name="from booking">
+          <bpmn:linkEventDefinition name="review" />
+        </bpmn:intermediateCatchEvent>
+        <bpmn:endEvent id="E" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="T1" />
+        <bpmn:sequenceFlow id="F2" sourceRef="T1" targetRef="Throw_Link" />
+        <bpmn:sequenceFlow id="F3" sourceRef="Catch_Link" targetRef="E" />
+      `),
+    );
+    expect(result.errors.filter((f) => f.elementId === 'Bnd_Comp' || f.elementId === 'Undo_Hotel')).toEqual([]);
+    expect(result.errors.filter((f) => f.elementId === 'Throw_Link' || f.elementId === 'Catch_Link')).toEqual([]);
+    expect(result.errors.some((f) => /is not connected/.test(f.message))).toBe(false);
+  });
+
+  it('does not apply task-verb to an event subprocess, boundary, or gateway collapsed as task', () => {
+    let p = createProcess();
+    p = addSubProcess(p, { name: 'Assess damage', id: 'Sub_Assess' }).process;
+    p = attachBoundaryTimer(p, { on: 'Sub_Assess', name: 'After 48h' }).process;
+    p = createEventSubprocess(p, { name: 'Escalation handler', id: 'EvSub_Escalation' }).process;
+    const named = lintProcess(p);
+    expect(named.style.some((f) => f.elementId === 'EvSub_Escalation')).toBe(false);
+    expect(named.style.some((f) => f.elementId === p.nodes.find((n) => n.type === 'boundaryEvent')?.id)).toBe(false);
+
+    const origin = createProcess();
+    const start = origin.nodes.find((n) => n.type === 'start')!;
+    const end = origin.nodes.find((n) => n.type === 'end')!;
+    const collapsed: Process = {
+      ...origin,
+      nodes: [start, { id: 'ComplexGateway_1', type: 'task', name: 'N of M', bpmnType: 'bpmn:ComplexGateway' }, end],
+      flows: [
+        { id: 'f1', source: start.id, target: 'ComplexGateway_1' },
+        { id: 'f2', source: 'ComplexGateway_1', target: end.id },
+      ],
+    };
+    const result = lintProcess(collapsed);
+    expect(result.style.some((f) => f.elementId === 'ComplexGateway_1')).toBe(false);
+    expect(result.warnings).toEqual([
+      expect.objectContaining({ id: 'execution.unsupported', layer: 2, elementId: 'ComplexGateway_1' }),
+    ]);
   });
 });

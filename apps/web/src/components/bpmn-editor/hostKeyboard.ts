@@ -54,6 +54,11 @@ export function bindKeyboardToHost(keyboard: EditorKeyboard, host: HTMLElement):
   keyboard.addListener?.(HAND_TOOL_SPACE_PRIORITY, swallowHandToolSpace, 'keyboard.keyup');
 }
 
+/** bpmn-js paints the diagram SVG with tabindex=0; Tab from inspector name must not land on the canvas. */
+export function silenceCanvasTabStop(host: HTMLElement): void {
+  host.querySelectorAll('svg').forEach((svg) => svg.setAttribute('tabindex', '-1'));
+}
+
 /**
  * Figma-style hold-to-pan. Returns the tool to apply, or undefined when the
  * current tool should stay. preventDefault only when Space is consumed as pan.

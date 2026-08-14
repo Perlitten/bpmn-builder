@@ -1,3 +1,5 @@
+import { assistantTimeoutError } from './timeout.js';
+
 export function isUpstreamError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   if ('name' in error && error.name === 'UpstreamError') return true;
@@ -14,9 +16,11 @@ export function friendlyAiError(error: unknown): string {
   }
   if (
     error instanceof Error &&
-    (error.name === 'AbortError' || error.name === 'TimeoutError' || /timed out after 30s|aborted due to timeout|this operation was aborted/i.test(raw))
+    (error.name === 'AbortError' ||
+      error.name === 'TimeoutError' ||
+      /timed out after \d+(?:\.\d+)?(?:s|ms)|aborted due to timeout|this operation was aborted/i.test(raw))
   ) {
-    return 'Architect timed out after 30s.';
+    return assistantTimeoutError().message;
   }
   if (/NVIDIA_API_KEY|GEMINI_API_KEY/i.test(raw) || /not configured/i.test(raw)) {
     return 'AI agent is not configured. Add the selected provider API key and restart the server.';

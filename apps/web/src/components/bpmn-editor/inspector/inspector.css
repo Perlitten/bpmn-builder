@@ -50,7 +50,9 @@
 }
 
 .element-inspector-body input[type='text'],
-.element-inspector-body input[type='search'] {
+.element-inspector-body input[type='search'],
+.element-inspector-body textarea,
+.element-inspector-body select {
   width: 100%;
   box-sizing: border-box;
   margin: 0;
@@ -63,8 +65,35 @@
   outline: none;
 }
 
-.element-inspector-body input:focus {
+.element-inspector-body input:focus,
+.element-inspector-body textarea:focus,
+.element-inspector-body select:focus {
   border-color: var(--color-ink);
+}
+
+.element-inspector-body textarea {
+  min-height: 48px;
+  resize: vertical;
+}
+
+.element-inspector-field-label {
+  display: block;
+  margin: 0 0 3px;
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.element-inspector-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 10px 6px;
+  font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-ink);
+}
+
+.element-inspector-check input[type='checkbox'] {
+  margin: 0;
 }
 
 .element-inspector-list {

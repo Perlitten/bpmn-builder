@@ -1,5 +1,6 @@
 import {
   allRegions,
+  bpmnComponentRegistry,
   defaultInsertAfter,
   findBranch,
   findRegion,
@@ -190,6 +191,8 @@ const PLACE_TOOLS = new Set<ToolName>([
   'splitParallel',
   'splitInclusive',
   'splitEventBased',
+  'splitComplex',
+  'createComponent',
   'moveToBranch',
 ]);
 
@@ -229,6 +232,9 @@ function lookupPlaceRef(
   if (branchById(process, ref)) return { kind: 'branch', id: ref };
   if (regionById(process, ref)) return { kind: 'region', id: ref };
   if (process.nodes.some((node) => node.id === ref) || process.flows.some((flow) => flow.id === ref)) {
+    return { kind: 'node', id: ref };
+  }
+  if ((process.artifacts ?? []).some((item) => item.id === ref)) {
     return { kind: 'node', id: ref };
   }
   const namedBranches = allRegions(process).flatMap((region) => region.branches.filter((branch) => branch.name === ref));
@@ -303,7 +309,7 @@ export function applyScopeDefaults(
 ): Record<string, unknown> {
   const placed = ctx?.process ? rewritePlaceArgs(name, args, ctx.process, ctx.lastId, scope) : args;
   if (!scope) return placed;
-  if (name !== 'addTask') return placed;
+  if (name !== 'addTask' && name !== 'createComponent') return placed;
   if (placed.after != null || placed.before != null || placed.branchId != null) return placed;
   if (scope.kind === 'branch' && scope.id) return { ...placed, branchId: scope.id };
   if (scope.kind === 'selection' && scope.ids?.length === 1) return { ...placed, after: scope.ids[0] };
@@ -346,8 +352,13 @@ export function assertMutationAllowed(
   const nodeId = ref('nodeId');
   const id = ref('id');
   const on = ref('on');
+  const from = ref('from');
+  const to = ref('to');
+  const associateTo = ref('associateTo');
+  const flowId = ref('flowId');
+  const parent = ref('parent');
 
-  for (const target of [after, before, branchId, regionId, nodeId, id, on]) {
+  for (const target of [after, before, branchId, regionId, nodeId, id, on, from, to, associateTo, flowId, parent]) {
     if (target && isLockedTarget(process, target)) {
       refuse(name, 'cannot mutate a branch protected from AI');
     }
@@ -374,7 +385,8 @@ export function assertMutationAllowed(
     name === 'splitExclusive' ||
     name === 'splitParallel' ||
     name === 'splitInclusive' ||
-    name === 'splitEventBased'
+    name === 'splitEventBased' ||
+    name === 'splitComplex'
   ) {
     if (!after || !canInsertAfter(process, scope, after, branchId)) {
       refuse(name, 'is outside agent scope (after)');
@@ -382,9 +394,84 @@ export function assertMutationAllowed(
     return;
   }
 
-  if (name === 'attachBoundaryTimer') {
+  if (name === 'attachBoundaryTimer' || name === 'attachBoundaryError') {
     const host = on ?? after;
     if (!host || !inMutable(process, scope, host)) refuse(name, 'is outside agent scope');
+    return;
+  }
+
+  if (name === 'createEventSubprocess') {
+    const host = parent ?? after;
+    if (host) {
+      if (!inMutable(process, scope, host)) refuse(name, 'is outside agent scope');
+      return;
+    }
+    if (scope && scope.kind !== 'process') refuse(name, 'requires whole-process scope');
+    return;
+  }
+
+  if (name === 'createComponent') {
+    const componentId = typeof args.componentId === 'string' ? args.componentId : '';
+    const def = bpmnComponentRegistry.get(componentId);
+    if (!def) refuse(name, 'cannot add that construction');
+    if (!def.implemented) return;
+    const place = def.layoutBehavior.placement;
+    if (place === 'pool' || place === 'lane' || place === 'messageFlow') {
+      if (scope && scope.kind !== 'process') refuse(name, 'requires whole-process scope');
+      return;
+    }
+    if (def.id.startsWith('start.') || def.id.startsWith('end.')) {
+      if (scope && scope.kind !== 'process') refuse(name, 'requires whole-process scope');
+      return;
+    }
+    if (place === 'data' || place === 'artifact') return;
+    if (place === 'attachToActivityBoundary') {
+      const host = on ?? after;
+      if (!host || !inMutable(process, scope, host)) refuse(name, 'is outside agent scope');
+      return;
+    }
+    if (place === 'sequenceFlow' || place === 'association') {
+      const target = flowId ?? after ?? from ?? to ?? id;
+      if (target && !inMutable(process, scope, target)) refuse(name, 'is outside agent scope');
+      return;
+    }
+    if (after && !canInsertAfter(process, scope, after, branchId)) {
+      refuse(name, 'is outside agent scope (after)');
+    }
+    if (before && !canInsertBefore(process, scope, before, branchId)) {
+      refuse(name, 'is outside agent scope (before)');
+    }
+    if (branchId && !inMutable(process, scope, branchId) && !(scope?.kind === 'branch' && scope.id === branchId)) {
+      refuse(name, 'is outside agent scope (branch)');
+    }
+    if (!after && !before && !branchId) {
+      const point = defaultInsertAfter(process);
+      if (!canInsertAfter(process, scope, point)) refuse(name, 'is outside agent scope (insert point)');
+    }
+    return;
+  }
+
+  if (name === 'setFlowKind') {
+    const target = flowId ?? id ?? after;
+    if (!target || !inMutable(process, scope, target)) refuse(name, 'is outside agent scope');
+    return;
+  }
+
+  if (name === 'setCalledElement') {
+    if (!id || !inMutable(process, scope, id)) refuse(name, 'is outside agent scope');
+    return;
+  }
+
+  if (name === 'addTextAnnotation') {
+    const host = associateTo ?? after;
+    if (host && !inMutable(process, scope, host)) refuse(name, 'is outside agent scope');
+    return;
+  }
+
+  if (name === 'addAssociation') {
+    for (const target of [from, to, after]) {
+      if (target && !inMutable(process, scope, target)) refuse(name, 'is outside agent scope');
+    }
     return;
   }
 
@@ -399,6 +486,11 @@ export function assertMutationAllowed(
     if (!branchId || !canInsertAfter(process, scope, branchId, branchId)) {
       refuse(name, 'is outside agent scope (branch)');
     }
+    return;
+  }
+
+  if (name === 'assignLane') {
+    if (!nodeId || !inMutable(process, scope, nodeId)) refuse(name, 'is outside agent scope (node)');
     return;
   }
 

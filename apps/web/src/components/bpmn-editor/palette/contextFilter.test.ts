@@ -22,10 +22,10 @@ describe('modeling catalog', () => {
   });
 
   it('keeps unimplemented elements findable in registry search', () => {
-    const hits = bpmnComponentRegistry.search('transaction');
-    const transaction = hits.find((item) => item.id === 'activity.transaction');
-    expect(transaction).toBeDefined();
-    const resolved = resolveCatalogItem(transaction!, {
+    const hits = bpmnComponentRegistry.search('compensation handler');
+    const blocked = hits.find((item) => item.id === 'boundary.compensation');
+    expect(blocked).toBeDefined();
+    const resolved = resolveCatalogItem(blocked!, {
       selection: null,
       hasParticipant: false,
       searching: true,
@@ -68,18 +68,21 @@ describe('context filter', () => {
     const idle = catalogForFlyout('activities', '', { selection: null, hasParticipant: false });
     const items = idle.groups.flatMap((group) => group.items);
     expect(items.some((entry) => entry.item.id === 'activity.task')).toBe(true);
+    const blocked = catalogForFlyout('events', '', { selection: null, hasParticipant: false })
+      .groups.flatMap((group) => group.items)
+      .find((entry) => entry.item.id === 'boundary.compensation');
+    expect(blocked?.enabled).toBe(false);
+    expect(blocked?.reason).toMatch(/modeling profile/i);
     const transaction = items.find((entry) => entry.item.id === 'activity.transaction');
-    expect(transaction?.enabled).toBe(false);
-    expect(transaction?.reason).toMatch(/modeling profile/i);
+    expect(transaction?.enabled).toBe(true);
   });
 
-  it('lists Data and Artifacts disabled; Pool is creatable', () => {
+  it('lists Data and Artifacts as creatable; Pool is creatable', () => {
     for (const category of ['data', 'artifacts'] as const) {
       const idle = catalogForFlyout(category, '', { selection: null, hasParticipant: false });
       const items = idle.groups.flatMap((group) => group.items);
       expect(items.length).toBeGreaterThan(0);
-      expect(items.every((entry) => !entry.enabled)).toBe(true);
-      expect(items.every((entry) => /modeling profile/i.test(entry.reason ?? ''))).toBe(true);
+      expect(items.every((entry) => entry.enabled)).toBe(true);
     }
     const idle = catalogForFlyout('participants', '', { selection: null, hasParticipant: false });
     const items = idle.groups.flatMap((group) => group.items);
@@ -124,6 +127,20 @@ describe('context filter', () => {
     expect(idle.reason).toMatch(/pool first/i);
     expect(
       resolveCatalogItem(item, { selection: null, hasParticipant: true, searching: false }).enabled,
+    ).toBe(true);
+  });
+
+  it('enables conditional and default flow when a source is selected', () => {
+    const conditional = def('flow.conditional');
+    expect(conditional.implemented).toBe(true);
+    expect(
+      resolveCatalogItem(conditional, { selection: null, hasParticipant: false, searching: false }).enabled,
+    ).toBe(false);
+    expect(
+      resolveCatalogItem(conditional, { selection: task, hasParticipant: false, searching: false }).enabled,
+    ).toBe(true);
+    expect(
+      resolveCatalogItem(def('flow.default'), { selection: task, hasParticipant: false, searching: false }).enabled,
     ).toBe(true);
   });
 

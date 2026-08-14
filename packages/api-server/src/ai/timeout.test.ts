@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  ASSISTANT_TIMEOUT_MS,
   assistantConnectTimeoutMs,
   assistantTimeoutError,
   assistantTimeoutMs,
@@ -24,12 +25,12 @@ describe('assistant timeout', () => {
 
   it('raceTimeout rejects after the budget and leaves a finished job alone', async () => {
     vi.useFakeTimers();
-    const hung = raceTimeout(new Promise(() => {}), 30_000);
-    const expectHung = expect(hung).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 30s/ });
-    await vi.advanceTimersByTimeAsync(30_000);
+    const hung = raceTimeout(new Promise(() => {}), ASSISTANT_TIMEOUT_MS);
+    const expectHung = expect(hung).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 120s/ });
+    await vi.advanceTimersByTimeAsync(ASSISTANT_TIMEOUT_MS);
     await expectHung;
 
-    expect(await raceTimeout(Promise.resolve('ok'), 30_000)).toBe('ok');
+    expect(await raceTimeout(Promise.resolve('ok'), ASSISTANT_TIMEOUT_MS)).toBe('ok');
   });
 
   it('detects timeout errors from AbortSignal and our sentinel', () => {
@@ -51,16 +52,16 @@ describe('assistant timeout', () => {
   });
 
   it('reads ASSISTANT_TIMEOUT_MS from the environment', () => {
-    const previous = process.env.ASSISTANT_TIMEOUT_MS;
     process.env.ASSISTANT_TIMEOUT_MS = '40';
     expect(assistantTimeoutMs()).toBe(40);
     expect(useFastConnectTimeout()).toBe(false);
-    if (previous === undefined) delete process.env.ASSISTANT_TIMEOUT_MS;
-    else process.env.ASSISTANT_TIMEOUT_MS = previous;
-    expect(assistantTimeoutMs()).toBe(30_000);
+    delete process.env.ASSISTANT_TIMEOUT_MS;
+    expect(assistantTimeoutMs()).toBe(120_000);
+    expect(assistantTimeoutError().message).toMatch(/timed out after 120s/);
+    expect(assistantTimeoutError(40).message).toMatch(/timed out after 40ms/);
   });
 
-  it('fails the connect gate before the 30s generation budget', async () => {
+  it('fails the connect gate before the generation budget', async () => {
     const previousTimeout = process.env.ASSISTANT_TIMEOUT_MS;
     const previousConnect = process.env.ASSISTANT_CONNECT_TIMEOUT_MS;
     process.env.ASSISTANT_TIMEOUT_MS = '5000';

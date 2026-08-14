@@ -1,5 +1,8 @@
-export const ASSISTANT_TIMEOUT_MS = 30_000;
+export const ASSISTANT_TIMEOUT_MS = 120_000;
 export const ASSISTANT_CONNECT_TIMEOUT_MS = 8_000;
+
+const TIMED_OUT =
+  /timed out after \d+(?:\.\d+)?(?:s|ms)|aborted due to timeout|this operation was aborted/i;
 
 export function assistantTimeoutMs(): number {
   const raw = Number(process.env.ASSISTANT_TIMEOUT_MS);
@@ -13,8 +16,12 @@ export function assistantConnectTimeoutMs(): number {
   return Math.min(connect, overall);
 }
 
-export function assistantTimeoutError(): Error {
-  const error = new Error('Architect timed out after 30s.');
+export function assistantTimeoutLabel(ms = assistantTimeoutMs()): string {
+  return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;
+}
+
+export function assistantTimeoutError(ms = assistantTimeoutMs()): Error {
+  const error = new Error(`Architect timed out after ${assistantTimeoutLabel(ms)}.`);
   error.name = 'TimeoutError';
   return error;
 }
@@ -40,7 +47,7 @@ export function isTimeoutError(error: unknown): boolean {
   if (isAbortError(error)) return true;
   if (!error || typeof error !== 'object') return false;
   const message = error instanceof Error ? error.message : String(error);
-  if (/timed out after 30s|aborted due to timeout|this operation was aborted/i.test(message)) return true;
+  if (TIMED_OUT.test(message)) return true;
   const cause = 'cause' in error ? (error as { cause?: unknown }).cause : undefined;
   return cause != null && cause !== error && isTimeoutError(cause);
 }
@@ -97,10 +104,11 @@ export function connectGateFailed(gate: ConnectGate, overall: AbortSignal): bool
 
 export function createDeadline(ms = assistantTimeoutMs(), extra?: AbortSignal): Deadline {
   const ac = new AbortController();
-  const abort = (reason: unknown = assistantTimeoutError()) => {
+  const timedOut = () => assistantTimeoutError(ms);
+  const abort = (reason: unknown = timedOut()) => {
     if (!ac.signal.aborted) ac.abort(reason);
   };
-  const timer = setTimeout(() => abort(assistantTimeoutError()), ms);
+  const timer = setTimeout(() => abort(timedOut()), ms);
   const onExtra = () => abort(extra?.reason ?? assistantTimeoutError());
   if (extra) {
     if (extra.aborted) onExtra();

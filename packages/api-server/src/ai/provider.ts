@@ -2,7 +2,7 @@ import { createGeminiClient } from './geminiClient.js';
 import { createNvidiaClient } from './nvidiaClient.js';
 import type { AiModelClient, AiProviderInfo } from './types.js';
 
-const DEFAULT_NVIDIA_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
+const DEFAULT_NVIDIA_MODEL = 'meta/llama-3.3-70b-instruct';
 const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 const preferredProvider = () => process.env.AI_PROVIDER?.trim().toLowerCase();

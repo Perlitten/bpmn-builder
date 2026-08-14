@@ -18,3 +18,7 @@ export function isEditorChromeKeyTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return !!target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]');
 }
+
+export function selectionIdsEqual(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}

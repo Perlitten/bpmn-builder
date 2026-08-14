@@ -1,7 +1,10 @@
 import {
   getNode,
   incomingFlows,
+  innerScope,
+  isEventSubProcess,
   outgoingFlows,
+  type FlowNode,
   type Process,
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
@@ -22,9 +25,21 @@ export type TokenSimulation = {
    * Start: always spawns a new token and emits outgoing.
    * Task / exclusive split: consumes one parked token.
    * Exclusive split with 2+ outgoing needs `outgoingFlowId` (or a default flow).
+   * Boundary: fires from an active host — no incoming sequence flow required.
+   * Event subprocess: starts a side token in its inner region.
    */
   signal(nodeId: string, outgoingFlowId?: string): SimSnapshot;
 };
+
+/** Diagram highlights for the token player. */
+export type SimMarks = {
+  click: string[];
+  choice: string[];
+  /** Host activities whose attached boundary is armed. */
+  host: string[];
+};
+
+const DRAIN_LIMIT = 10_000;
 
 export function completedCount(snap: SimSnapshot): number {
   return Object.values(snap.completed).reduce((sum, n) => sum + n, 0);
@@ -32,6 +47,86 @@ export function completedCount(snap: SimSnapshot): number {
 
 function isChoiceGateway(type: string): boolean {
   return type === 'exclusiveGateway' || type === 'inclusiveGateway' || type === 'eventBasedGateway';
+}
+
+function innerStart(process: Process, ownerId: string): FlowNode | undefined {
+  const scope = innerScope(process, ownerId);
+  if (!scope) return undefined;
+  const starts = process.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
+  return starts.find((n) => n.eventDefinition) ?? starts[0];
+}
+
+function ownerSubtreeIds(process: Process, ownerId: string): string[] {
+  const inner = innerScope(process, ownerId);
+  if (!inner) return [];
+  const out: string[] = [];
+  const walk = (scopeId: string) => {
+    const scope = process.scopes.find((s) => s.id === scopeId);
+    if (!scope) return;
+    out.push(...scope.nodeIds);
+    for (const child of process.scopes) {
+      if (child.parentId === scope.id) walk(child.id);
+    }
+  };
+  walk(inner.id);
+  return out;
+}
+
+function waitHasToken(buf: Record<string, number> | undefined): boolean {
+  return !!buf && Object.values(buf).some((n) => n > 0);
+}
+
+function isHostActive(
+  process: Process,
+  tokens: Record<string, number>,
+  joinWait: Record<string, Record<string, number>>,
+  hostId: string,
+): boolean {
+  if ((tokens[hostId] ?? 0) > 0 || waitHasToken(joinWait[hostId])) return true;
+  for (const id of ownerSubtreeIds(process, hostId)) {
+    if ((tokens[id] ?? 0) > 0 || waitHasToken(joinWait[id])) return true;
+  }
+  return false;
+}
+
+export function simulationMarks(process: Process, snap: SimSnapshot): SimMarks {
+  const click = new Set<string>();
+  const choice = new Set<string>();
+  const host = new Set<string>();
+  const hasTokens = Object.keys(snap.tokens).length > 0;
+
+  if (!hasTokens) {
+    for (const node of process.nodes) {
+      if (node.type === 'start') click.add(node.id);
+    }
+  }
+
+  for (const node of process.nodes) {
+    if ((snap.tokens[node.id] ?? 0) < 1) continue;
+    const outs = outgoingFlows(process, node.id);
+    if (isChoiceGateway(node.type) && outs.length > 1) {
+      for (const flow of outs) choice.add(flow.id);
+      continue;
+    }
+    click.add(node.id);
+  }
+
+  for (const node of process.nodes) {
+    if (node.type !== 'boundaryEvent' || !node.attachedTo) continue;
+    if (!isHostActive(process, snap.tokens, snap.joinWait, node.attachedTo)) continue;
+    click.add(node.id);
+    click.add(node.attachedTo);
+    host.add(node.attachedTo);
+  }
+
+  for (const node of process.nodes) {
+    if (!isEventSubProcess(node)) continue;
+    click.add(node.id);
+    const start = innerStart(process, node.id);
+    if (start) click.add(start.id);
+  }
+
+  return { click: [...click], choice: [...choice], host: [...host] };
 }
 
 export function createTokenSimulation(process: Process): TokenSimulation {
@@ -75,7 +170,7 @@ export function createTokenSimulation(process: Process): TokenSimulation {
     draining = true;
     let steps = 0;
     while (queue.length) {
-      if (++steps > 10_000) {
+      if (++steps > DRAIN_LIMIT) {
         draining = false;
         queue.length = 0;
         throw new Error('simulation exceeded step limit');
@@ -130,6 +225,36 @@ export function createTokenSimulation(process: Process): TokenSimulation {
     return fallback;
   }
 
+  function consumeHostInstance(hostId: string): void {
+    if ((tokens[hostId] ?? 0) > 0) {
+      bump(tokens, hostId, -1);
+      return;
+    }
+    for (const id of ownerSubtreeIds(process, hostId)) {
+      delete tokens[id];
+      delete joinWait[id];
+    }
+  }
+
+  function fireBoundary(node: FlowNode, outgoingFlowId?: string): void {
+    const nodeId = node.id;
+    const outs = outgoingFlows(process, nodeId);
+    const onBoundary = (tokens[nodeId] ?? 0) > 0;
+    const hostId = node.attachedTo;
+    const armed = !!hostId && isHostActive(process, tokens, joinWait, hostId);
+    if (!onBoundary && !armed) throw new Error(`no token at ${nodeId}`);
+    const chosen = pickOutgoing(nodeId, outs, outgoingFlowId);
+    if (onBoundary) bump(tokens, nodeId, -1);
+    else if (node.cancelActivity !== false && hostId) consumeHostInstance(hostId);
+    emitFlow(chosen);
+  }
+
+  function fireEventSubprocess(nodeId: string): void {
+    const start = innerStart(process, nodeId);
+    if (!start) throw new Error(`no token at ${nodeId}`);
+    emitAll(outgoingFlows(process, start.id));
+  }
+
   return {
     snapshot,
     reset() {
@@ -145,6 +270,14 @@ export function createTokenSimulation(process: Process): TokenSimulation {
       const outs = outgoingFlows(process, nodeId);
       if (node.type === 'start') {
         emitAll(outs);
+        return snapshot();
+      }
+      if (node.type === 'boundaryEvent') {
+        fireBoundary(node, outgoingFlowId);
+        return snapshot();
+      }
+      if (isEventSubProcess(node)) {
+        fireEventSubprocess(nodeId);
         return snapshot();
       }
       if ((tokens[nodeId] ?? 0) < 1) throw new Error(`no token at ${nodeId}`);
@@ -174,6 +307,10 @@ export function resolveClick(
 ): { nodeId: string; flowId?: string } | null {
   const node = process.nodes.find((n) => n.id === elementId);
   if (node?.type === 'start') return { nodeId: elementId };
+  if (node && isEventSubProcess(node)) {
+    const start = innerStart(process, node.id);
+    return start ? { nodeId: start.id } : { nodeId: node.id };
+  }
   if ((snap.tokens[elementId] ?? 0) > 0) {
     const parked = getNode(process, elementId);
     const outs = outgoingFlows(process, elementId);
@@ -182,11 +319,23 @@ export function resolveClick(
     }
     return { nodeId: elementId };
   }
+  if (node?.type === 'boundaryEvent' && node.attachedTo) {
+    if (isHostActive(process, snap.tokens, snap.joinWait, node.attachedTo)) {
+      return { nodeId: elementId };
+    }
+  }
   const flow = process.flows.find((f) => f.id === elementId);
   if (!flow) return null;
   const source = getNode(process, flow.source);
   if (isChoiceGateway(source.type) && (snap.tokens[flow.source] ?? 0) > 0) {
     return { nodeId: flow.source, flowId: flow.id };
+  }
+  if (
+    source.type === 'boundaryEvent' &&
+    source.attachedTo &&
+    isHostActive(process, snap.tokens, snap.joinWait, source.attachedTo)
+  ) {
+    return { nodeId: source.id, flowId: flow.id };
   }
   return null;
 }
@@ -203,7 +352,8 @@ function simNodeLabel(process: Process, id: string): string {
   if (node.type === 'start') return 'Start';
   if (node.type === 'end') return 'End';
   if (node.type === 'task') return 'Task';
-  if (node.type === 'subProcess') return 'Subprocess';
+  if (node.type === 'boundaryEvent') return 'boundary event';
+  if (node.type === 'subProcess') return node.triggeredByEvent ? 'event subprocess' : 'Subprocess';
   return 'element';
 }
 
@@ -211,6 +361,18 @@ function choiceKind(type: string): string {
   if (type === 'inclusiveGateway') return 'OR';
   if (type === 'eventBasedGateway') return 'event-based';
   return 'XOR';
+}
+
+function exceptionHint(process: Process, hostId: string): string {
+  const bounds = process.nodes.filter((n) => n.type === 'boundaryEvent' && n.attachedTo === hostId);
+  if (!bounds.length) return '';
+  return `, or ${simNodeLabel(process, bounds[0]!.id)} for the exception path`;
+}
+
+function sideEventHint(process: Process): string {
+  const ev = process.nodes.find((n) => isEventSubProcess(n));
+  if (!ev) return '';
+  return `, or ${simNodeLabel(process, ev.id)} as a side event`;
 }
 
 export function describeSimulation(process: Process, snap: SimSnapshot): string {
@@ -235,7 +397,8 @@ export function describeSimulation(process: Process, snap: SimSnapshot): string 
     return `Waiting at ${where} (${got}/${ins.length} incoming)`;
   }
   if (parked.length === 1) {
-    return `Token on ${simNodeLabel(process, parked[0]!)} — click the element to advance`;
+    const id = parked[0]!;
+    return `Token on ${simNodeLabel(process, id)} — click the element to advance${exceptionHint(process, id)}${sideEventHint(process)}`;
   }
   if (parked.length > 1) {
     const names = parked.slice(0, 3).map((id) => simNodeLabel(process, id)).join(', ');

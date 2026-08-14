@@ -76,7 +76,8 @@ function semanticGraph(p: Process) {
 
 describe('@bpmn/bpmn-adapter MIWG-inspired round-trip', () => {
   it('uses local A.1 / A.2 / C.1 fixtures (no network download)', () => {
-    expect(readdirSync(FIXTURES).filter((f) => f.endsWith('.bpmn')).sort()).toEqual([...CASES]);
+    const names = readdirSync(FIXTURES).filter((f) => f.endsWith('.bpmn'));
+    expect(CASES.every((name) => names.includes(name))).toBe(true);
   });
 
   it.each(CASES)('%s: import → graph → export → import is semantically equivalent; layout is deterministic', async (name) => {

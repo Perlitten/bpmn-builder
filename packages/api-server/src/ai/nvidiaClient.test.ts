@@ -68,7 +68,7 @@ describe('NVIDIA client', () => {
     });
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
     ac.abort(assistantTimeoutError());
-    await expect(pending).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 30s/ });
+    await expect(pending).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 120s/ });
     expect(cancelled).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

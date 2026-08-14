@@ -124,8 +124,137 @@ describe('agent tools', () => {
     const origin = createProcess();
     expect(() =>
       executePlan(origin, [{ name: 'addTask', args: { componentId: 'event.start.none' } }]),
-    ).toThrow(/unknown component/);
+    ).toThrow(/cannot be added here/);
     const added = executePlan(origin, [{ name: 'addTask', args: { componentId: 'activity.userTask' } }]);
     expect(getNode(added.process, added.id).bpmnType).toBe('bpmn:UserTask');
+  });
+
+  it('assignLane moves a task between lanes and refuses a boundary event', () => {
+    const origin = createProcess({ name: 'Clerk' });
+    const pooled = executePlan(origin, [
+      { name: 'addTask', args: { name: 'Review' } },
+      { name: 'addLane', args: { name: 'Clerk' } },
+      { name: 'addLane', args: { name: 'Manager' } },
+    ]);
+    const clerk = pooled.process.lanes[0]!;
+    const manager = pooled.process.lanes[1]!;
+    const review = pooled.process.nodes.find((n) => n.name === 'Review')!;
+    expect(clerk.nodeIds).toContain(review.id);
+
+    const moved = executePlan(pooled.process, [
+      { name: 'assignLane', args: { nodeId: review.id, laneId: manager.id } },
+    ]);
+    expect(moved.process.lanes[0]!.nodeIds).not.toContain(review.id);
+    expect(moved.process.lanes[1]!.nodeIds).toContain(review.id);
+    expect(moved.inverse(moved.process)).toEqual(pooled.process);
+
+    const timed = executePlan(pooled.process, [{ name: 'attachBoundaryTimer', args: { on: review.id } }]);
+    expect(() =>
+      executePlan(timed.process, [{ name: 'assignLane', args: { nodeId: timed.id, laneId: manager.id } }]),
+    ).toThrow(/attach to an activity, not a lane/i);
+  });
+
+  it('catalog tools create via registry ids, not a private type list', () => {
+    const origin = createProcess();
+    const withTask = executePlan(origin, [{ name: 'addTask', args: { name: 'Review' } }]);
+
+    const errBound = executePlan(withTask.process, [
+      { name: 'attachBoundaryError', args: { on: 'Review', name: 'Claim failed' } },
+    ]);
+    expect(getNode(errBound.process, errBound.id).eventDefinition).toBe('ErrorEventDefinition');
+    expect(errBound.inverse(errBound.process)).toEqual(withTask.process);
+
+    const viaCreate = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'boundary.error', after: 'Review' } },
+    ]);
+    expect(getNode(viaCreate.process, viaCreate.id).type).toBe('boundaryEvent');
+
+    const catchTimer = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'intermediate.catch.timer', after: 'Review', name: 'Wait SLA' } },
+    ]);
+    expect(getNode(catchTimer.process, catchTimer.id)).toMatchObject({
+      type: 'intermediateCatch',
+      eventDefinition: 'TimerEventDefinition',
+    });
+
+    const startMsg = executePlan(origin, [{ name: 'createComponent', args: { componentId: 'start.message' } }]);
+    expect(getNode(startMsg.process, 'StartEvent_1').eventDefinition).toBe('MessageEventDefinition');
+
+    const endErr = executePlan(origin, [{ name: 'createComponent', args: { componentId: 'end.error' } }]);
+    expect(getNode(endErr.process, 'EndEvent_1').eventDefinition).toBe('ErrorEventDefinition');
+
+    const tx = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'activity.transaction', after: 'Review', name: 'Settle' } },
+    ]);
+    expect(getNode(tx.process, tx.id).bpmnType).toBe('bpmn:Transaction');
+
+    const adHoc = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'activity.adHocSubProcess', after: 'Review', name: 'Ad hoc' } },
+    ]);
+    expect(getNode(adHoc.process, adHoc.id).bpmnType).toBe('bpmn:AdHocSubProcess');
+
+    const call = executePlan(origin, [{ name: 'addTask', args: { name: 'Call claims', componentId: 'activity.callActivity' } }]);
+    const named = executePlan(call.process, [
+      { name: 'setCalledElement', args: { id: call.id, calledElement: 'Process_Claims' } },
+    ]);
+    expect(getNode(named.process, call.id).calledElement).toBe('Process_Claims');
+
+    const eventSub = executePlan(origin, [{ name: 'createEventSubprocess', args: { name: 'On error' } }]);
+    expect(getNode(eventSub.process, eventSub.id).type).toBe('subProcess');
+
+    expect(() =>
+      executePlan(origin, [{ name: 'createComponent', args: { componentId: 'boundary.compensation' } }]),
+    ).toThrow(/cannot be added/i);
+  });
+
+  it('splitComplex, setFlowKind, and artifacts are first-class tools', () => {
+    const origin = createProcess();
+    const withTask = executePlan(origin, [{ name: 'addTask', args: { name: 'Score' } }]);
+    const split = executePlan(withTask.process, [
+      { name: 'splitComplex', args: { after: 'Score', name: 'Route', branches: [{ name: 'A' }, { name: 'B' }] } },
+    ]);
+    expect(split.process.regions[0]!.type).toBe('complex');
+    expect(getNode(split.process, split.process.regions[0]!.split).type).toBe('complexGateway');
+    expect(split.inverse(split.process)).toEqual(withTask.process);
+
+    const viaCreate = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'gateway.complex', after: 'Score' } },
+    ]);
+    expect(viaCreate.process.regions[0]!.type).toBe('complex');
+
+    const cond = executePlan(withTask.process, [
+      { name: 'setFlowKind', args: { flowId: 'SequenceFlow_1', kind: 'conditional', condition: '${ok}' } },
+    ]);
+    expect(cond.process.flows.find((f) => f.id === 'SequenceFlow_1')).toMatchObject({
+      condition: '${ok}',
+      isDefault: false,
+    });
+
+    const data = executePlan(origin, [
+      { name: 'addDataObject', args: { name: 'Claim' } },
+      { name: 'addDataStore', args: { name: 'Claims DB' } },
+      { name: 'addTextAnnotation', args: { text: 'Note', associateTo: 'StartEvent_1' } },
+      { name: 'addGroup', args: { name: 'Pack' } },
+    ]);
+    const types = (data.process.artifacts ?? []).map((item) => String(item.$type));
+    expect(types).toEqual(
+      expect.arrayContaining([
+        'bpmn:DataObjectReference',
+        'bpmn:DataStoreReference',
+        'bpmn:TextAnnotation',
+        'bpmn:Association',
+        'bpmn:Group',
+      ]),
+    );
+    const note = (data.process.artifacts ?? []).find((item) => String(item.$type).endsWith('TextAnnotation'))!;
+    const extra = executePlan(data.process, [
+      { name: 'addAssociation', args: { from: String(note.id), to: 'EndEvent_1' } },
+    ]);
+    expect((extra.process.artifacts ?? []).filter((item) => String(item.$type).endsWith('Association')).length).toBe(2);
+
+    const viaRegistry = executePlan(origin, [
+      { name: 'createComponent', args: { componentId: 'data.object', name: 'Folder' } },
+    ]);
+    expect((viaRegistry.process.artifacts ?? []).some((item) => item.name === 'Folder')).toBe(true);
   });
 });

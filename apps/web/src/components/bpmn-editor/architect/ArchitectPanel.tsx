@@ -15,7 +15,6 @@ import {
 } from './agentScope';
 import type { AssistantApplyResult } from './applyAssistant';
 import { isArchitectComposeSubmitKey } from './architectComposeKey';
-import { greetingReply, isGreetingMessage } from './greeting';
 import { ArchitectShell } from './ArchitectShell';
 import './architect.css';
 
@@ -78,23 +77,6 @@ export function ArchitectPanel({
   const submit = (text = draft) => {
     const value = text.trim();
     if (!value || busy || disabled) return;
-    if (isGreetingMessage(value)) {
-      abortRef.current?.abort();
-      timeoutRef.current?.dispose();
-      timeoutRef.current = null;
-      abortRef.current = null;
-      cancelledRef.current = false;
-      const reply = greetingReply(value);
-      setError(null);
-      setFailedText(null);
-      setHistory((prev) =>
-        [...prev, { role: 'user' as const, text: value }, { role: 'assistant' as const, text: reply }].slice(-12),
-      );
-      setMessage(reply);
-      setDiff([]);
-      setDraft('');
-      return;
-    }
     if (configured === false) return;
     abortRef.current?.abort();
     timeoutRef.current?.dispose();
@@ -233,7 +215,7 @@ export function ArchitectPanel({
           <button
             type="button"
             className="architect-apply"
-            disabled={disabled || !draft.trim() || (configured === false && !isGreetingMessage(draft))}
+            disabled={disabled || !draft.trim() || configured === false}
             onClick={() => submit()}
           >
             Apply

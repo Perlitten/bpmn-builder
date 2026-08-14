@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allFindings, suggestName, type LintResult } from '@bpmn/rules';
-import { bpmnComponentRegistry, type BpmnComponentDefinition } from '@bpmn/semantic-core';
+import { bpmnComponentRegistry, findFlowNode, type BpmnComponentDefinition, type Process } from '@bpmn/semantic-core';
 import { ScoreChips } from '../../lint/ScoreChips';
 import { isActivity } from '../palette/contextFilter';
 import { iconClassFor } from '../palette/catalogPresentation';
@@ -21,7 +21,10 @@ import {
   poolLaneCreate,
   type PoolLaneRow,
 } from './inspectorModel';
+import { applyInspectorNameKey, commitInspectorName } from './inspectorNameKey';
 import { nameContextFromElement } from './nameContext';
+import { PreservedBpmnFields } from './PreservedBpmnFields';
+import type { PreservedChange } from './preservedFields';
 import './inspector.css';
 
 type ElementInspectorProps = {
@@ -37,9 +40,15 @@ type ElementInspectorProps = {
   onFlowKind: (kind: FlowKind) => void;
   onCondition: (flowId: string, body: string) => void;
   onDefaultOutgoing: (flowId: string) => void;
+  onCalledElement?: (calledElement: string) => void;
   onAttach: (def: BpmnComponentDefinition) => void;
   onCreate: (def: BpmnComponentDefinition) => void;
+  process?: Process;
+  onPreservedChange?: (change: PreservedChange) => void;
   poolLanes?: PoolLaneRow[];
+  nodeLanes?: PoolLaneRow[];
+  currentLaneId?: string;
+  onAssignLane?: (laneId: string) => void;
 };
 
 function LaneNameField({
@@ -52,9 +61,15 @@ function LaneNameField({
   onRename?: (laneId: string, name: string) => void;
 }) {
   const [name, setName] = useState(initial);
+  const committed = useRef(initial);
   useEffect(() => {
     setName(initial);
+    committed.current = initial;
   }, [laneId, initial]);
+  const commit = (next = name) => {
+    setName(next);
+    committed.current = commitInspectorName(next, committed.current, (value) => onRename?.(laneId, value));
+  };
   return (
     <label>
       <span className="sr-only">Lane name</span>
@@ -63,11 +78,11 @@ function LaneNameField({
         value={name}
         aria-label="Lane name"
         onChange={(event) => setName(event.target.value)}
-        onBlur={() => {
-          if (name !== initial) onRename?.(laneId, name);
-        }}
+        onBlur={(event) => commit(event.currentTarget.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur();
+          const action = applyInspectorNameKey(event);
+          if (action === 'commit') commit(event.currentTarget.value);
+          if (action === 'revert') setName(committed.current);
         }}
       />
     </label>
@@ -87,13 +102,20 @@ export function ElementInspector({
   onFlowKind,
   onCondition,
   onDefaultOutgoing,
+  onCalledElement,
   onAttach,
   onCreate,
+  process,
+  onPreservedChange,
   poolLanes = [],
+  nodeLanes = [],
+  currentLaneId,
+  onAssignLane,
 }: ElementInspectorProps) {
   const registry = bpmnComponentRegistry;
   const [query, setQuery] = useState('');
   const [name, setName] = useState(elementName(element));
+  const committedName = useRef(elementName(element));
   const addLaneGate = useRef(createInspectorCreateGate());
   const currentId = currentComponentId(registry, element);
   const current = currentId ? registry.get(currentId) : undefined;
@@ -114,16 +136,21 @@ export function ElementInspector({
 
   useEffect(() => {
     setQuery('');
-    setName(elementName(element));
+    const next = elementName(element);
+    setName(next);
+    committedName.current = next;
     addLaneGate.current.reset();
   }, [element.id]);
 
   useEffect(() => {
-    setName(elementName(element));
+    const next = elementName(element);
+    setName(next);
+    committedName.current = next;
   }, [element.id, element.businessObject?.name, element.businessObject?.text]);
 
-  const commitName = () => {
-    if (name !== elementName(element)) onRename(name);
+  const commitName = (next = name) => {
+    setName(next);
+    committedName.current = commitInspectorName(next, committedName.current, onRename);
   };
 
   const root = (children: ReactNode) =>
@@ -150,9 +177,11 @@ export function ElementInspector({
             value={name}
             aria-label="Element name"
             onChange={(event) => setName(event.target.value)}
-            onBlur={commitName}
+            onBlur={(event) => commitName(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
+              const action = applyInspectorNameKey(event);
+              if (action === 'commit') commitName(event.currentTarget.value);
+              if (action === 'revert') setName(committedName.current);
             }}
           />
         </label>
@@ -163,7 +192,7 @@ export function ElementInspector({
               className="element-inspector-suggest"
               onClick={() => {
                 setName(suggestion.name);
-                onRename(suggestion.name);
+                committedName.current = commitInspectorName(suggestion.name, committedName.current, onRename);
               }}
             >
               Suggest name
@@ -171,6 +200,34 @@ export function ElementInspector({
             <p className="element-inspector-hint">
               {suggestion.name ? suggestion.name : 'Leave unlabeled'} — {suggestion.reason}
             </p>
+          </>
+        ) : null}
+
+        {process && onPreservedChange ? (
+          <PreservedBpmnFields process={process} element={element} onChange={onPreservedChange} />
+        ) : null}
+
+        {nodeLanes.length > 0 ? (
+          <>
+            <h3>Lane</h3>
+            <label>
+              <span className="sr-only">Lane</span>
+              <select
+                aria-label="Lane"
+                value={currentLaneId ?? ''}
+                onChange={(event) => {
+                  const laneId = event.target.value;
+                  if (laneId) onAssignLane?.(laneId);
+                }}
+              >
+                {!currentLaneId ? <option value="">Not in a lane</option> : null}
+                {nodeLanes.map((lane) => (
+                  <option key={lane.id} value={lane.id}>
+                    {lane.name.trim() ? lane.name : lane.id}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         ) : null}
 
@@ -247,6 +304,27 @@ export function ElementInspector({
                 ))}
               </ul>
             )}
+          </>
+        ) : null}
+
+        {element.type === 'bpmn:CallActivity' ? (
+          <>
+            <h3>Called element</h3>
+            <label>
+              <span className="sr-only">Called element</span>
+              <input
+                type="text"
+                defaultValue={
+                  process
+                    ? (findFlowNode(process, element.id)?.calledElement ?? '')
+                    : String(element.businessObject?.calledElement ?? '')
+                }
+                key={`${element.id}:${process ? findFlowNode(process, element.id)?.calledElement ?? '' : String(element.businessObject?.calledElement ?? '')}`}
+                placeholder="Process id"
+                aria-label="Called element"
+                onBlur={(event) => onCalledElement?.(event.target.value)}
+              />
+            </label>
           </>
         ) : null}
 

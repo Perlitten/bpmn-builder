@@ -8,9 +8,10 @@ import {
   addLane as coreAddLane,
   addMessageInteraction as coreAddMessageInteraction,
   addPool as coreAddPool,
+  assignLane as coreAssignLane,
   allRegions,
   bpmnComponentRegistry,
-  createFromComponent,
+  findBranch,
   moveToBranch as coreMoveToBranch,
   removeElement as coreRemoveElement,
   renameElement as coreRenameElement,
@@ -18,7 +19,19 @@ import {
   splitInclusive as coreSplitInclusive,
   splitEventBased as coreSplitEventBased,
   splitParallel as coreSplitParallel,
+  attachBoundaryError as coreAttachBoundaryError,
   attachBoundaryTimer as coreAttachBoundaryTimer,
+  createEventSubprocess as coreCreateEventSubprocess,
+  createFromComponent,
+  addAssociation as coreAddAssociation,
+  addDataObject as coreAddDataObject,
+  addDataStore as coreAddDataStore,
+  addGroup as coreAddGroup,
+  addTextAnnotation as coreAddTextAnnotation,
+  resolveAssociationEnds,
+  setCalledElement as coreSetCalledElement,
+  setFlowKind as coreSetFlowKind,
+  splitComplex as coreSplitComplex,
   type FlowNodeType,
   type PlaceSpec,
   type Process,
@@ -50,11 +63,12 @@ const TASK_BPMN = new Set<string>([
   BPMN.callActivity,
 ]);
 
-const GATEWAY_TOOLS: Record<string, 'splitExclusive' | 'splitParallel' | 'splitInclusive' | 'splitEventBased'> = {
+const GATEWAY_TOOLS: Record<string, 'splitExclusive' | 'splitParallel' | 'splitInclusive' | 'splitEventBased' | 'splitComplex'> = {
   'gateway.exclusive': 'splitExclusive',
   'gateway.parallel': 'splitParallel',
   'gateway.inclusive': 'splitInclusive',
   'gateway.eventBased': 'splitEventBased',
+  'gateway.complex': 'splitComplex',
 };
 
 const ARG_ALIASES: Record<string, string> = {
@@ -62,6 +76,9 @@ const ARG_ALIASES: Record<string, string> = {
   beforeId: 'before',
   elementId: 'id',
   branch: 'branchId',
+  host: 'on',
+  sourceId: 'from',
+  targetId: 'to',
 };
 
 function unchanged(process: Process, name: ToolName, view: unknown): ToolResult {
@@ -105,6 +122,13 @@ function resolveRef(process: Process, ref: string, lastId?: string): string {
   if ((process.participants ?? []).some((p) => p.id === ref)) return ref;
   if ((process.lanes ?? []).some((l) => l.id === ref)) return ref;
   if ((process.messageFlows ?? []).some((m) => m.id === ref)) return ref;
+  if ((process.artifacts ?? []).some((item) => typeof item.id === 'string' && item.id === ref)) return ref;
+  const namedArts = (process.artifacts ?? []).filter((item) => {
+    const label = typeof item.name === 'string' ? item.name : typeof item.text === 'string' ? item.text : undefined;
+    return label === ref;
+  });
+  if (namedArts.length === 1 && typeof namedArts[0]!.id === 'string') return namedArts[0]!.id;
+  if (namedArts.length > 1) throw new ToolPlanError(`ambiguous name: ${ref}`);
   for (const region of allRegions(process)) {
     if (region.id === ref || region.split === ref || region.join === ref) return ref;
     if (region.branches.some((b) => b.id === ref)) return ref;
@@ -156,8 +180,16 @@ function taskPlace(process: Process, args: Record<string, unknown>, lastId?: str
   const before = ref(process, args, 'before', lastId);
   const branchId = ref(process, args, 'branchId', lastId);
   const type = str(args, 'type') as FlowNodeType | undefined;
-  if (type === 'exclusiveGateway' || type === 'parallelGateway' || type === 'inclusiveGateway' || type === 'eventBasedGateway') {
-    throw new ToolPlanError('gateways must be created with splitExclusive / splitParallel / splitInclusive / splitEventBased');
+  if (
+    type === 'exclusiveGateway' ||
+    type === 'parallelGateway' ||
+    type === 'inclusiveGateway' ||
+    type === 'eventBasedGateway' ||
+    type === 'complexGateway'
+  ) {
+    throw new ToolPlanError(
+      'gateways must be created with splitExclusive / splitParallel / splitInclusive / splitEventBased / splitComplex',
+    );
   }
   if (componentId) {
     const def = componentDef(componentId);
@@ -223,6 +255,81 @@ const HANDLERS: Record<ToolName, (process: Process, args: Record<string, unknown
     if (!on) throw new ToolPlanError('on is required');
     return wrap('attachBoundaryTimer', coreAttachBoundaryTimer(process, { on, name: str(args, 'name') }));
   },
+  attachBoundaryError: (process, args, lastId) => {
+    const on = ref(process, args, 'on', lastId) ?? ref(process, args, 'after', lastId);
+    if (!on) throw new ToolPlanError('on is required');
+    return wrap('attachBoundaryError', coreAttachBoundaryError(process, { on, name: str(args, 'name') }));
+  },
+  createComponent: (process, args, lastId) => {
+    const componentId = req(args, 'componentId');
+    const def = componentDef(componentId);
+    if (!def.implemented) throw new ToolPlanError(`no semantic create op for ${def.id}`);
+    let after = ref(process, args, 'after', lastId);
+    const branchId = ref(process, args, 'branchId', lastId);
+    if (!after && branchId) {
+      const { region, branch } = findBranch(process, branchId);
+      after = branch.nodeIds.at(-1) ?? region.split;
+    }
+    return wrap(
+      'createComponent',
+      createFromComponent(process, componentId, {
+        name: str(args, 'name'),
+        after,
+        from: ref(process, args, 'from', lastId),
+        to: ref(process, args, 'to', lastId),
+        participantId: ref(process, args, 'participantId', lastId),
+        calledElement: str(args, 'calledElement'),
+        condition: str(args, 'condition'),
+      }),
+    );
+  },
+  createEventSubprocess: (process, args, lastId) =>
+    wrap(
+      'createEventSubprocess',
+      coreCreateEventSubprocess(process, {
+        parent: ref(process, args, 'parent', lastId) ?? ref(process, args, 'after', lastId),
+        name: str(args, 'name'),
+      }),
+    ),
+  splitComplex: (process, args, lastId) => wrap('splitComplex', coreSplitComplex(process, splitArgs(process, args, lastId))),
+  setFlowKind: (process, args, lastId) => {
+    const flowId = ref(process, args, 'flowId', lastId) ?? ref(process, args, 'id', lastId) ?? ref(process, args, 'after', lastId);
+    if (!flowId) throw new ToolPlanError('flowId is required');
+    const kind = req(args, 'kind');
+    if (kind !== 'sequence' && kind !== 'conditional' && kind !== 'default') {
+      throw new ToolPlanError('kind must be sequence, conditional, or default');
+    }
+    const resolved = process.flows.some((f) => f.id === flowId)
+      ? flowId
+      : process.flows.find((f) => f.source === flowId && process.flows.filter((x) => x.source === flowId).length === 1)?.id;
+    if (!resolved) throw new ToolPlanError('Select a sequence flow or a source with one outgoing flow');
+    return wrap('setFlowKind', coreSetFlowKind(process, resolved, kind, str(args, 'condition')));
+  },
+  setCalledElement: (process, args, lastId) =>
+    wrap('setCalledElement', coreSetCalledElement(process, reqRef(process, args, 'id', lastId), req(args, 'calledElement'))),
+  addDataObject: (process, args) => wrap('addDataObject', coreAddDataObject(process, { name: str(args, 'name') })),
+  addDataStore: (process, args) => wrap('addDataStore', coreAddDataStore(process, { name: str(args, 'name') })),
+  addTextAnnotation: (process, args, lastId) =>
+    wrap(
+      'addTextAnnotation',
+      coreAddTextAnnotation(process, {
+        text: str(args, 'text') ?? str(args, 'name'),
+        associateTo: ref(process, args, 'associateTo', lastId) ?? ref(process, args, 'after', lastId),
+      }),
+    ),
+  addGroup: (process, args) => wrap('addGroup', coreAddGroup(process, { name: str(args, 'name') })),
+  addAssociation: (process, args, lastId) =>
+    wrap(
+      'addAssociation',
+      coreAddAssociation(
+        process,
+        resolveAssociationEnds(process, {
+          from: ref(process, args, 'from', lastId),
+          to: ref(process, args, 'to', lastId),
+          after: ref(process, args, 'after', lastId),
+        }),
+      ),
+    ),
   addPool: (process, args) => wrap('addPool', coreAddPool(process, { name: str(args, 'name') })),
   addLane: (process, args, lastId) =>
     wrap(
@@ -233,6 +340,15 @@ const HANDLERS: Record<ToolName, (process: Process, args: Record<string, unknown
         parentLaneId: ref(process, args, 'parentLaneId', lastId),
       }),
     ),
+  assignLane: (process, args, lastId) => {
+    const nodeId = reqRef(process, args, 'nodeId', lastId);
+    const laneId = reqRef(process, args, 'laneId', lastId);
+    const node = process.nodes.find((item) => item.id === nodeId);
+    if (node?.type === 'boundaryEvent') {
+      throw new ToolPlanError('Boundary events attach to an activity, not a lane.');
+    }
+    return wrap('assignLane', coreAssignLane(process, nodeId, laneId));
+  },
   addMessageInteraction: (process, args, lastId) =>
     wrap(
       'addMessageInteraction',

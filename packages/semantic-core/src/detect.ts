@@ -10,6 +10,7 @@ const KIND: Record<string, GatewayKind> = {
   parallelGateway: 'parallel',
   inclusiveGateway: 'inclusive',
   eventBasedGateway: 'eventBased',
+  complexGateway: 'complex',
 };
 
 function isSplitType(type: string): type is keyof typeof KIND {

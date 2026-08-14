@@ -251,7 +251,7 @@ describe('assistant routes', () => {
     expect(Date.now() - started).toBeLessThan(5_000);
     expect(response.status).toBe(504);
     const body = (await response.json()) as { error: string };
-    expect(body.error).toMatch(/timed out after 30s/i);
+    expect(body.error).toMatch(/timed out after 40ms/i);
   });
 
   it('returns 504 when a fake NVIDIA upstream never responds', async () => {
@@ -279,13 +279,41 @@ describe('assistant routes', () => {
     expect(response.status).toBe(504);
     const text = await response.text();
     expect(text.length).toBeGreaterThan(0);
-    expect(JSON.parse(text).error).toMatch(/timed out after 30s/i);
+    expect(JSON.parse(text).error).toMatch(/timed out after 80ms/i);
   });
 
-  it('answers привет without waiting on a hung model', async () => {
+  it('sends привет to the model instead of a local greeting', async () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
-    process.env.ASSISTANT_TIMEOUT_MS = '5000';
+    let called = 0;
+    const app = express();
+    app.use(express.json());
+    registerAssistantRoutes(app, () => ({
+      provider: 'nvidia',
+      model: 'nvidia/nemotron-3-super-120b-a12b',
+      generateJson: async () => {
+        called += 1;
+        return { message: 'Hello from the model.', tools: [] };
+      },
+    }));
+    const { server, url } = await listen(app);
+    servers.push(server);
+    const response = await fetch(`${url}/api/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'привет' }),
+    });
+    expect(response.status).toBe(200);
+    expect(called).toBe(1);
+    const body = (await response.json()) as { data: { message: string; tools: unknown[] } };
+    expect(body.data.tools).toEqual([]);
+    expect(body.data.message).toBe('Hello from the model.');
+  });
+
+  it('returns 504 when a greeting hangs on the model', async () => {
+    process.env.AI_PROVIDER = 'nvidia';
+    process.env.NVIDIA_API_KEY = 'nvapi-test';
+    process.env.ASSISTANT_TIMEOUT_MS = '40';
     let called = 0;
     const app = express();
     app.use(express.json());
@@ -305,15 +333,13 @@ describe('assistant routes', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: 'привет' }),
     });
-    expect(Date.now() - started).toBeLessThan(1_000);
-    expect(response.status).toBe(200);
-    expect(called).toBe(0);
-    const body = (await response.json()) as { data: { message: string; tools: unknown[] } };
-    expect(body.data.tools).toEqual([]);
-    expect(body.data.message).toMatch(/процесс/i);
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(called).toBe(1);
+    expect(response.status).toBe(504);
+    expect(((await response.json()) as { error: string }).error).toMatch(/timed out after 40ms/i);
   });
 
-  it('answers a greeting when AI is not configured', async () => {
+  it('returns 503 for a greeting when AI is not configured', async () => {
     process.env.AI_PROVIDER = 'nvidia';
     delete process.env.NVIDIA_API_KEY;
     const app = express();
@@ -321,15 +347,16 @@ describe('assistant routes', () => {
     registerAssistantRoutes(app);
     const { server, url } = await listen(app);
     servers.push(server);
+    const started = Date.now();
     const response = await fetch(`${url}/api/assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: 'hello' }),
     });
-    expect(response.status).toBe(200);
-    const body = (await response.json()) as { data: { message: string; tools: unknown[] } };
-    expect(body.data.tools).toEqual([]);
-    expect(body.data.message).toMatch(/process structure/i);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toMatch(/not configured/i);
   });
 
   it('returns 502 when the provider is silent', async () => {

@@ -1,3 +1,4 @@
+import { bpmnComponentRegistry } from './components/index.js';
 import { rebuildStructure } from './detect.js';
 import {
   allRegions,
@@ -18,7 +19,7 @@ import {
   scopeOf,
 } from './graph.js';
 import { nextId } from './ids.js';
-import type { Applied, FlowNodeType, GatewayKind, PlaceSpec, Process } from './types.js';
+import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, Process } from './types.js';
 
 function apply(prev: Process, fn: (draft: Process) => string): Applied {
   const draft = structuredClone(prev);
@@ -77,12 +78,20 @@ function placeName(spec: PlaceSpec): string {
   return defaultFlowNodeName(placeType(spec));
 }
 
+function placeExtra(spec: PlaceSpec): Pick<FlowNode, 'eventDefinition' | 'cancelActivity' | 'calledElement'> | undefined {
+  const extra: Pick<FlowNode, 'eventDefinition' | 'cancelActivity' | 'calledElement'> = {};
+  if (spec.eventDefinition) extra.eventDefinition = spec.eventDefinition;
+  if (spec.cancelActivity === false) extra.cancelActivity = false;
+  if (spec.calledElement) extra.calledElement = spec.calledElement;
+  return extra.eventDefinition || extra.cancelActivity === false || extra.calledElement ? extra : undefined;
+}
+
 export function addAfter(process: Process, afterId: string, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
     const type = placeType(spec);
     if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
     if (type === 'end') throw new Error('cannot insert an end with an outgoing flow');
-    const node = makeNode(draft, type, placeName(spec), spec.id, spec.bpmnType);
+    const node = makeNode(draft, type, placeName(spec), spec.id, spec.bpmnType, placeExtra(spec));
     insertOnFlow(draft, flowAfter(draft, afterId, spec.branchId).id, node);
     return node.id;
   });
@@ -93,7 +102,7 @@ export function addBefore(process: Process, beforeId: string, spec: PlaceSpec = 
     const type = placeType(spec);
     if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
     if (type === 'end') throw new Error('cannot insert an end with an outgoing flow');
-    const node = makeNode(draft, type, placeName(spec), spec.id, spec.bpmnType);
+    const node = makeNode(draft, type, placeName(spec), spec.id, spec.bpmnType, placeExtra(spec));
     insertOnFlow(draft, flowBefore(draft, beforeId, spec.branchId).id, node);
     return node.id;
   });
@@ -170,6 +179,7 @@ const GATEWAY_NODE: Record<GatewayKind, FlowNodeType> = {
   parallel: 'parallelGateway',
   inclusive: 'inclusiveGateway',
   eventBased: 'eventBasedGateway',
+  complex: 'complexGateway',
 };
 
 const EVENT_CATCH_DEF = ['MessageEventDefinition', 'TimerEventDefinition'] as const;
@@ -272,18 +282,25 @@ export function splitEventBased(
   return splitGateway(process, { ...spec, kind: 'eventBased' });
 }
 
-export function attachBoundaryTimer(
+export function splitComplex(
   process: Process,
-  spec: { on: string; name?: string; interrupting?: boolean },
+  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
+): Applied {
+  return splitGateway(process, { ...spec, kind: 'complex' });
+}
+
+export function attachBoundaryEvent(
+  process: Process,
+  spec: { on: string; name?: string; eventDefinition: string; interrupting?: boolean },
 ): Applied {
   return apply(process, (draft) => {
     const host = getNode(draft, spec.on);
-    if (!isActivity(host)) throw new Error(`cannot attach a boundary timer to ${host.type}`);
-    const name = spec.name ?? 'Timeout';
-    const interrupting = spec.interrupting !== false;
+    if (!isActivity(host)) throw new Error(`cannot attach a boundary event to ${host.type}`);
+    const name = spec.name ?? (spec.eventDefinition === 'ErrorEventDefinition' ? 'Error' : 'Timeout');
+    const interrupting = spec.eventDefinition === 'ErrorEventDefinition' ? true : spec.interrupting !== false;
     const boundary = makeNode(draft, 'boundaryEvent', name, undefined, 'bpmn:BoundaryEvent', {
       attachedTo: host.id,
-      eventDefinition: 'TimerEventDefinition',
+      eventDefinition: spec.eventDefinition,
       cancelActivity: interrupting,
     });
     const end = makeNode(draft, 'end', name);
@@ -300,6 +317,67 @@ export function attachBoundaryTimer(
     scope.nodeIds.push(boundary.id, end.id);
     scope.flowIds.push(flow.id);
     return boundary.id;
+  });
+}
+
+export function attachBoundaryTimer(
+  process: Process,
+  spec: { on: string; name?: string; interrupting?: boolean },
+): Applied {
+  return attachBoundaryEvent(process, { ...spec, eventDefinition: 'TimerEventDefinition' });
+}
+
+export function attachBoundaryError(process: Process, spec: { on: string; name?: string }): Applied {
+  return attachBoundaryEvent(process, { ...spec, eventDefinition: 'ErrorEventDefinition', interrupting: true });
+}
+
+function stripEventDefinitions(node: FlowNode): void {
+  const props = node.bpmnPreserve?.props;
+  if (!props || !('eventDefinitions' in props)) return;
+  const next = { ...props };
+  delete next.eventDefinitions;
+  const attrs = node.bpmnPreserve?.attrs;
+  if (Object.keys(next).length) node.bpmnPreserve = { ...(attrs ? { attrs } : {}), props: next };
+  else if (attrs && Object.keys(attrs).length) node.bpmnPreserve = { attrs };
+  else delete node.bpmnPreserve;
+}
+
+export function setEventDefinition(process: Process, id: string, eventDefinition: string | undefined): Applied {
+  return apply(process, (draft) => {
+    const node = getNode(draft, id);
+    if (node.type !== 'start' && node.type !== 'end' && node.type !== 'intermediateCatch' && node.type !== 'boundaryEvent') {
+      throw new Error(`cannot set event definition on ${node.type}`);
+    }
+    if (eventDefinition) node.eventDefinition = eventDefinition;
+    else delete node.eventDefinition;
+    stripEventDefinitions(node);
+    return id;
+  });
+}
+
+export function setCalledElement(process: Process, id: string, calledElement: string): Applied {
+  return apply(process, (draft) => {
+    const node = getNode(draft, id);
+    if (node.bpmnType !== 'bpmn:CallActivity' && node.type !== 'task') {
+      throw new Error(`cannot set calledElement on ${node.type}`);
+    }
+    if (node.bpmnType && node.bpmnType !== 'bpmn:CallActivity') {
+      throw new Error('calledElement is only valid on a call activity');
+    }
+    node.bpmnType = 'bpmn:CallActivity';
+    const next = calledElement.trim();
+    if (next) node.calledElement = next;
+    else delete node.calledElement;
+    if (node.bpmnPreserve?.attrs && 'calledElement' in node.bpmnPreserve.attrs) {
+      const attrs = { ...node.bpmnPreserve.attrs };
+      delete attrs.calledElement;
+      node.bpmnPreserve = {
+        ...(Object.keys(attrs).length ? { attrs } : {}),
+        ...(node.bpmnPreserve.props ? { props: node.bpmnPreserve.props } : {}),
+      };
+      if (!node.bpmnPreserve.attrs && !node.bpmnPreserve.props) delete node.bpmnPreserve;
+    }
+    return id;
   });
 }
 
@@ -320,8 +398,11 @@ const BPMN_TO_KIND: Record<string, FlowNodeType> = {
   'bpmn:ParallelGateway': 'parallelGateway',
   'bpmn:InclusiveGateway': 'inclusiveGateway',
   'bpmn:EventBasedGateway': 'eventBasedGateway',
+  'bpmn:ComplexGateway': 'complexGateway',
   'bpmn:IntermediateCatchEvent': 'intermediateCatch',
   'bpmn:BoundaryEvent': 'boundaryEvent',
+  'bpmn:Transaction': 'subProcess',
+  'bpmn:AdHocSubProcess': 'subProcess',
 };
 
 function family(type: FlowNodeType): 'event' | 'task' | 'gateway' | 'subprocess' {
@@ -330,7 +411,8 @@ function family(type: FlowNodeType): 'event' | 'task' | 'gateway' | 'subprocess'
     type === 'exclusiveGateway' ||
     type === 'parallelGateway' ||
     type === 'inclusiveGateway' ||
-    type === 'eventBasedGateway'
+    type === 'eventBasedGateway' ||
+    type === 'complexGateway'
   ) {
     return 'gateway';
   }
@@ -349,6 +431,41 @@ export function replaceBpmnType(process: Process, id: string, bpmnType: string):
     }
     node.type = nextKind;
     node.bpmnType = bpmnType;
+    return id;
+  });
+}
+
+/** Registry-aware replace: bpmnType + event definition + subprocess flags. */
+export function replaceComponent(process: Process, id: string, componentId: string): Applied {
+  const def = bpmnComponentRegistry.get(componentId);
+  if (!def) throw new Error(`unknown component: ${componentId}`);
+  if (def.bpmnType === 'bpmn:SequenceFlow') {
+    return setFlowKind(process, id, componentId === 'flow.conditional' ? 'conditional' : componentId === 'flow.default' ? 'default' : 'sequence');
+  }
+  const nextKind = BPMN_TO_KIND[def.bpmnType];
+  if (!nextKind) throw new Error(`cannot replace with ${def.bpmnType}`);
+  return apply(process, (draft) => {
+    const node = getNode(draft, id);
+    if (family(node.type) !== family(nextKind)) {
+      throw new Error(`cannot replace ${node.type} with ${def.bpmnType}`);
+    }
+    node.type = nextKind;
+    node.bpmnType = def.bpmnType;
+    if (def.eventDefinition) node.eventDefinition = def.eventDefinition;
+    else if (family(nextKind) === 'event') delete node.eventDefinition;
+    if (nextKind === 'boundaryEvent' || nextKind === 'start') {
+      if (def.id.includes('nonInterrupting')) node.cancelActivity = false;
+      else delete node.cancelActivity;
+    }
+    if (def.id === 'activity.eventSubProcess') node.triggeredByEvent = true;
+    else if (def.id === 'activity.subProcess' || def.id === 'activity.transaction' || def.id === 'activity.adHocSubProcess') {
+      delete node.triggeredByEvent;
+    }
+    if (def.bpmnType === 'bpmn:CallActivity' && !node.calledElement) {
+      /* inspector / create arg sets calledElement */
+    }
+    if (def.bpmnType !== 'bpmn:CallActivity') delete node.calledElement;
+    stripEventDefinitions(node);
     return id;
   });
 }

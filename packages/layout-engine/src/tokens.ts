@@ -16,6 +16,11 @@ export const TOKENS = {
   laneMinHeight: 80,
   subprocessPad: 24,
   eventSubprocessGap: 64,
+  dataObject: { width: 36, height: 50 },
+  dataStore: { width: 50, height: 40 },
+  textAnnotation: { width: 100, height: 30 },
+  group: { width: 240, height: 120 },
+  artifactGap: 24,
   /** External BPMN labels (events/gateways/named flows). Min size ≥ bpmn-js DEFAULT_LABEL_SIZE. */
   label: { width: 90, height: 24, gap: 12, charWidth: 8, padX: 16, flowIndent: 15 },
 } as const;

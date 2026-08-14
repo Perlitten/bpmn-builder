@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { exportProcessXml } from '@bpmn/bpmn-adapter';
+import { exportProcessXml, xmlToProcess } from '@bpmn/bpmn-adapter';
 import type { LintResult } from '@bpmn/rules';
 import { createProcess } from '@bpmn/semantic-core';
 import { ElementInspector } from './ElementInspector';
@@ -35,7 +35,16 @@ const task: DiagramElement = {
 
 const noop = () => undefined;
 
-function renderInspector(element: DiagramElement, onCreate = noop, poolLanes: PoolLaneRow[] = []) {
+function renderInspector(
+  element: DiagramElement,
+  onCreate = noop,
+  poolLanes: PoolLaneRow[] = [],
+  extras: {
+    nodeLanes?: PoolLaneRow[];
+    currentLaneId?: string;
+    onAssignLane?: (laneId: string) => void;
+  } = {},
+) {
   return renderToStaticMarkup(
     createElement(ElementInspector, {
       element,
@@ -51,6 +60,9 @@ function renderInspector(element: DiagramElement, onCreate = noop, poolLanes: Po
       onAttach: noop,
       onCreate,
       poolLanes,
+      nodeLanes: extras.nodeLanes,
+      currentLaneId: extras.currentLaneId,
+      onAssignLane: extras.onAssignLane,
     }),
   );
 }
@@ -93,6 +105,17 @@ describe('ElementInspector Add lane', () => {
     expect(renderInspector(task)).not.toContain('Add lane to this pool');
   });
 
+  it('shows Called element for a call activity', () => {
+    const call: DiagramElement = {
+      id: 'Call_1',
+      type: 'bpmn:CallActivity',
+      businessObject: { $type: 'bpmn:CallActivity', name: 'Pay', calledElement: 'PaymentProc' },
+    };
+    const html = renderInspector(call);
+    expect(html).toMatch(/aria-label="Called element"/);
+    expect(html).toContain('PaymentProc');
+  });
+
   it('clicking the pool does not add a lane; Add lane twice lists two name fields', async () => {
     const gate = createInspectorCreateGate();
     const editor = await createSemanticEditor({ importXml: async () => undefined }, exportProcessXml(createProcess()));
@@ -132,5 +155,68 @@ describe('ElementInspector Add lane', () => {
     expect(src).toMatch(/addLaneGate\.current\.pointerDown/);
     expect(src).toMatch(/addLaneGate\.current\.click/);
     expect(src).toMatch(/onRename=\{onRenameLane\}/);
+    expect(src).toMatch(/applyInspectorNameKey/);
+    expect(src).toMatch(/commitInspectorName/);
+    expect(src).toMatch(/onAssignLane\?\.\(laneId\)/);
+    expect(src).toMatch(/aria-label="Lane"/);
+  });
+});
+
+describe('ElementInspector lane assignment', () => {
+  it('does not show a lane picker on a task when the process has no lanes', () => {
+    expect(renderInspector(task)).not.toContain('aria-label="Lane"');
+  });
+
+  it('lists lanes on a task and keeps Add lane off the task inspector', () => {
+    const html = renderInspector(task, noop, [], {
+      nodeLanes: [
+        { id: 'Lane_1', name: 'Clerk' },
+        { id: 'Lane_2', name: 'Manager' },
+      ],
+      currentLaneId: 'Lane_1',
+    });
+    expect(html).toMatch(/<select[^>]*aria-label="Lane"/);
+    expect(html).toContain('value="Lane_1"');
+    expect(html).toContain('Clerk');
+    expect(html).toContain('Manager');
+    expect(html).not.toContain('Add lane to this pool');
+    expect(html).not.toContain('assignee');
+  });
+});
+
+describe('ElementInspector preserved BPMN fields', () => {
+  it('includes PreservedBpmnFields for graph-backed documentation', async () => {
+    const xml = readFileSync(
+      new URL('../../../../../../packages/bpmn-adapter/fixtures/insurance-claim-stress.bpmn', import.meta.url),
+      'utf8',
+    );
+    const process = await xmlToProcess(xml);
+    const html = renderToStaticMarkup(
+      createElement(ElementInspector, {
+        element: { id: 'Task_Policy', type: 'bpmn:ServiceTask', businessObject: { $type: 'bpmn:ServiceTask', name: 'Fetch' } },
+        canDelete: true,
+        lint: emptyLint,
+        replaceWorks: () => true,
+        onRename: noop,
+        onChangeTo: noop,
+        onDelete: noop,
+        onFlowKind: noop,
+        onCondition: noop,
+        onDefaultOutgoing: noop,
+        onAttach: noop,
+        onCreate: noop,
+        process,
+        onPreservedChange: noop,
+      }),
+    );
+    expect(html).toContain('aria-label="Topic"');
+    expect(html).toContain('claim-intake');
+    expect(html).toContain('aria-label="Documentation"');
+    expect(html).not.toContain('aria-label="Called element"');
+  });
+
+  it('hooks PreservedBpmnFields from ElementInspector', () => {
+    const src = readFileSync(new URL('./ElementInspector.tsx', import.meta.url), 'utf8');
+    expect(src).toMatch(/<PreservedBpmnFields /);
   });
 });

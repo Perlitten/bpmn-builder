@@ -2,8 +2,9 @@ import { layoutProcess, TOKENS, type Bounds } from '@bpmn/layout-engine';
 import { allRegions, getNode, happyPathIds, type Process, type StructuredRegion } from '@bpmn/semantic-core';
 
 export type DropSlot = {
-  afterId: string;
+  afterId?: string;
   branchId?: string;
+  laneId?: string;
 };
 
 function cy(box: Bounds): number {
@@ -14,16 +15,38 @@ function right(box: Bounds): number {
   return box.x + box.width;
 }
 
+function contains(box: Bounds, point: { x: number; y: number }): boolean {
+  return point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height;
+}
+
+function area(box: Bounds): number {
+  return box.width * box.height;
+}
+
 /**
  * Map a drop point (diagram space) onto a semantic slot.
  * Coordinates are compared to canonical layout of the current graph, not the dragged XY.
+ * Lane body → assignLane; drop on a node in a lane → moveAfter/moveToBranch + assignLane.
  */
 export function dropSlot(process: Process, draggedId: string, point: { x: number; y: number }): DropSlot | null {
   const dragged = process.nodes.find((node) => node.id === draggedId);
-  if (!dragged || dragged.type !== 'task') return null;
+  if (!dragged || dragged.type === 'boundaryEvent') return null;
   const layout = layoutProcess(process);
   if (!layout.shapes[draggedId]) return null;
 
+  const reorder = dragged.type === 'task' ? reorderSlot(process, layout, draggedId, point) : null;
+  const laneId = laneForDrop(process, layout, draggedId, point);
+  if (reorder && laneId) return { ...reorder, laneId };
+  if (reorder) return reorder;
+  return laneId ? { laneId } : null;
+}
+
+function reorderSlot(
+  process: Process,
+  layout: ReturnType<typeof layoutProcess>,
+  draggedId: string,
+  point: { x: number; y: number },
+): DropSlot | null {
   for (const region of allRegions(process)) {
     const split = layout.shapes[region.split];
     const join = layout.shapes[region.join];
@@ -52,6 +75,40 @@ export function dropSlot(process: Process, draggedId: string, point: { x: number
     }
   }
   return afterId && afterId !== draggedId ? { afterId } : null;
+}
+
+function laneForDrop(
+  process: Process,
+  layout: ReturnType<typeof layoutProcess>,
+  draggedId: string,
+  point: { x: number; y: number },
+): string | undefined {
+  const lanes = process.lanes ?? [];
+  if (!lanes.length) return undefined;
+  const hitNode = smallestIdAt(process.nodes, layout, point, (node) => node.id !== draggedId && node.type !== 'boundaryEvent');
+  const fromNode = hitNode ? lanes.find((lane) => lane.nodeIds.includes(hitNode))?.id : undefined;
+  const fromBand = smallestIdAt(lanes, layout, point, () => true);
+  const laneId = fromNode ?? fromBand;
+  if (!laneId) return undefined;
+  if (lanes.some((lane) => lane.id === laneId && lane.nodeIds.includes(draggedId))) return undefined;
+  return laneId;
+}
+
+function smallestIdAt<T extends { id: string }>(
+  items: readonly T[],
+  layout: ReturnType<typeof layoutProcess>,
+  point: { x: number; y: number },
+  keep: (item: T) => boolean,
+): string | undefined {
+  let best: { id: string; area: number } | undefined;
+  for (const item of items) {
+    if (!keep(item)) continue;
+    const box = layout.shapes[item.id];
+    if (!box || !contains(box, point)) continue;
+    const size = area(box);
+    if (!best || size < best.area) best = { id: item.id, area: size };
+  }
+  return best?.id;
 }
 
 function pickBranch(

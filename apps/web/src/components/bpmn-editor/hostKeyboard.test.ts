@@ -11,6 +11,7 @@ import {
   isSpaceKey,
   isUndoKey,
   releaseSpacePan,
+  silenceCanvasTabStop,
   type SpacePanKeyEvent,
 } from './hostKeyboard';
 
@@ -53,6 +54,13 @@ describe('bindKeyboardToHost', () => {
     expect(swallow({ keyEvent: { key: 'h' } })).toBeUndefined();
   });
 
+  it('takes the canvas SVG out of the tab order', () => {
+    const svg = { setAttribute: vi.fn() };
+    const host = { querySelectorAll: () => [svg] } as unknown as HTMLElement;
+    silenceCanvasTabStop(host);
+    expect(svg.setAttribute).toHaveBeenCalledWith('tabindex', '-1');
+  });
+
   it('does not restore Space Tool or global connect, and does not bind to document', () => {
     const src = readFileSync(new URL('./BpmnEditor.tsx', import.meta.url), 'utf8');
     expect(src).not.toMatch(/bindTo:\s*document/);
@@ -69,6 +77,9 @@ describe('bindKeyboardToHost', () => {
     expect(src).toMatch(/session\.paste/);
     expect(src).toMatch(/session\.undo/);
     expect(src).toMatch(/createSelectMarqueeModule/);
+    expect(src).toMatch(/silenceCanvasTabStop/);
+    expect(src).toMatch(/applyViewerLabel/);
+    expect(src).toMatch(/labelWriteRef/);
     expect(src).not.toMatch(/activateHand/);
     expect(src).not.toMatch(/spaceTool\.activate/);
   });

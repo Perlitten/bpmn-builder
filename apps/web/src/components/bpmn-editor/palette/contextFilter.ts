@@ -47,10 +47,18 @@ function contextReason(def: BpmnComponentDefinition, ctx: FilterContext): string
     return 'Add a pool first — message flow is between participants';
   }
   if (kind === 'connect-sequence') {
+    if (def.id === 'flow.conditional' || def.id === 'flow.default') {
+      if (!ctx.selection) return 'Select a sequence flow or a source with one outgoing flow';
+      return undefined;
+    }
     if (ctx.selection && !isSequenceFlowSource(ctx.selection)) {
       return 'Sequence flow cannot leave this element';
     }
     return SEQUENCE_FLOW_HINT;
+  }
+  if (kind === 'association' || def.id === 'flow.association') {
+    if (!ctx.selection) return 'Select an element to associate with a text annotation';
+    return undefined;
   }
   return undefined;
 }

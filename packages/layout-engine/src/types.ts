@@ -38,6 +38,15 @@ export type LayoutInput = {
   lanes?: LayoutLane[];
   messageFlows?: LayoutMessageFlow[];
   processes?: LayoutProcessGraph[];
+  artifacts?: LayoutArtifact[];
+};
+
+export type LayoutArtifact = {
+  id: string;
+  kind: 'dataObject' | 'dataStore' | 'textAnnotation' | 'group' | 'association';
+  name?: string;
+  source?: string;
+  target?: string;
 };
 
 export type LayoutParticipant = {
@@ -66,6 +75,7 @@ export type LayoutProcessGraph = {
   nodes: LayoutNode[];
   sequenceFlows: SequenceFlow[];
   regions?: StructuredRegion[];
+  artifacts?: LayoutArtifact[];
 };
 
 export type Bounds = {

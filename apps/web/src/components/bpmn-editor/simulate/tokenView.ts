@@ -1,5 +1,5 @@
-import { incomingFlows, outgoingFlows, type Process } from '@bpmn/semantic-core';
-import type { SimSnapshot } from '@bpmn/simulate';
+import { incomingFlows, type Process } from '@bpmn/semantic-core';
+import { simulationMarks, type SimSnapshot } from '@bpmn/simulate';
 
 const OVERLAY = 'token-sim';
 const CHOICE = 'sim-choice';
@@ -16,10 +16,6 @@ type Canvas = {
 };
 
 type Modeler = { get: (name: string) => unknown };
-
-function isChoiceGateway(type: string): boolean {
-  return type === 'exclusiveGateway' || type === 'inclusiveGateway' || type === 'eventBasedGateway';
-}
 
 export function createTokenView(modeler: Modeler) {
   let marked: Array<{ id: string; marker: string }> = [];
@@ -82,27 +78,9 @@ export function createTokenView(modeler: Modeler) {
       for (const [id, count] of Object.entries(snap.completed)) {
         if (count) addBadge(id, String(count));
       }
-      const idle = !Object.keys(snap.tokens).length && !Object.keys(snap.joinWait).length;
-      if (idle) {
-        for (const node of process.nodes) {
-          if (node.type === 'start') mark(node.id, CLICK);
-        }
-        return;
-      }
-      for (const node of process.nodes) {
-        if ((snap.tokens[node.id] ?? 0) < 1) continue;
-        const outs = outgoingFlows(process, node.id);
-        if (isChoiceGateway(node.type) && outs.length > 1) {
-          for (const flow of outs) mark(flow.id, CHOICE);
-          continue;
-        }
-        mark(node.id, CLICK);
-      }
-      if (!Object.keys(snap.tokens).length && Object.keys(snap.joinWait).length) {
-        for (const node of process.nodes) {
-          if (node.type === 'start') mark(node.id, CLICK);
-        }
-      }
+      const marks = simulationMarks(process, snap);
+      for (const id of marks.click) mark(id, CLICK);
+      for (const id of marks.choice) mark(id, CHOICE);
     },
   };
 }

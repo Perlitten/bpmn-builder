@@ -5,6 +5,7 @@ const REGION: Record<RegionKind, string> = {
   parallel: 'AND',
   inclusive: 'OR',
   eventBased: 'event-based',
+  complex: 'complex',
   subprocess: 'subprocess',
   eventSubprocess: 'event subprocess',
 };
@@ -18,6 +19,7 @@ const NODE: Record<FlowNodeType, string> = {
   parallelGateway: 'AND',
   inclusiveGateway: 'OR',
   eventBasedGateway: 'event-based',
+  complexGateway: 'complex',
   intermediateCatch: 'catch event',
   boundaryEvent: 'boundary timer',
 };

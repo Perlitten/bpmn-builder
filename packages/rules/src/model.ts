@@ -7,7 +7,7 @@ import {
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
 
-export type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event';
+export type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event' | 'subprocess';
 
 export type LintNode = {
   id: string;
@@ -17,6 +17,14 @@ export type LintNode = {
   coreType: FlowNodeType;
   bpmnType?: string;
   eventDefinition?: string;
+  /** Host activity id (`attachedToRef`) when this is a boundary event. */
+  attachedTo?: string;
+  /** Event subprocess (`triggeredByEvent`). Not on the parent sequence chain. */
+  triggeredByEvent?: boolean;
+  /** Boundary `cancelActivity` / start `isInterrupting`. `false` = non-interrupting. */
+  cancelActivity?: boolean;
+  /** Compensation handler activity (`isForCompensation`). Association, not sequence. */
+  isForCompensation?: boolean;
 };
 
 export type LintFlow = {
@@ -33,9 +41,17 @@ export type Bounds = {
   height: number;
 };
 
+export type LintAssociation = {
+  id: string;
+  source: string | null;
+  target: string | null;
+};
+
 export type LintModel = {
   nodes: LintNode[];
   flows: LintFlow[];
+  associations: LintAssociation[];
+  adHocInnerIds: string[];
   bounds: Record<string, Bounds>;
   hasDi: boolean;
   parseError?: string;
@@ -51,8 +67,8 @@ const NODE_KIND: Record<string, LintKind> = {
   inclusivegateway: 'gateway',
   eventbasedgateway: 'gateway',
   complexgateway: 'gateway',
-  adhocsubprocess: 'task',
-  transaction: 'task',
+  adhocsubprocess: 'subprocess',
+  transaction: 'subprocess',
   task: 'task',
   usertask: 'task',
   servicetask: 'task',
@@ -62,7 +78,7 @@ const NODE_KIND: Record<string, LintKind> = {
   businessruletask: 'task',
   manualtask: 'task',
   callactivity: 'task',
-  subprocess: 'task',
+  subprocess: 'subprocess',
   boundaryevent: 'event',
 };
 
@@ -93,40 +109,80 @@ export function toLintModel(input: unknown): LintModel {
   if (input !== null && typeof input === 'object' && 'bpmnXml' in input) {
     const xml = (input as { bpmnXml?: unknown }).bpmnXml;
     if (typeof xml === 'string') return fromXml(xml);
-    return { nodes: [], flows: [], bounds: {}, hasDi: false, parseError: 'Process has no BPMN XML' };
+    return emptyModel('Process has no BPMN XML');
   }
-  return { nodes: [], flows: [], bounds: {}, hasDi: false, parseError: 'Unsupported lint input' };
+  return emptyModel('Unsupported lint input');
+}
+
+function emptyModel(parseError?: string): LintModel {
+  return { nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, hasDi: false, ...(parseError ? { parseError } : {}) };
 }
 
 function fromGraph(process: Process): LintModel {
+  const adHocOwners = new Set(
+    process.nodes.filter((n) => localTag(n.bpmnType ?? '') === 'adhocsubprocess').map((n) => n.id),
+  );
+  const adHocInnerIds = process.scopes.flatMap((s) => (s.ownerId && adHocOwners.has(s.ownerId) ? s.nodeIds : []));
   return {
     nodes: process.nodes.map((node) => fromCoreNode(node)),
     flows: process.flows.map((flow) => fromCoreFlow(flow)),
+    associations: [],
+    adHocInnerIds,
     bounds: {},
     hasDi: false,
   };
 }
 
 function fromCoreNode(node: FlowNode): LintNode {
-  const kind: LintKind =
-    node.type === 'start'
-      ? 'start'
-      : node.type === 'end'
-        ? 'end'
-        : node.type.endsWith('Gateway')
-          ? 'gateway'
-          : node.type === 'boundaryEvent' || node.type === 'intermediateCatch'
-            ? 'event'
-            : 'task';
+  const bpmnType = node.bpmnType ?? DEFAULT_BPMN_TYPE[node.type];
   return {
     id: node.id,
     name: node.name ?? '',
-    kind,
+    kind: kindFromBpmn(node.type, bpmnType, node.triggeredByEvent),
     layoutType: node.type,
     coreType: node.type,
-    bpmnType: node.bpmnType ?? DEFAULT_BPMN_TYPE[node.type],
-    ...(node.eventDefinition ? { eventDefinition: node.eventDefinition } : {}),
+    bpmnType,
+    ...(node.eventDefinition ? { eventDefinition: normalizeEventDefinition(node.eventDefinition) } : {}),
+    ...(node.attachedTo ? { attachedTo: node.attachedTo } : {}),
+    ...(node.triggeredByEvent ? { triggeredByEvent: true } : {}),
+    ...(node.cancelActivity === false ? { cancelActivity: false } : {}),
   };
+}
+
+function kindFromBpmn(coreType: string, bpmnType?: string, triggeredByEvent?: boolean): LintKind {
+  const tag = localTag(bpmnType ?? coreType);
+  if (coreType === 'start' || tag === 'startevent') return 'start';
+  if (coreType === 'end' || tag === 'endevent') return 'end';
+  if (coreType.endsWith('Gateway') || tag.endsWith('gateway')) return 'gateway';
+  if (
+    coreType === 'boundaryEvent' ||
+    coreType === 'intermediateCatch' ||
+    (tag.includes('event') && !tag.endsWith('gateway'))
+  ) {
+    return 'event';
+  }
+  if (
+    triggeredByEvent ||
+    coreType === 'subProcess' ||
+    tag === 'subprocess' ||
+    tag === 'adhocsubprocess' ||
+    tag === 'transaction'
+  ) {
+    return 'subprocess';
+  }
+  return 'task';
+}
+
+/** `timerEventDefinition` / `bpmn:TimerEventDefinition` → `TimerEventDefinition`. */
+export function normalizeEventDefinition(value?: string): string | undefined {
+  if (!value) return undefined;
+  const local = value.replace(/^bpmn:/i, '').trim();
+  if (!local) return undefined;
+  const m = /^(.*?)(eventdefinition)$/i.exec(local);
+  if (!m) return local;
+  const head = m[1] ?? '';
+  if (!head) return 'EventDefinition';
+  return `${head.charAt(0).toUpperCase()}${head.slice(1)}EventDefinition`;
 }
 
 export function bpmnTypeFromTag(tag: string): string | undefined {
@@ -167,14 +223,52 @@ function decode(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
-function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string> }[] {
+function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
   const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
-  const found: { tag: string; attr: Record<string, string> }[] = [];
+  const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
   let match: RegExpExecArray | null;
   while ((match = re.exec(xml))) {
-    found.push({ tag: localTag(match[1]), attr: attrs(match[2] ?? '') });
+    const tag = localTag(match[1]);
+    const attr = attrs(match[2] ?? '');
+    const selfClosing = Boolean(match[3]) || /\/\s*$/.test(match[2] ?? '');
+    const inner = selfClosing ? '' : innerXml(xml, match.index + match[0].length, match[1] ?? tag);
+    found.push({ tag, attr, inner });
   }
   return found;
+}
+
+function innerXml(xml: string, from: number, tag: string): string {
+  const open = new RegExp(`<(?:[\\w.-]+:)?${tag}\\b`, 'gi');
+  const close = new RegExp(`</(?:[\\w.-]+:)?${tag}\\s*>`, 'gi');
+  let depth = 1;
+  let i = from;
+  while (depth > 0 && i < xml.length) {
+    open.lastIndex = i;
+    close.lastIndex = i;
+    const nextOpen = open.exec(xml);
+    const nextClose = close.exec(xml);
+    if (!nextClose) return xml.slice(from);
+    if (nextOpen && nextOpen.index < nextClose.index) {
+      depth += 1;
+      i = nextOpen.index + nextOpen[0].length;
+    } else {
+      depth -= 1;
+      if (depth === 0) return xml.slice(from, nextClose.index);
+      i = nextClose.index + nextClose[0].length;
+    }
+  }
+  return xml.slice(from);
+}
+
+function eventDefinitionFromInner(inner: string): string | undefined {
+  const match = /<(?:[\w.-]+:)?([A-Za-z]+EventDefinition)\b/i.exec(inner);
+  return match ? normalizeEventDefinition(match[1]) : undefined;
+}
+
+function cancelActivityFrom(attr: Record<string, string>): boolean | undefined {
+  if (attr.cancelactivity === 'false' || attr.isinterrupting === 'false') return false;
+  if (attr.cancelactivity === 'true' || attr.isinterrupting === 'true') return true;
+  return undefined;
 }
 
 function processBodies(xml: string): string[] {
@@ -220,28 +314,40 @@ function parseBounds(xml: string): Record<string, Bounds> {
   return bounds;
 }
 
+function xmlTrue(value: string | undefined): boolean {
+  return value === 'true' || value === '1';
+}
+
 function fromXml(xml: string): LintModel {
   const trimmed = xml.trim();
-  if (!trimmed) {
-    return { nodes: [], flows: [], bounds: {}, hasDi: false, parseError: 'Empty BPMN XML' };
-  }
+  if (!trimmed) return emptyModel('Empty BPMN XML');
   const bodies = processBodies(trimmed);
   if (!bodies.length && !/<(?:[\w.-]+:)?definitions\b/i.test(trimmed)) {
-    return { nodes: [], flows: [], bounds: {}, hasDi: false, parseError: 'Could not parse BPMN XML' };
+    return emptyModel('Could not parse BPMN XML');
   }
 
   const nodes: LintNode[] = [];
   const seen = new Set<string>();
   const flows: LintFlow[] = [];
+  const associations: LintAssociation[] = [];
+  const adHocInnerIds: string[] = [];
   for (const body of bodies) {
     for (const hit of collect(body, NODE_ALT)) {
       const kind = NODE_KIND[hit.tag];
       const id = hit.attr.id;
       if (!kind || !id || seen.has(id)) continue;
       seen.add(id);
+      if (hit.tag === 'adhocsubprocess') {
+        for (const inner of collect(hit.inner, NODE_ALT)) {
+          if (inner.attr.id) adHocInnerIds.push(inner.attr.id);
+        }
+      }
       const coreType =
         CORE_TYPE[hit.tag] ??
         (kind === 'start' ? 'start' : kind === 'end' ? 'end' : kind === 'gateway' ? 'exclusiveGateway' : 'task');
+      const eventKind = kind === 'start' || kind === 'end' || kind === 'event';
+      const eventDefinition = eventKind ? eventDefinitionFromInner(hit.inner) : undefined;
+      const cancelActivity = cancelActivityFrom(hit.attr);
       nodes.push({
         id,
         name: hit.attr.name ?? '',
@@ -249,6 +355,11 @@ function fromXml(xml: string): LintModel {
         layoutType: hit.tag === 'startevent' ? 'start' : hit.tag === 'endevent' ? 'end' : CORE_TYPE[hit.tag] ?? hit.tag,
         coreType,
         bpmnType: bpmnTypeFromTag(hit.tag) ?? DEFAULT_BPMN_TYPE[coreType],
+        ...(eventDefinition ? { eventDefinition } : {}),
+        ...(hit.attr.attachedtoref ? { attachedTo: hit.attr.attachedtoref } : {}),
+        ...(xmlTrue(hit.attr.triggeredbyevent) ? { triggeredByEvent: true } : {}),
+        ...(cancelActivity === false ? { cancelActivity: false } : {}),
+        ...(xmlTrue(hit.attr.isforcompensation) ? { isForCompensation: true } : {}),
       });
     }
     for (const hit of collect(body, 'sequenceflow')) {
@@ -259,8 +370,15 @@ function fromXml(xml: string): LintModel {
         name: hit.attr.name ?? '',
       });
     }
+    for (const hit of collect(body, 'association')) {
+      associations.push({
+        id: hit.attr.id || `assoc_${associations.length + 1}`,
+        source: hit.attr.sourceref || null,
+        target: hit.attr.targetref || null,
+      });
+    }
   }
 
   const bounds = parseBounds(trimmed);
-  return { nodes, flows, bounds, hasDi: Object.keys(bounds).length > 0 };
+  return { nodes, flows, associations, adHocInnerIds, bounds, hasDi: Object.keys(bounds).length > 0 };
 }

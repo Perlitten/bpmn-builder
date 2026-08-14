@@ -108,6 +108,23 @@ export function happyPathIds(p: Process, scopeId: string = p.rootScopeId): strin
   }
 }
 
+function dropFromLanes(p: Process, nodeId: string): void {
+  for (const lane of p.lanes ?? []) {
+    lane.nodeIds = lane.nodeIds.filter((id) => id !== nodeId);
+  }
+}
+
+/** Keep `flowNodeRef` in sync: follow the source's lane, else the first band of this process. */
+function adoptLane(p: Process, nodeId: string, sourceId: string): void {
+  const lanes = p.lanes ?? [];
+  if (!lanes.length || lanes.some((lane) => lane.nodeIds.includes(nodeId))) return;
+  const fromSource = lanes.find((lane) => lane.nodeIds.includes(sourceId));
+  const ofProcess = lanes.filter((lane) => lane.processId === p.id && !lane.parentLaneId);
+  const fallback = ofProcess.find((lane) => lane.nodeIds.length) ?? ofProcess[0];
+  const lane = fromSource ?? fallback;
+  if (lane) lane.nodeIds.push(nodeId);
+}
+
 export function insertOnFlow(p: Process, flowId: string, node: FlowNode): SequenceFlow {
   const flow = getFlow(p, flowId);
   const oldTarget = flow.target;
@@ -122,8 +139,7 @@ export function insertOnFlow(p: Process, flowId: string, node: FlowNode): Sequen
   const scope = p.scopes.find((s) => s.nodeIds.includes(flow.source)) ?? rootScope(p);
   scope.nodeIds.push(node.id);
   scope.flowIds.push(created.id);
-  const lane = (p.lanes ?? []).find((l) => l.nodeIds.includes(flow.source));
-  if (lane) lane.nodeIds.push(node.id);
+  adoptLane(p, node.id, flow.source);
   return created;
 }
 
@@ -145,7 +161,7 @@ export function makeNode(
   name: string,
   id?: string,
   bpmnType?: string,
-  extra?: Pick<FlowNode, 'attachedTo' | 'eventDefinition' | 'cancelActivity' | 'triggeredByEvent'>,
+  extra?: Pick<FlowNode, 'attachedTo' | 'eventDefinition' | 'cancelActivity' | 'triggeredByEvent' | 'calledElement'>,
 ): FlowNode {
   return {
     id: nextId(p, ID_PREFIX[type], id),
@@ -171,6 +187,7 @@ export function detachLinear(p: Process, nodeId: string): FlowNode {
     s.nodeIds = s.nodeIds.filter((id) => id !== nodeId);
     s.flowIds = s.flowIds.filter((id) => id !== drop.id);
   }
+  dropFromLanes(p, nodeId);
   return node;
 }
 
@@ -186,6 +203,7 @@ export function removeJoin(p: Process, nodeId: string): void {
     s.nodeIds = s.nodeIds.filter((id) => id !== nodeId);
     s.flowIds = s.flowIds.filter((id) => id !== outs[0].id);
   }
+  dropFromLanes(p, nodeId);
 }
 
 export function flowAfter(p: Process, afterId: string, branchId?: string): SequenceFlow {

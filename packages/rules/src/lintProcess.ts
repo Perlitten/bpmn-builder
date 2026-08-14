@@ -109,10 +109,11 @@ function layerBpmn(model: LintModel, errors: Finding[]): void {
   }
 
   for (const node of model.nodes) {
-    const inCount = incoming.has(node.id);
-    const outCount = outgoing.has(node.id);
+    const hasIn = incoming.has(node.id);
+    const hasOut = outgoing.has(node.id);
+    if (model.adHocInnerIds.includes(node.id)) continue;
     if (node.kind === 'start') {
-      if (!outCount) {
+      if (!hasOut) {
         errors.push({
           id: 'bpmn.dangling',
           layer: 1,
@@ -124,7 +125,7 @@ function layerBpmn(model: LintModel, errors: Finding[]): void {
       continue;
     }
     if (node.kind === 'end') {
-      if (!inCount) {
+      if (!hasIn) {
         errors.push({
           id: 'bpmn.dangling',
           layer: 1,
@@ -135,7 +136,29 @@ function layerBpmn(model: LintModel, errors: Finding[]): void {
       }
       continue;
     }
-    if (!inCount || !outCount) {
+    if (node.coreType === 'boundaryEvent') {
+      if (!node.attachedTo || !ids.has(node.attachedTo)) {
+        errors.push({
+          id: 'bpmn.dangling',
+          layer: 1,
+          severity: 'error',
+          message: `Boundary event ${label(node)} is not attached to an activity`,
+          elementId: node.id,
+        });
+      }
+      if (!hasOut && !sequenceOptional(node, model)) {
+        errors.push({
+          id: 'bpmn.dangling',
+          layer: 1,
+          severity: 'error',
+          message: `Boundary event ${label(node)} has no outgoing sequence flow`,
+          elementId: node.id,
+        });
+      }
+      continue;
+    }
+    if (node.triggeredByEvent || sequenceOptional(node, model)) continue;
+    if (!hasIn || !hasOut) {
       errors.push({
         id: 'bpmn.dangling',
         layer: 1,
@@ -166,7 +189,7 @@ function layerStyle(model: LintModel, style: Finding[]): void {
         });
       }
     }
-    if (node.kind !== 'task') continue;
+    if (node.kind !== 'task' || node.triggeredByEvent) continue;
     const name = node.name.trim();
     if (!name || isPlaceholderName(name, node.id)) {
       style.push({
@@ -265,9 +288,26 @@ function isExclusiveXor(node: LintNode): boolean {
   return node.kind === 'gateway' && (node.bpmnType ?? 'bpmn:ExclusiveGateway') === 'bpmn:ExclusiveGateway';
 }
 
+function sequenceOptional(node: LintNode, model: LintModel): boolean {
+  if (node.isForCompensation) return true;
+  if (isEventDef(node, 'Compensate') || isEventDef(node, 'Link')) return true;
+  const others = model.associations.flatMap((a) => {
+    if (a.source === node.id) return a.target ? [a.target] : [];
+    if (a.target === node.id) return a.source ? [a.source] : [];
+    return [];
+  });
+  return others.some((id) => model.nodes.find((n) => n.id === id)?.isForCompensation);
+}
+
+function isEventDef(node: LintNode, kind: 'Compensate' | 'Link'): boolean {
+  const def = node.eventDefinition ?? '';
+  return kind === 'Link' ? def === 'LinkEventDefinition' : def === 'CompensateEventDefinition';
+}
+
 function kindTitle(kind: LintNode['kind']): string {
   if (kind === 'gateway') return 'Gateway';
   if (kind === 'event') return 'Event';
+  if (kind === 'subprocess') return 'Subprocess';
   return 'Task';
 }
 

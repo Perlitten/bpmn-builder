@@ -1,5 +1,8 @@
-import { addLane, addMessageInteraction, addPool, addTask, createEventSubprocess, createProcess, splitExclusive, splitInclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
+import { addLane, addMessageInteraction, addPool, addTask, createEventSubprocess, createProcess, renameElement, splitExclusive, splitInclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
 import { layoutProcess, TOKENS } from '@bpmn/layout-engine';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { bpmnToWorkflow, workflowToBpmn } from './workflow.js';
 import { exportProcessXml, readDiFromXml, xmlToProcess } from './semantic-xml.js';
@@ -333,5 +336,108 @@ describe('workflow DTO (api-server)', () => {
   <bpmn:process id="Process_1" isExecutable="false" />
 </bpmn:definitions>`;
     expect(await bpmnToWorkflow(xml)).toEqual({ processId: 'Process_1', nodes: [], edges: [] });
+  });
+});
+
+const STRESS = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../fixtures/insurance-claim-stress.bpmn'), 'utf8');
+
+function tagCount(xml: string, local: string): number {
+  return xml.match(new RegExp(`<(?:[\\w.-]+:)?${local}[\\s>/]`, 'g'))?.length ?? 0;
+}
+
+function attrCount(xml: string, name: string): number {
+  return xml.match(new RegExp(`${name}="`, 'g'))?.length ?? 0;
+}
+
+function stressCounters(xml: string) {
+  return {
+    documentation: tagCount(xml, 'documentation'),
+    dataObject: tagCount(xml, 'dataObject'),
+    dataStore: tagCount(xml, 'dataStore'),
+    textAnnotation: tagCount(xml, 'textAnnotation'),
+    association: tagCount(xml, 'association'),
+    group: tagCount(xml, 'group'),
+    multiInstanceLoopCharacteristics: tagCount(xml, 'multiInstanceLoopCharacteristics'),
+    script: tagCount(xml, 'script'),
+    message: tagCount(xml, 'message'),
+    error: tagCount(xml, 'error'),
+    signal: tagCount(xml, 'signal'),
+    escalation: tagCount(xml, 'escalation'),
+    targetNamespace: /targetNamespace="http:\/\/acme-insurance\.example"/.test(xml),
+    isExecutableTrue: /isExecutable="true"/.test(xml),
+    messageRef: attrCount(xml, 'messageRef'),
+    errorRef: attrCount(xml, 'errorRef'),
+    timeDuration: tagCount(xml, 'timeDuration'),
+    P5D: xml.includes('P5D'),
+    PT48H: xml.includes('PT48H'),
+    calledElement: attrCount(xml, 'calledElement'),
+    camundaTopic: attrCount(xml, 'camunda:topic'),
+    camundaType: attrCount(xml, 'camunda:type'),
+    camundaAssignee: attrCount(xml, 'camunda:assignee'),
+    camundaDecisionRef: attrCount(xml, 'camunda:decisionRef'),
+    isInterrupting: attrCount(xml, 'isInterrupting'),
+    scriptFormat: attrCount(xml, 'scriptFormat'),
+    ordering: attrCount(xml, 'ordering'),
+    exporter: attrCount(xml, 'exporter'),
+    extensionElements: tagCount(xml, 'extensionElements'),
+    dataStoreRef: attrCount(xml, 'dataStoreRef'),
+    categoryValueRef: attrCount(xml, 'categoryValueRef'),
+  };
+}
+
+describe('import → rename → save keeps Camunda-ish extras', () => {
+  it('preserves dropped tags/attrs after one semantic rename', async () => {
+    const before = stressCounters(STRESS);
+    expect(before).toMatchObject({
+      documentation: 2,
+      dataObject: 1,
+      dataStore: 1,
+      textAnnotation: 1,
+      association: 1,
+      group: 1,
+      multiInstanceLoopCharacteristics: 1,
+      script: 1,
+      message: 3,
+      error: 1,
+      signal: 1,
+      escalation: 1,
+      targetNamespace: true,
+      isExecutableTrue: true,
+      messageRef: 1,
+      errorRef: 3,
+      timeDuration: 2,
+      P5D: true,
+      PT48H: true,
+      calledElement: 1,
+      camundaTopic: 1,
+      camundaType: 1,
+      camundaAssignee: 1,
+      camundaDecisionRef: 1,
+      isInterrupting: 1,
+      scriptFormat: 1,
+      ordering: 1,
+      exporter: 1,
+      extensionElements: 1,
+      dataStoreRef: 1,
+      categoryValueRef: 1,
+    });
+
+    const g1 = await xmlToProcess(STRESS);
+    const renamed = renameElement(g1, 'Task_Register', 'Register claim v2').process;
+    const saved = exportProcessXml(renamed);
+    const after = stressCounters(saved);
+
+    expect(after).toEqual(before);
+    expect(saved).toContain('Register claim v2');
+    expect(saved).not.toContain('x="9999"');
+    expect(saved).toContain('camunda:inputParameter');
+    expect(saved).toMatch(/bpmnElement="DO_Claim"/);
+    expect(saved).toMatch(/bpmnElement="DS_Claims"/);
+    expect(saved).toMatch(/bpmnElement="Note_1"/);
+    expect(saved).toMatch(/bpmnElement="G_1"/);
+    expect(saved).toMatch(/bpmnElement="As_1"/);
+    expect(await xmlToProcess(saved).then((g) => g.nodes.find((n) => n.id === 'Task_Register')?.name)).toBe(
+      'Register claim v2',
+    );
   });
 });

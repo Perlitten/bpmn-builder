@@ -18,6 +18,7 @@ function nodeView(process: Process, id: string): NodeView {
     ...(node.bpmnType ? { bpmnType: node.bpmnType } : {}),
     ...(node.attachedTo ? { attachedTo: node.attachedTo } : {}),
     ...(node.eventDefinition ? { eventDefinition: node.eventDefinition } : {}),
+    ...(node.calledElement ? { calledElement: node.calledElement } : {}),
   };
 }
 
@@ -87,6 +88,12 @@ export function processView(process: Process): ProcessView {
       target: m.target,
       ...(m.name ? { name: m.name } : {}),
     })),
+    artifacts: (process.artifacts ?? []).flatMap((item) => {
+      if (typeof item.id !== 'string') return [];
+      const type = String(item.$type ?? 'unknown');
+      const name = typeof item.name === 'string' ? item.name : typeof item.text === 'string' ? item.text : undefined;
+      return [{ id: item.id, type, ...(name ? { name } : {}) }];
+    }),
   };
 }
 

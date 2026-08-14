@@ -1,5 +1,5 @@
 import type { BpmnComponentDefinition, BpmnComponentRegistry, ReplaceTarget } from '@bpmn/semantic-core';
-import type { DiagramElement } from '../diagramElement';
+import { isBpmnType, type DiagramElement } from '../diagramElement';
 
 export const NOT_IN_PROFILE = 'Not in modeling profile yet';
 const ATTACH_IDS = ['boundary.timer', 'boundary.error'] as const;
@@ -182,6 +182,79 @@ export function lanesInPool(
   return lanes
     .filter((lane) => lane.participantId === participantId && !lane.parentLaneId)
     .map((lane) => ({ id: lane.id, name: lane.name ?? '' }));
+}
+
+type LaneGraph = {
+  id: string;
+  nodes: ReadonlyArray<{ id: string }>;
+  lanes: ReadonlyArray<{
+    id: string;
+    name?: string;
+    participantId?: string;
+    parentLaneId?: string;
+    processId?: string;
+    nodeIds: readonly string[];
+  }>;
+  participants?: ReadonlyArray<{ id: string; processId?: string }>;
+  processes?: ReadonlyArray<{ id: string; nodes: ReadonlyArray<{ id: string }> }>;
+};
+
+function isAssignableFlowNode(element: DiagramElement | null | undefined): element is DiagramElement {
+  if (!element || isParticipant(element) || isLaneElement(element)) return false;
+  if (element.type === 'bpmn:BoundaryEvent' || element.type === 'bpmn:SequenceFlow') return false;
+  return isBpmnType(element, 'bpmn:FlowNode');
+}
+
+function leafLaneRows(
+  lanes: LaneGraph['lanes'],
+  match: (lane: LaneGraph['lanes'][number]) => boolean,
+): PoolLaneRow[] {
+  const pool = lanes.filter(match);
+  const parents = new Set(pool.map((lane) => lane.parentLaneId).filter((id): id is string => !!id));
+  return pool.filter((lane) => !parents.has(lane.id)).map((lane) => ({ id: lane.id, name: lane.name ?? '' }));
+}
+
+function participantIdForNode(graph: LaneGraph, nodeId: string): string | undefined {
+  const fromLane = graph.lanes.find((lane) => lane.nodeIds.includes(nodeId));
+  if (fromLane?.participantId) return fromLane.participantId;
+  if (graph.nodes.some((node) => node.id === nodeId)) {
+    return graph.participants?.find((part) => part.processId === graph.id)?.id;
+  }
+  for (const peer of graph.processes ?? []) {
+    if (!peer.nodes.some((node) => node.id === nodeId)) continue;
+    return graph.participants?.find((part) => part.processId === peer.id)?.id;
+  }
+  return undefined;
+}
+
+function processIdForNode(graph: LaneGraph, nodeId: string): string | undefined {
+  if (graph.nodes.some((node) => node.id === nodeId)) return graph.id;
+  for (const peer of graph.processes ?? []) {
+    if (peer.nodes.some((node) => node.id === nodeId)) return peer.id;
+  }
+  return graph.lanes.find((lane) => lane.nodeIds.includes(nodeId))?.processId;
+}
+
+/** Lanes a flow node can be assigned to via `assignLane`. Empty when the process / participant has none. */
+export function flowNodeLaneAssignment(
+  element: DiagramElement | null | undefined,
+  graph: LaneGraph | undefined,
+): { lanes: PoolLaneRow[]; currentLaneId?: string } {
+  if (!element || !graph || !isAssignableFlowNode(element)) return { lanes: [] };
+  const lanes = graph.lanes ?? [];
+  if (!lanes.length) return { lanes: [] };
+  const participantId = participantIdForNode(graph, element.id);
+  const processId = processIdForNode(graph, element.id);
+  const ofParticipant = participantId
+    ? leafLaneRows(lanes, (lane) => lane.participantId === participantId)
+    : [];
+  const ofProcess = processId ? leafLaneRows(lanes, (lane) => lane.processId === processId) : [];
+  const rows = ofParticipant.length ? ofParticipant : ofProcess;
+  const current = lanes.find((lane) => lane.nodeIds.includes(element.id));
+  if (current && !rows.some((row) => row.id === current.id)) {
+    rows.unshift({ id: current.id, name: current.name ?? '' });
+  }
+  return current ? { lanes: rows, currentLaneId: current.id } : { lanes: rows };
 }
 
 export function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {

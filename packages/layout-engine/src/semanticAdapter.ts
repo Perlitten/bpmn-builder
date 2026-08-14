@@ -1,5 +1,5 @@
 import type { Process, StructuredRegion as CoreRegion } from '../../semantic-core/src/index.js';
-import type { Branch, LayoutInput, LayoutNode, SequenceFlow, StructuredRegion } from './types.js';
+import type { Branch, LayoutArtifact, LayoutInput, LayoutNode, SequenceFlow, StructuredRegion } from './types.js';
 
 type Dict = Record<string, unknown>;
 
@@ -14,6 +14,46 @@ function arr(value: unknown): unknown[] {
 function idOf(value: unknown): string {
   if (typeof value === 'string') return value;
   return String(obj(value).id ?? '');
+}
+
+function refId(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  const rec = obj(value);
+  if (typeof rec.$ref === 'string' && rec.$ref.trim()) return rec.$ref.trim();
+  if (typeof rec.id === 'string' && rec.id.trim()) return rec.id.trim();
+  return undefined;
+}
+
+export function artifactsFromExtras(extras: unknown[]): LayoutArtifact[] {
+  const out: LayoutArtifact[] = [];
+  for (const raw of extras) {
+    const item = obj(raw);
+    const id = typeof item.id === 'string' ? item.id : '';
+    if (!id) continue;
+    const type = String(item.$type ?? '');
+    if (type.endsWith(':Association')) {
+      out.push({
+        id,
+        kind: 'association',
+        ...(refId(item.sourceRef) ? { source: refId(item.sourceRef) } : {}),
+        ...(refId(item.targetRef) ? { target: refId(item.targetRef) } : {}),
+      });
+      continue;
+    }
+    const name =
+      typeof item.name === 'string' && item.name.trim()
+        ? item.name
+        : typeof item.text === 'string' && item.text.trim()
+          ? item.text
+          : undefined;
+    let kind: LayoutArtifact['kind'] | undefined;
+    if (type.endsWith(':DataObjectReference') || type.endsWith(':DataObject')) kind = 'dataObject';
+    else if (type.endsWith(':DataStoreReference') || type.endsWith(':DataStore')) kind = 'dataStore';
+    else if (type.endsWith(':TextAnnotation')) kind = 'textAnnotation';
+    else if (type.endsWith(':Group')) kind = 'group';
+    if (kind) out.push({ id, kind, ...(name ? { name } : {}) });
+  }
+  return out;
 }
 
 function optionalName(value: Dict): string | undefined {
@@ -119,6 +159,10 @@ export function fromSemanticProcess(process: Process | unknown): LayoutInput {
         target: m.target,
         ...(m.name ? { name: m.name } : {}),
       })),
+      artifacts: artifactsFromExtras([
+        ...(process.artifacts ?? []),
+        ...(process.collaborationArtifacts ?? []),
+      ]),
       processes: (process.processes ?? []).map((g) => ({
         id: g.id,
         nodes: g.nodes.map((n) => ({
@@ -135,6 +179,7 @@ export function fromSemanticProcess(process: Process | unknown): LayoutInput {
           ...(f.name ? { name: f.name } : {}),
         })),
         regions: g.regions.map(fromCoreRegion),
+        artifacts: artifactsFromExtras(g.artifacts ?? []),
       })),
     };
   }

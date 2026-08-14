@@ -5,6 +5,7 @@ import { BASELINE_CY, ORIGIN_X, snapToGrid, TOKENS } from './tokens.js';
 import type {
   Bounds,
   Branch,
+  LayoutArtifact,
   LayoutInput,
   LayoutLane,
   LayoutNode,
@@ -53,7 +54,7 @@ function collaborationFlowGap(input: LayoutInput): number {
 }
 
 function layoutGraph(
-  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>,
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
   flowGap: number = TOKENS.forwardFlowGap,
 ): LayoutResult {
   const ctx = index(input, flowGap);
@@ -61,8 +62,9 @@ function layoutGraph(
   placeChain(buildMainChain(input, ctx), ORIGIN_X, BASELINE_CY, placed, ctx);
   placeLooseEventSubprocesses(input.regions ?? [], placed, ctx);
   placeRemainder(input, placed, ctx);
+  const artifactEdges = placeArtifacts(input.artifacts ?? [], placed);
 
-  const edges: LayoutResult['edges'] = {};
+  const edges: LayoutResult['edges'] = { ...artifactEdges };
   for (const flow of [...input.sequenceFlows].sort((a, b) => a.id.localeCompare(b.id))) {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
@@ -177,6 +179,7 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
           nodes: peer.nodes,
           sequenceFlows: peer.sequenceFlows,
           regions: peer.regions,
+          artifacts: peer.artifacts,
         },
         TOKENS.poolInnerFlowGap,
       );
@@ -574,6 +577,78 @@ function placeBoundaryEvents(input: Pick<LayoutInput, 'nodes'>, placed: Map<stri
   return grew;
 }
 
+function unplacedChainRoots(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows'>,
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): string[] {
+  const unplaced = new Set<string>();
+  for (const node of input.nodes) {
+    if (node.id && !placed.has(node.id) && ctx.nodes.has(node.id)) unplaced.add(node.id);
+  }
+  if (!unplaced.size) return [];
+  const hasUnplacedPred = new Set<string>();
+  for (const flow of input.sequenceFlows) {
+    if (unplaced.has(flow.source) && unplaced.has(flow.target)) hasUnplacedPred.add(flow.target);
+  }
+  const eligible = [...unplaced].filter((id) => !ctx.nodes.get(id)?.attachedTo);
+  const roots = eligible.filter((id) => !hasUnplacedPred.has(id)).sort((a, b) => a.localeCompare(b));
+  if (roots.length) return roots;
+  return eligible.sort((a, b) => a.localeCompare(b)).slice(0, 1);
+}
+
+function fanUnplacedSources(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows'>,
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): boolean {
+  const roots = unplacedChainRoots(input, placed, ctx);
+  if (!roots.length) return false;
+  const chains = roots.map((id) => walkUnplacedChain(id, placed, ctx)).filter((c) => c.length);
+  if (!chains.length) return false;
+  const content = bbox(Object.fromEntries(placed));
+  const x = content?.x ?? ORIGIN_X;
+  const top = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
+  const extents = chains.map((items) => measureChain(items, ctx));
+  const { total, bandCys } = stackMetrics(extents);
+  const cy = top + total / 2;
+  for (let i = 0; i < chains.length; i++) {
+    placeChain(chains[i]!, x, cy - total / 2 + bandCys[i]!, placed, ctx);
+  }
+  return true;
+}
+
+function artifactSize(kind: LayoutArtifact['kind']): { width: number; height: number } {
+  if (kind === 'dataObject') return { width: TOKENS.dataObject.width, height: TOKENS.dataObject.height };
+  if (kind === 'dataStore') return { width: TOKENS.dataStore.width, height: TOKENS.dataStore.height };
+  if (kind === 'textAnnotation') return { width: TOKENS.textAnnotation.width, height: TOKENS.textAnnotation.height };
+  return { width: TOKENS.group.width, height: TOKENS.group.height };
+}
+
+function placeArtifacts(artifacts: LayoutArtifact[], placed: Map<string, Bounds>): Record<string, Point[]> {
+  const shapes = artifacts
+    .filter((item) => item.kind !== 'association' && item.id && !placed.has(item.id))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  if (shapes.length) {
+    const content = bbox(Object.fromEntries(placed));
+    let x = content?.x ?? ORIGIN_X;
+    const y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
+    for (const item of shapes) {
+      const size = artifactSize(item.kind);
+      placed.set(item.id, { x, y, width: size.width, height: size.height });
+      x += size.width + TOKENS.artifactGap;
+    }
+  }
+  const edges: Record<string, Point[]> = {};
+  for (const item of artifacts.filter((a) => a.kind === 'association').sort((a, b) => a.id.localeCompare(b.id))) {
+    if (!item.source || !item.target) continue;
+    const from = placed.get(item.source);
+    const to = placed.get(item.target);
+    if (from && to) edges[item.id] = routeOrthogonal(from, to);
+  }
+  return edges;
+}
+
 function placeOrphans(input: Pick<LayoutInput, 'nodes'>, placed: Map<string, Bounds>, ctx: Ctx): void {
   const leftover = input.nodes.filter((n) => n.id && !placed.has(n.id)).sort((a, b) => a.id.localeCompare(b.id));
   if (!leftover.length) return;
@@ -594,7 +669,8 @@ function placeRemainder(
 ): void {
   const limit = input.nodes.length + 2;
   for (let i = 0; i < limit; i++) {
-    const grew = fanUnplaced(placed, ctx) || placeBoundaryEvents(input, placed);
+    const grew =
+      fanUnplaced(placed, ctx) || placeBoundaryEvents(input, placed) || fanUnplacedSources(input, placed, ctx);
     if (!grew) break;
   }
   placeOrphans(input, placed, ctx);

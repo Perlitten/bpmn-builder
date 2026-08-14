@@ -27,7 +27,8 @@ export type CatalogCreateKind =
   | 'lane'
   | 'attach'
   | 'connect-sequence'
-  | 'connect-message';
+  | 'connect-message'
+  | 'association';
 
 export function createKind(def: BpmnComponentDefinition): CatalogCreateKind {
   switch (def.layoutBehavior.placement) {
@@ -37,6 +38,8 @@ export function createKind(def: BpmnComponentDefinition): CatalogCreateKind {
       return 'connect-sequence';
     case 'messageFlow':
       return 'connect-message';
+    case 'association':
+      return 'association';
     case 'pool':
       return 'participant';
     case 'lane':

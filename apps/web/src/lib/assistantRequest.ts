@@ -1,6 +1,10 @@
 import { userFacingPlanError } from '@bpmn/agent-tools';
 
-export const ASSISTANT_TIMEOUT_MS = 30_000;
+export const ASSISTANT_TIMEOUT_MS = 120_000;
+
+export function assistantTimeoutLabel(ms = ASSISTANT_TIMEOUT_MS): string {
+  return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;
+}
 
 export function isAbortError(err: unknown): boolean {
   return (
@@ -9,12 +13,18 @@ export function isAbortError(err: unknown): boolean {
   );
 }
 
+function timeoutFailure(ms: number): Error {
+  const timeout = new Error(
+    `Architect timed out after ${assistantTimeoutLabel(ms)}. Retry, edit the request, or cancel.`,
+  );
+  timeout.name = 'TimeoutError';
+  return timeout;
+}
+
 export function mergeTimeoutSignal(user: AbortSignal | undefined, timeoutMs: number) {
   const ac = new AbortController();
   const timer = setTimeout(() => {
-    const timeout = new Error('Architect timed out after 30s. Retry, edit the request, or cancel.');
-    timeout.name = 'TimeoutError';
-    ac.abort(timeout);
+    ac.abort(timeoutFailure(timeoutMs));
   }, timeoutMs);
   const onAbort = () => ac.abort();
   if (user) {
@@ -50,7 +60,7 @@ export function diagramImportError(err: unknown): Error {
 export function mapAssistantError(err: unknown, userCancelled: boolean): Error {
   if (userCancelled) return new Error('Cancelled');
   if (isAbortError(err)) {
-    return new Error('Architect timed out after 30s. Retry, edit the request, or cancel.');
+    return timeoutFailure(ASSISTANT_TIMEOUT_MS);
   }
   const mapped = diagramImportError(err);
   if (mapped.message === 'Could not import the generated BPMN diagram') {

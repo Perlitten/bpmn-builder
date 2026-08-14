@@ -9,6 +9,7 @@ export const ID_PREFIX: Record<FlowNodeType, string> = {
   parallelGateway: 'ParallelGateway',
   inclusiveGateway: 'InclusiveGateway',
   eventBasedGateway: 'EventBasedGateway',
+  complexGateway: 'ComplexGateway',
   intermediateCatch: 'IntermediateCatchEvent',
   boundaryEvent: 'BoundaryEvent',
 };
@@ -38,6 +39,9 @@ export function allIds(p: Process): Set<string> {
     }
   };
   walk(p.regions);
+  for (const extra of [...(p.artifacts ?? []), ...(p.rootElements ?? []), ...(p.collaborationArtifacts ?? [])]) {
+    if (typeof extra.id === 'string') ids.add(extra.id);
+  }
   for (const peer of p.processes ?? []) {
     ids.add(peer.id);
     for (const n of peer.nodes) ids.add(n.id);
@@ -46,6 +50,9 @@ export function allIds(p: Process): Set<string> {
     for (const f of peer.feedback ?? []) ids.add(f.id);
     for (const e of peer.exceptionBranches ?? []) ids.add(e.id);
     walk(peer.regions);
+    for (const extra of peer.artifacts ?? []) {
+      if (typeof extra.id === 'string') ids.add(extra.id);
+    }
   }
   return ids;
 }

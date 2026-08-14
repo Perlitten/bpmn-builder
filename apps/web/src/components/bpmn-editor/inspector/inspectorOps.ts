@@ -5,7 +5,12 @@ import { flowKind, type FlowKind } from './inspectorModel';
 
 type Getter = { get: (name: string, strict?: boolean) => unknown };
 
-type ElementRegistry = { get: (id: string) => DiagramElement | undefined };
+type ElementRegistry = {
+  get: (id: string) => DiagramElement | undefined;
+  getGraphics?: (el: unknown) => unknown;
+};
+
+type GraphicsFactory = { update: (type: 'shape' | 'connection', element: unknown, gfx: unknown) => void };
 
 type Rules = { allowed: (action: string, context: unknown) => unknown };
 
@@ -59,14 +64,44 @@ export function canReplaceWithBpmnJs(
   return !!bpmnJsReplacePayload(def);
 }
 
-export function renameElement(modeler: Getter, elementId: string, name: string): void {
+function gfxKind(element: DiagramElement): 'shape' | 'connection' {
+  return element.type === 'bpmn:SequenceFlow' || element.type === 'bpmn:MessageFlow' ? 'connection' : 'shape';
+}
+
+function paintLabel(modeler: Getter, element: DiagramElement): void {
+  const gfx = (modeler.get('elementRegistry') as ElementRegistry).getGraphics?.(element);
+  if (!gfx) return;
+  try {
+    (modeler.get('graphicsFactory') as GraphicsFactory).update(gfxKind(element), element, gfx);
+  } catch {
+    /* root planes skip update; label text still sits on the businessObject */
+  }
+}
+
+/** Semantic rename is already applied. Refresh bpmn-js paint without a second import. */
+export function applyViewerLabel(modeler: Getter, elementId: string, name: string): void {
   const element = live(modeler, elementId);
   if (!element) return;
-  if (element.type === 'bpmn:TextAnnotation') {
-    modeling(modeler).updateProperties(element, { text: name });
-    return;
+  const target = element.type === 'label' && element.labelTarget ? element.labelTarget : element;
+  try {
+    if (target.type === 'bpmn:TextAnnotation') {
+      modeling(modeler).updateProperties(target, { text: name });
+    } else {
+      modeling(modeler).updateLabel(target, name);
+    }
+  } catch {
+    if (target.businessObject) {
+      if (target.type === 'bpmn:TextAnnotation') target.businessObject.text = name;
+      else target.businessObject.name = name;
+    }
   }
-  modeling(modeler).updateLabel(element, name);
+  paintLabel(modeler, target);
+  const nested = (target as DiagramElement & { label?: DiagramElement }).label;
+  if (nested) paintLabel(modeler, nested);
+}
+
+export function renameElement(modeler: Getter, elementId: string, name: string): void {
+  applyViewerLabel(modeler, elementId, name);
 }
 
 export function replaceElement(modeler: Getter, elementId: string, def: BpmnComponentDefinition): void {

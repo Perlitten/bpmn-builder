@@ -12,8 +12,20 @@ export const TOOL_NAMES = [
   'splitInclusive',
   'splitEventBased',
   'attachBoundaryTimer',
+  'attachBoundaryError',
+  'createComponent',
+  'createEventSubprocess',
+  'splitComplex',
+  'setFlowKind',
+  'setCalledElement',
+  'addDataObject',
+  'addDataStore',
+  'addTextAnnotation',
+  'addGroup',
+  'addAssociation',
   'addPool',
   'addLane',
+  'assignLane',
   'addMessageInteraction',
   'addBranch',
   'moveToBranch',
@@ -57,6 +69,7 @@ export type NodeView = {
   bpmnType?: string;
   attachedTo?: string;
   eventDefinition?: string;
+  calledElement?: string;
 };
 
 export type FlowView = {
@@ -99,6 +112,7 @@ export type ProcessView = {
   participants: Array<{ id: string; name: string; processId?: string }>;
   lanes: Array<{ id: string; name: string; participantId?: string; nodeIds: string[] }>;
   messageFlows: FlowView[];
+  artifacts: Array<{ id: string; type: string; name?: string }>;
 };
 
 export type ToolResult = Applied & {

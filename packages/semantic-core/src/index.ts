@@ -1,6 +1,8 @@
 export type {
   Applied,
+  BpmnPreserve,
   Branch,
+  DefinitionsMeta,
   ExceptionBranch,
   ExtensionValue,
   FeedbackEdge,
@@ -47,6 +49,8 @@ export {
   addBranch,
   addTask,
   attachBoundaryTimer,
+  attachBoundaryEvent,
+  attachBoundaryError,
   createProcess,
   defaultFlowNodeName,
   visibleNodeName,
@@ -55,15 +59,35 @@ export {
   removeElement,
   renameElement,
   replaceBpmnType,
+  replaceComponent,
   setBranchLocked,
+  setCalledElement,
+  setEventDefinition,
   setFlowKind,
+  splitComplex,
   splitEventBased,
   splitExclusive,
   splitInclusive,
   splitParallel,
 } from './ops.js';
+export {
+  findFlowNode,
+  findSequenceFlow,
+  owningProcessHost,
+  readDocumentation,
+  readMultiInstance,
+  readPreserveAttr,
+  readTimerDuration,
+  setDocumentation,
+  setIsExecutable,
+  setMultiInstance,
+  setPreserveAttr,
+  setTimerDuration,
+} from './preserve.js';
+export type { MultiInstanceSpec } from './preserve.js';
 export { addLane, addMessageInteraction, addPool, assignLane } from './collaboration.js';
 export { addSubProcess, createEventSubprocess, wrapInSubprocess } from './subprocess.js';
+export { addAssociation, addDataObject, addDataStore, addGroup, addTextAnnotation, resolveAssociationEnds } from './artifacts.js';
 export { createFromComponent } from './create.js';
 export { extractSubgraph, pasteSubgraph } from './clipboard.js';
 export type { PasteApplied, SemanticClip } from './clipboard.js';

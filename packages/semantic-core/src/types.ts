@@ -7,13 +7,14 @@ export const FLOW_NODE_TYPES = [
   'parallelGateway',
   'inclusiveGateway',
   'eventBasedGateway',
+  'complexGateway',
   'intermediateCatch',
   'boundaryEvent',
 ] as const;
 
 export type FlowNodeType = (typeof FLOW_NODE_TYPES)[number];
 
-export type GatewayKind = 'exclusive' | 'parallel' | 'inclusive' | 'eventBased';
+export type GatewayKind = 'exclusive' | 'parallel' | 'inclusive' | 'eventBased' | 'complex';
 
 export type RegionKind = GatewayKind | 'subprocess' | 'eventSubprocess';
 
@@ -26,6 +27,7 @@ export const DEFAULT_BPMN_TYPE: Record<FlowNodeType, string> = {
   parallelGateway: 'bpmn:ParallelGateway',
   inclusiveGateway: 'bpmn:InclusiveGateway',
   eventBasedGateway: 'bpmn:EventBasedGateway',
+  complexGateway: 'bpmn:ComplexGateway',
   intermediateCatch: 'bpmn:IntermediateCatchEvent',
   boundaryEvent: 'bpmn:BoundaryEvent',
 };
@@ -37,6 +39,26 @@ export type ExtensionValue = {
   $body?: string;
   $children?: ExtensionValue[];
   [key: string]: unknown;
+};
+
+/**
+ * Opaque BPMN the kernel does not model (script, loopCharacteristics, Camunda attrs, …).
+ * Adapter round-trips this; UI/agent must not interpret it as intent geometry.
+ */
+export type BpmnPreserve = {
+  attrs?: Record<string, unknown>;
+  props?: Record<string, unknown>;
+};
+
+/** Definitions-level interchange metadata. Not process semantics; not DI. */
+export type DefinitionsMeta = {
+  id?: string;
+  targetNamespace?: string;
+  exporter?: string;
+  exporterVersion?: string;
+  expressionLanguage?: string;
+  typeLanguage?: string;
+  attrs?: Record<string, string>;
 };
 
 export type FlowNode = {
@@ -53,7 +75,10 @@ export type FlowNode = {
   cancelActivity?: boolean;
   /** Event subprocess (`triggeredByEvent`). Not on sequence flow. */
   triggeredByEvent?: boolean;
+  /** Call activity `calledElement` (process id). */
+  calledElement?: string;
   extensionElements?: ExtensionValue[];
+  bpmnPreserve?: BpmnPreserve;
 };
 
 export type SequenceFlow = {
@@ -66,6 +91,7 @@ export type SequenceFlow = {
   /** Outgoing of a boundary event — not happy-path sequence. */
   exception?: boolean;
   extensionElements?: ExtensionValue[];
+  bpmnPreserve?: BpmnPreserve;
 };
 
 /** Pool. `processId` omitted = black-box partner. Sequence flow never leaves that process. */
@@ -109,6 +135,9 @@ export type ProcessGraph = {
   feedback: FeedbackEdge[];
   exceptionBranches: ExceptionBranch[];
   extensionElements?: ExtensionValue[];
+  isExecutable?: boolean;
+  artifacts?: ExtensionValue[];
+  bpmnPreserve?: BpmnPreserve;
 };
 
 export type Branch = {
@@ -182,7 +211,15 @@ export type Process = {
   exceptionBranches: ExceptionBranch[];
   idSeq: Record<string, number>;
   extensionElements?: ExtensionValue[];
+  isExecutable?: boolean;
+  definitions?: DefinitionsMeta;
+  /** Root items the kernel does not own: Message, Error, Signal, Escalation, Category, DataStore, … */
+  rootElements?: ExtensionValue[];
+  /** Data objects / stores / annotations / associations / groups in this process. */
+  artifacts?: ExtensionValue[];
+  bpmnPreserve?: BpmnPreserve;
   collaborationId?: string;
+  collaborationArtifacts?: ExtensionValue[];
   participants: Participant[];
   lanes: Lane[];
   messageFlows: MessageFlow[];
@@ -210,4 +247,8 @@ export type PlaceSpec = {
   from?: string;
   to?: string;
   participantId?: string;
+  eventDefinition?: string;
+  cancelActivity?: boolean;
+  calledElement?: string;
+  condition?: string;
 };

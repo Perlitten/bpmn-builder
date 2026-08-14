@@ -109,6 +109,24 @@ describe('agent scope and branch lock', () => {
     expect(getNode(renamed.process, handleNo).name).toBe('Handle no');
   });
 
+  it('assignLane stays inside selection scope', () => {
+    const origin = executePlan(xorProcess(), [
+      { name: 'addLane', args: { name: 'Clerk' } },
+      { name: 'addLane', args: { name: 'Manager' } },
+    ]).process;
+    const handleYes = origin.nodes.find((n) => n.name === 'Handle yes')!.id;
+    const handleNo = origin.nodes.find((n) => n.name === 'Handle no')!.id;
+    const manager = origin.lanes[1]!.id;
+    const scope = { kind: 'selection' as const, ids: [handleYes] };
+    expect(() =>
+      executePlan(origin, [{ name: 'assignLane', args: { nodeId: handleNo, laneId: manager } }], { scope }),
+    ).toThrow(/outside agent scope/);
+    const moved = executePlan(origin, [{ name: 'assignLane', args: { nodeId: handleYes, laneId: manager } }], {
+      scope,
+    });
+    expect(moved.process.lanes[1]!.nodeIds).toContain(handleYes);
+  });
+
   it('addTask with no placement stays on the scoped branch', () => {
     const p = xorProcess();
     const yes = p.regions[0]!.branches[0]!;
@@ -183,6 +201,22 @@ describe('agent scope and branch lock', () => {
       scope: { kind: 'process' },
     });
     expect(happyPathIds(added.process).slice(-3)).toEqual([region.join, added.id, 'EndEvent_1']);
+  });
+
+  it('splitComplex and createComponent after Region_1 map to the join', () => {
+    const p = xorProcess();
+    const region = p.regions[0]!;
+    const split = executePlan(p, [{ name: 'splitComplex', args: { after: region.id, name: 'Score' } }], {
+      scope: { kind: 'process' },
+    });
+    expect(split.process.regions.some((item) => item.type === 'complex')).toBe(true);
+    expect(happyPathIds(split.process)).toContain(split.process.regions.find((item) => item.type === 'complex')!.split);
+
+    const tx = executePlan(p, [
+      { name: 'createComponent', args: { componentId: 'activity.transaction', after: region.id, name: 'Settle' } },
+    ], { scope: { kind: 'process' } });
+    expect(getNode(tx.process, tx.id).bpmnType).toBe('bpmn:Transaction');
+    expect(happyPathIds(tx.process).slice(-3)).toEqual([region.join, tx.id, 'EndEvent_1']);
   });
 
   it('unknown branch still fails with a BPMN sentence, not a kernel dump', () => {

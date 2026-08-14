@@ -38,6 +38,7 @@ export type DiagramElement = {
     cancelActivity?: boolean;
     conditionExpression?: { body?: string };
     default?: { id?: string } | string;
+    calledElement?: string;
   };
   incoming?: DiagramElement[];
   outgoing?: DiagramElement[];

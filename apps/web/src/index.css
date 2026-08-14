@@ -79,6 +79,14 @@ html.is-editor #root {
   display: block;
 }
 
+.bpmn-editor-stage [data-import-hold] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Default bpmn-js strip — replaced by the semantic rail */
 .bpmn-stage .djs-palette,
 .bpmn-editor-stage .djs-palette {

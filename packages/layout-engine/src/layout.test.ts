@@ -1,9 +1,9 @@
-import { addLane, addMessageInteraction, addPool, addTask, attachBoundaryTimer, createEventSubprocess, createProcess, renameElement, splitExclusive, wrapInSubprocess } from '@bpmn/semantic-core';
+import { addLane, addMessageInteraction, addPool, addTask, attachBoundaryTimer, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { layout, layoutProcess } from './layout.js';
 import { centerY, isOrthogonal } from './route.js';
 import { BASELINE_CY, TOKENS } from './tokens.js';
-import type { LayoutInput, LayoutResult } from './types.js';
+import type { Bounds, LayoutInput, LayoutResult } from './types.js';
 
 function linear(): LayoutInput {
   return {
@@ -62,6 +62,90 @@ function allOrthogonal(result: LayoutResult) {
   for (const [id, waypoints] of Object.entries(result.edges)) {
     expect(isOrthogonal(waypoints), id).toBe(true);
   }
+}
+
+function overlaps(a: Bounds, b: Bounds): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function expectDistinctBands(boxes: Bounds[]) {
+  expect(new Set(boxes.map((b) => b.y)).size).toBe(boxes.length);
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      expect(overlaps(boxes[i]!, boxes[j]!), `${i} overlaps ${j}`).toBe(false);
+    }
+  }
+}
+
+/** AND split → three tasks → AND join. */
+function threeParallelAnd(regions: boolean): LayoutInput {
+  return {
+    nodes: [
+      { id: 'start', type: 'startEvent' },
+      { id: 'split', type: 'parallelGateway' },
+      { id: 'a', type: 'task' },
+      { id: 'b', type: 'task' },
+      { id: 'c', type: 'task' },
+      { id: 'join', type: 'parallelGateway' },
+      { id: 'end', type: 'endEvent' },
+    ],
+    sequenceFlows: [
+      { id: 'f_start_split', source: 'start', target: 'split' },
+      { id: 'f_split_a', source: 'split', target: 'a' },
+      { id: 'f_split_b', source: 'split', target: 'b' },
+      { id: 'f_split_c', source: 'split', target: 'c' },
+      { id: 'f_a_join', source: 'a', target: 'join' },
+      { id: 'f_b_join', source: 'b', target: 'join' },
+      { id: 'f_c_join', source: 'c', target: 'join' },
+      { id: 'f_join_end', source: 'join', target: 'end' },
+    ],
+    ...(regions
+      ? {
+          regions: [
+            {
+              id: 'and3',
+              split: 'split',
+              join: 'join',
+              branches: [
+                { id: 'ba', nodes: ['a'] },
+                { id: 'bb', nodes: ['b'] },
+                { id: 'bc', nodes: ['c'] },
+              ],
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
+/** Happy path plus three message-catch side chains with no sequence from the main line. */
+function threeMessageCatchSides(): LayoutInput {
+  return {
+    nodes: [
+      { id: 'start', type: 'startEvent' },
+      { id: 'main', type: 'task' },
+      { id: 'end', type: 'endEvent' },
+      { id: 'catchA', type: 'intermediateCatch' },
+      { id: 'a', type: 'task' },
+      { id: 'endA', type: 'endEvent' },
+      { id: 'catchB', type: 'intermediateCatch' },
+      { id: 'b', type: 'task' },
+      { id: 'endB', type: 'endEvent' },
+      { id: 'catchC', type: 'intermediateCatch' },
+      { id: 'c', type: 'task' },
+      { id: 'endC', type: 'endEvent' },
+    ],
+    sequenceFlows: [
+      { id: 'f_start_main', source: 'start', target: 'main' },
+      { id: 'f_main_end', source: 'main', target: 'end' },
+      { id: 'f_catchA_a', source: 'catchA', target: 'a' },
+      { id: 'f_a_endA', source: 'a', target: 'endA' },
+      { id: 'f_catchB_b', source: 'catchB', target: 'b' },
+      { id: 'f_b_endB', source: 'b', target: 'endB' },
+      { id: 'f_catchC_c', source: 'catchC', target: 'c' },
+      { id: 'f_c_endC', source: 'c', target: 'endC' },
+    ],
+  };
 }
 
 /** 16 nodes / 15 flows: payment XOR → inventory XOR, each branch ends (no join). */
@@ -431,5 +515,67 @@ describe('layout', () => {
     expect(result.shapes[boundary.id]).toBeDefined();
     expect(result.shapes[exEnd]).toBeDefined();
     expect(result.shapes[boundary.id]!.y).toBeGreaterThan(result.shapes[host.id]!.y);
+  });
+
+  it('does not collapse three parallel AND branches onto one overlapping row', () => {
+    const structured = layout(threeParallelAnd(true));
+    expectDistinctBands([structured.shapes.a!, structured.shapes.b!, structured.shapes.c!]);
+    expect(structured.shapes.a!.x).toBe(structured.shapes.b!.x);
+    expect(structured.shapes.b!.x).toBe(structured.shapes.c!.x);
+    allOrthogonal(structured);
+
+    const unmatched = layout(threeParallelAnd(false));
+    expectDistinctBands([unmatched.shapes.a!, unmatched.shapes.b!, unmatched.shapes.c!]);
+    allOrthogonal(unmatched);
+
+    let p = createProcess();
+    p = addTask(p, { name: 'Before' }).process;
+    p = splitParallel(p, {
+      after: p.nodes.find((n) => n.name === 'Before')!.id,
+      branches: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+    }).process;
+    expect(p.regions[0]!.branches).toHaveLength(3);
+    const [ba, bb, bc] = p.regions[0]!.branches;
+    p = addTask(p, { name: 'DoA', branchId: ba!.id }).process;
+    p = addTask(p, { name: 'DoB', branchId: bb!.id }).process;
+    p = addTask(p, { name: 'DoC', branchId: bc!.id }).process;
+    const di = layoutProcess(p);
+    const boxes = ['DoA', 'DoB', 'DoC'].map((name) => di.shapes[p.nodes.find((n) => n.name === name)!.id]!);
+    expectDistinctBands(boxes);
+  });
+
+  it('stacks three message-catch side paths instead of one remainder row', () => {
+    const input = threeMessageCatchSides();
+    const result = layout(input);
+    for (const node of input.nodes) {
+      expect(result.shapes[node.id], node.id).toBeDefined();
+    }
+    expectDistinctBands([result.shapes.a!, result.shapes.b!, result.shapes.c!]);
+    expect(result.shapes.catchA!.x).toBeLessThan(result.shapes.a!.x);
+    expect(result.shapes.a!.x).toBeLessThan(result.shapes.endA!.x);
+    expect(centerY(result.shapes.catchA!)).toBe(centerY(result.shapes.a!));
+    expect(centerY(result.shapes.catchB!)).toBe(centerY(result.shapes.b!));
+    expect(centerY(result.shapes.catchC!)).toBe(centerY(result.shapes.c!));
+    expect(result.shapes.a!.y).toBeGreaterThan(result.shapes.main!.y);
+    allOrthogonal(result);
+  });
+
+  it('places data objects and annotations with canonical DI, not imported XY', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Review' }).process;
+    p = createFromComponent(p, 'data.object', { name: 'File' }).process;
+    p = createFromComponent(p, 'artifact.textAnnotation', {
+      after: p.nodes.find((n) => n.name === 'Review')!.id,
+      name: 'Note',
+    }).process;
+    const di = layoutProcess(p);
+    const data = p.artifacts!.find((item) => String(item.$type).includes('DataObject'))!;
+    const note = p.artifacts!.find((item) => String(item.$type).endsWith('TextAnnotation'))!;
+    const assoc = p.artifacts!.find((item) => String(item.$type).endsWith('Association'))!;
+    expect(di.shapes[String(data.id)]).toBeDefined();
+    expect(di.shapes[String(note.id)]).toBeDefined();
+    expect(di.edges[String(assoc.id)]?.length).toBeGreaterThan(1);
+    const host = di.shapes[p.nodes.find((n) => n.name === 'Review')!.id]!;
+    expect(di.shapes[String(data.id)]!.y).toBeGreaterThan(host.y);
   });
 });

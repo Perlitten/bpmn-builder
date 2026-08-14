@@ -97,6 +97,11 @@ describe('BpmnComponentRegistry', () => {
     expect(def?.canAttach({ attachToBpmnType: 'bpmn:UserTask' })).toBe(true);
     expect(def?.canAttach({ attachToBpmnType: 'bpmn:StartEvent' })).toBe(false);
     expect(def?.canAttach({})).toBe(false);
+    expect(get('boundary.error')?.implemented).toBe(true);
+    expect(get('boundary.error')?.canAttach({ attachToBpmnType: 'bpmn:ServiceTask' })).toBe(true);
+    expect(get('intermediate.catch.timer')?.implemented).toBe(true);
+    expect(get('end.terminate')?.implemented).toBe(true);
+    expect(get('start.message')?.implemented).toBe(true);
   });
 
   it('rejects duplicate ids', () => {

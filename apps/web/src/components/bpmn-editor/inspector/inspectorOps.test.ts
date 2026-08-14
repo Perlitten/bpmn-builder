@@ -3,6 +3,7 @@ import { bpmnComponentRegistry } from '@bpmn/semantic-core';
 import type { DiagramElement } from '../diagramElement';
 import {
   applyFlowKind,
+  applyViewerLabel,
   attachBoundary,
   canDeleteElement,
   canReplaceWithBpmnJs,
@@ -20,14 +21,20 @@ function mockModeler(element: DiagramElement, extras: Record<string, unknown> = 
     removeElements: vi.fn(),
     createShape: vi.fn(),
   };
+  const graphicsFactory = { update: vi.fn() };
   const bpmnReplace = { replaceElement: vi.fn() };
   const elementFactory = { createShape: vi.fn((attrs) => ({ ...attrs })) };
   const bpmnFactory = { create: vi.fn((type, attrs) => ({ $type: type, ...attrs })) };
   const editorActions = { trigger: vi.fn() };
   const rules = { allowed: vi.fn(() => true) };
+  const gfx = { id: 'gfx' };
   const services: Record<string, unknown> = {
-    elementRegistry: { get: (id: string) => (id === element.id ? element : extras[id]) },
+    elementRegistry: {
+      get: (id: string) => (id === element.id ? element : extras[id]),
+      getGraphics: () => gfx,
+    },
     modeling,
+    graphicsFactory,
     bpmnReplace,
     elementFactory,
     bpmnFactory,
@@ -38,6 +45,7 @@ function mockModeler(element: DiagramElement, extras: Record<string, unknown> = 
   return {
     get: (name: string) => services[name],
     modeling,
+    graphicsFactory,
     bpmnReplace,
     elementFactory,
     bpmnFactory,
@@ -69,6 +77,7 @@ describe('inspector ops', () => {
     const modeler = mockModeler(task);
     renameElement(modeler, task.id, 'Review request');
     expect(modeler.modeling.updateLabel).toHaveBeenCalledWith(task, 'Review request');
+    expect(modeler.graphicsFactory.update).toHaveBeenCalledWith('shape', task, { id: 'gfx' });
 
     expect(canDeleteElement(modeler, task)).toBe(true);
     deleteSelection(modeler);
@@ -114,5 +123,32 @@ describe('inspector ops', () => {
 
     setDefaultOutgoing(modeler, gateway.id, flow.id);
     expect(modeler.modeling.updateProperties).toHaveBeenCalledWith(gateway, { default: flow.businessObject });
+  });
+
+  it('repaints a pool label without waiting for a second import', () => {
+    const pool: DiagramElement = {
+      id: 'Participant_1',
+      type: 'bpmn:Participant',
+      businessObject: { $type: 'bpmn:Participant', name: 'Pool' },
+    };
+    const modeler = mockModeler(pool);
+    applyViewerLabel(modeler, pool.id, 'Bank');
+    expect(modeler.modeling.updateLabel).toHaveBeenCalledWith(pool, 'Bank');
+    expect(modeler.graphicsFactory.update).toHaveBeenCalledWith('shape', pool, { id: 'gfx' });
+  });
+
+  it('still paints a pool when updateLabel throws', () => {
+    const pool: DiagramElement = {
+      id: 'Participant_1',
+      type: 'bpmn:Participant',
+      businessObject: { $type: 'bpmn:Participant', name: 'Pool' },
+    };
+    const modeler = mockModeler(pool);
+    modeler.modeling.updateLabel.mockImplementation(() => {
+      throw new Error('cannot execute element.updateLabel');
+    });
+    applyViewerLabel(modeler, pool.id, 'Bank');
+    expect(pool.businessObject?.name).toBe('Bank');
+    expect(modeler.graphicsFactory.update).toHaveBeenCalledWith('shape', pool, { id: 'gfx' });
   });
 });

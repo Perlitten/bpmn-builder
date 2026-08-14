@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { exportProcessXml } from '@bpmn/bpmn-adapter';
 import { layoutProcess } from '@bpmn/layout-engine';
 import { addTask, createProcess, happyPathIds, splitExclusive } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
-import { createSemanticEditor, MODELER_REMOUNT_KEYS } from './session';
+import { createSemanticEditor, MODELER_REMOUNT_KEYS, createIntoLane, createdLaneTargets } from './session';
 
 describe('semantic editor session', () => {
   it('does not remount the modeler when autosave xml changes', () => {
@@ -53,6 +54,42 @@ describe('semantic editor session', () => {
     expect(labels).toEqual([[task.id, 'Review request']]);
     expect(xml).toContain('Review request');
     expect(editor.process().nodes.find((n) => n.id === task.id)?.name).toBe('Review request');
+  });
+
+  it('requests a canvas fit on first import and add pool/lane, not on task or rename', async () => {
+    const fits: boolean[] = [];
+    const editor = await createSemanticEditor(
+      {
+        importXml: async (_xml, _select, options) => {
+          fits.push(options?.fit === true);
+        },
+        updateLabel: () => {},
+      },
+      exportProcessXml(createProcess()),
+    );
+    await editor.bootstrap();
+    expect(fits).toEqual([true]);
+
+    await editor.create('activity.task');
+    expect(fits.at(-1)).toBe(false);
+
+    const task = editor.process().nodes.find((n) => n.type === 'task')!;
+    editor.rename(task.id, 'Review request');
+    expect(fits).toHaveLength(2);
+
+    await editor.create('participant.pool');
+    expect(fits.at(-1)).toBe(true);
+
+    await editor.create('participant.lane');
+    expect(fits.at(-1)).toBe(true);
+
+    await editor.create('activity.task');
+    expect(fits.at(-1)).toBe(false);
+
+    await editor.undo();
+    expect(fits.at(-1)).toBe(false);
+    await editor.undo();
+    expect(fits.at(-1)).toBe(true);
   });
 
   it('drop reorders via moveAfter then writes canonical DI', async () => {
@@ -109,6 +146,41 @@ describe('semantic editor session', () => {
     const names = (ids: string[]) => ids.map((id) => editor.process().nodes.find((n) => n.id === id)!.name);
     expect(names(region.branches[1]!.nodeIds)).toEqual(['Yes', 'No']);
     expect(names(region.branches[0]!.nodeIds)).toEqual([]);
+    expect(imports.at(-1)).toContain('<dc:Bounds');
+  });
+
+  it('drop onto a lane uses assignLane; drop on a node in a lane also reorders', async () => {
+    const imports: string[] = [];
+    const editor = await createSemanticEditor(
+      {
+        importXml: async (xml) => {
+          imports.push(xml);
+        },
+      },
+      exportProcessXml(createProcess()),
+    );
+    const a = await editor.create('activity.task');
+    editor.rename(a.id, 'A');
+    const b = await editor.create('activity.task');
+    editor.rename(b.id, 'B');
+    await editor.create('participant.lane');
+    await editor.create('participant.lane');
+    const clerk = editor.process().lanes[0]!;
+    const manager = editor.process().lanes[1]!;
+    await editor.assignLane(b.id, manager.id);
+
+    const managerBox = layoutProcess(editor.process()).shapes[manager.id]!;
+    await editor.drop(a.id, {
+      x: managerBox.x + managerBox.width / 2,
+      y: managerBox.y + managerBox.height / 2,
+    });
+    expect(editor.process().lanes.find((lane) => lane.id === manager.id)!.nodeIds).toContain(a.id);
+    expect(editor.process().lanes.find((lane) => lane.id === clerk.id)!.nodeIds).not.toContain(a.id);
+
+    await editor.assignLane(a.id, clerk.id);
+    const bBox = layoutProcess(editor.process()).shapes[b.id]!;
+    await editor.drop(a.id, { x: bBox.x + bBox.width / 2, y: bBox.y + bBox.height / 2 });
+    expect(editor.process().lanes.find((lane) => lane.id === manager.id)!.nodeIds).toContain(a.id);
     expect(imports.at(-1)).toContain('<dc:Bounds');
   });
 
@@ -265,5 +337,117 @@ describe('semantic editor session', () => {
     editor.rename(onPartner.id, 'Treasury');
     editor.rename(onHost.id, 'Clerk');
     expect(editor.process().lanes.map((lane) => lane.name)).toEqual(['Treasury', 'Clerk']);
+  });
+
+  it('assignLane moves a task between lanes and create into a lane uses the same op', async () => {
+    const imports: string[] = [];
+    const editor = await createSemanticEditor(
+      {
+        importXml: async (xml) => {
+          imports.push(xml);
+        },
+      },
+      exportProcessXml(createProcess()),
+    );
+    const task = await editor.create('activity.task');
+    await editor.create('participant.lane');
+    await editor.create('participant.lane');
+    const [clerk, manager] = editor.process().lanes;
+    expect(clerk).toBeDefined();
+    expect(manager).toBeDefined();
+    expect(clerk!.nodeIds).toContain(task.id);
+    expect(manager!.nodeIds).toEqual([]);
+
+    const xml = await editor.assignLane(task.id, manager!.id);
+    expect(editor.process().lanes[0]!.nodeIds).not.toContain(task.id);
+    expect(editor.process().lanes[1]!.nodeIds).toEqual([task.id]);
+    expect(xml).toContain('<dc:Bounds');
+    expect(imports.at(-1)).toBe(xml);
+
+    const placed = await editor.create('activity.userTask', manager!.id);
+    expect(editor.process().lanes[1]!.nodeIds).toContain(placed.id);
+    expect(editor.process().nodes.find((node) => node.id === placed.id)?.bpmnType).toBe('bpmn:UserTask');
+
+    const xor = await editor.create('gateway.exclusive', manager!.id);
+    const region = editor.process().regions[0]!;
+    expect(xor.id).toBe(region.id);
+    expect(createdLaneTargets(editor.process(), xor.id).sort()).toEqual([region.split, region.join].sort());
+    expect(editor.process().lanes[1]!.nodeIds).toEqual(expect.arrayContaining([region.split, region.join]));
+    expect(editor.process().lanes[0]!.nodeIds).not.toContain(region.split);
+    expect(editor.process().lanes[0]!.nodeIds).not.toContain(region.join);
+
+    const third = await editor.create('participant.lane', clerk!.id);
+    expect(editor.process().lanes).toHaveLength(3);
+    expect(editor.process().lanes.find((lane) => lane.id === third.id)).toMatchObject({
+      participantId: clerk!.participantId,
+    });
+    expect(editor.process().lanes.find((lane) => lane.id === third.id)?.parentLaneId).toBeUndefined();
+  });
+
+  it('createIntoLane assigns flow nodes; Add lane on a lane stays a sibling after', () => {
+    let process = createProcess();
+    process = {
+      ...process,
+      lanes: [{ id: 'Lane_1', name: 'Clerk', processId: process.id, nodeIds: [] }],
+    };
+    expect(createIntoLane(process, 'activity.task', 'Lane_1')).toEqual({ laneId: 'Lane_1' });
+    expect(createIntoLane(process, 'gateway.exclusive', 'Lane_1')).toEqual({ laneId: 'Lane_1' });
+    expect(createIntoLane(process, 'boundary.timer', 'Lane_1')).toEqual({});
+    expect(createIntoLane(process, 'participant.lane', 'Lane_1')).toEqual({ after: 'Lane_1' });
+    expect(createIntoLane(process, 'activity.task', 'StartEvent_1')).toEqual({ after: 'StartEvent_1' });
+  });
+
+  it('addLane ×3, rename, click-only rename, and reload keep lane count and names', async () => {
+    const editor = await createSemanticEditor(
+      { importXml: async () => {} },
+      exportProcessXml(createProcess()),
+    );
+    await editor.create('participant.lane');
+    await editor.create('participant.lane');
+    await editor.create('participant.lane');
+    const [front, adjuster, finance] = editor.process().lanes;
+    expect(editor.process().lanes).toHaveLength(3);
+    editor.rename(front!.id, 'Front Office');
+    editor.rename(adjuster!.id, 'Claims Adjuster');
+    editor.rename(finance!.id, 'Finance');
+    const tasksBefore = editor.process().nodes.filter((node) => node.type === 'task').length;
+    editor.rename(adjuster!.id, 'Claims Adjuster');
+    expect(editor.process().lanes.map((lane) => lane.name)).toEqual([
+      'Front Office',
+      'Claims Adjuster',
+      'Finance',
+    ]);
+    expect(editor.process().nodes.filter((node) => node.type === 'task')).toHaveLength(tasksBefore);
+
+    const xml = editor.xml();
+    const reloaded = await createSemanticEditor({ importXml: async () => {} }, xml);
+    expect(reloaded.process().lanes.map((lane) => lane.name)).toEqual([
+      'Front Office',
+      'Claims Adjuster',
+      'Finance',
+    ]);
+    expect(reloaded.process().participants).toHaveLength(1);
+    expect(reloaded.process().nodes.filter((node) => node.type === 'task')).toHaveLength(tasksBefore);
+  });
+});
+
+describe('semantic editor preserved fields', () => {
+  it('edits documentation and Camunda topic without dropping the other extras', async () => {
+    const xml = readFileSync(
+      new URL('../../../../../../packages/bpmn-adapter/fixtures/insurance-claim-stress.bpmn', import.meta.url),
+      'utf8',
+    );
+    const editor = await createSemanticEditor({ importXml: async () => undefined }, xml);
+    await editor.setDocumentation('Task_Policy', 'Load policy v2');
+    await editor.setPreserveAttr('Task_Policy', 'camunda:topic', 'claim-intake-v2');
+    await editor.setCalledElement('Call_Payment', 'RefundProc');
+    await editor.setIsExecutable(true);
+    const saved = editor.xml();
+    expect(saved).toContain('Load policy v2');
+    expect(saved).toContain('camunda:topic="claim-intake-v2"');
+    expect(saved).toContain('calledElement="RefundProc"');
+    expect(saved).toContain('isExecutable="true"');
+    expect(saved).toContain('camunda:assignee="${assignee}"');
+    expect(saved).toContain('<bpmn:timeDuration>P5D</bpmn:timeDuration>');
   });
 });

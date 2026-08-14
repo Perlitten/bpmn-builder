@@ -161,7 +161,7 @@ describe('semantic-core', () => {
     const p = createProcess();
     expect(() => createFromComponent(p, 'start.none')).toThrow(/already has a start/i);
     expect(() => createFromComponent(p, 'end.none')).toThrow(/cannot be inserted/i);
-    expect(() => createFromComponent(p, 'gateway.complex')).toThrow(/no semantic create op/i);
+    expect(() => createFromComponent(p, 'boundary.compensation')).toThrow(/no semantic create op/i);
     expect(() => createFromComponent(p, 'event.start.none')).toThrow(/unknown component/);
   });
 
@@ -234,6 +234,19 @@ describe('semantic-core', () => {
 
     p = createFromComponent(createProcess(), 'gateway.eventBased', { after: 'StartEvent_1' }).process;
     expect(p.regions[0]!.type).toBe('eventBased');
+  });
+
+  it('splitComplex is a real gateway region with a matching join', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'A' }).process;
+    const split = createFromComponent(p, 'gateway.complex', { after: named(p, 'A') });
+    p = split.process;
+    expect(p.regions[0]!.type).toBe('complex');
+    expect(getNode(p, p.regions[0]!.split).type).toBe('complexGateway');
+    expect(getNode(p, p.regions[0]!.join).type).toBe('complexGateway');
+    expect(p.regions[0]!.split).not.toBe(p.regions[0]!.join);
+    expect(p.regions[0]!.branches).toHaveLength(2);
+    expect(getNode(p, p.regions[0]!.split).bpmnType).toBe('bpmn:ComplexGateway');
   });
 
   it('attachBoundaryTimer marks an exception/feedback path on the task', () => {
@@ -450,5 +463,24 @@ describe('semantic-core', () => {
     expect(pathNames(p)).toEqual(['Start', 'Subprocess', 'End']);
     expect(p.regions[0]!.type).toBe('subprocess');
     expect(innerScope(p, created.id)?.nodeIds).toHaveLength(2);
+  });
+
+  it('renameElement keeps opaque BPMN preservation fields', () => {
+    let p = createProcess();
+    p = {
+      ...p,
+      isExecutable: true,
+      artifacts: [{ $type: 'bpmn:DataObject', id: 'DO_1', name: 'File' }],
+      rootElements: [{ $type: 'bpmn:Message', id: 'Msg_1', name: 'Ping' }],
+      nodes: p.nodes.map((n) =>
+        n.id === 'EndEvent_1' ? { ...n, bpmnPreserve: { attrs: { calledElement: 'Pay' } } } : n,
+      ),
+    };
+    p = renameElement(p, 'EndEvent_1', 'Done').process;
+    expect(p.isExecutable).toBe(true);
+    expect(p.artifacts).toEqual([{ $type: 'bpmn:DataObject', id: 'DO_1', name: 'File' }]);
+    expect(p.rootElements).toEqual([{ $type: 'bpmn:Message', id: 'Msg_1', name: 'Ping' }]);
+    expect(p.nodes.find((n) => n.id === 'EndEvent_1')?.name).toBe('Done');
+    expect(p.nodes.find((n) => n.id === 'EndEvent_1')?.bpmnPreserve).toEqual({ attrs: { calledElement: 'Pay' } });
   });
 });

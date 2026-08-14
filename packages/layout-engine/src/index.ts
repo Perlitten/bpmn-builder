@@ -4,6 +4,7 @@ export { TOKENS, ORIGIN_X, BASELINE_CY, snapToGrid } from './tokens.js';
 export type {
   Branch,
   Bounds,
+  LayoutArtifact,
   LayoutInput,
   LayoutLane,
   LayoutMessageFlow,

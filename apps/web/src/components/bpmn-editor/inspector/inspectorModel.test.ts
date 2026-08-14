@@ -6,13 +6,14 @@ import {
   changeToOptions,
   currentComponentId,
   findMatchingReplaceTarget,
+  flowNodeLaneAssignment,
   isXorOr,
   lanesInPool,
   matchesReplaceTarget,
   poolLaneCreate,
   toReplaceTarget,
 } from './inspectorModel';
-import { selectableElement } from './selectable';
+import { selectableElement, selectionIdsEqual } from './selectable';
 import type { DiagramElement } from '../diagramElement';
 
 const task: DiagramElement = {
@@ -41,6 +42,11 @@ describe('selectableElement', () => {
   it('keeps a pool header and a lane as the selected id', () => {
     expect(selectableElement({ id: 'Participant_1', type: 'bpmn:Participant' })?.id).toBe('Participant_1');
     expect(selectableElement({ id: 'Lane_1', type: 'bpmn:Lane' })?.id).toBe('Lane_1');
+  });
+
+  it('treats the same selected ids as unchanged during a label write', () => {
+    expect(selectionIdsEqual(['Participant_1'], ['Participant_1'])).toBe(true);
+    expect(selectionIdsEqual(['Participant_1'], ['Lane_1'])).toBe(false);
   });
 });
 
@@ -152,6 +158,51 @@ describe('inspector model', () => {
     expect(lanesInPool([{ id: 'Lane_1', name: '', participantId: 'Participant_1' }], 'Participant_1')).toEqual([
       { id: 'Lane_1', name: '' },
     ]);
+  });
+
+  it('lists leaf lanes of the node’s pool for assignLane, not a partner pool', () => {
+    const graph = {
+      id: 'Process_1',
+      nodes: [{ id: 'Activity_1' }],
+      participants: [
+        { id: 'Participant_1', processId: 'Process_1' },
+        { id: 'Participant_2', processId: 'Process_2' },
+      ],
+      processes: [{ id: 'Process_2', nodes: [{ id: 'Activity_ext' }] }],
+      lanes: [
+        {
+          id: 'Lane_1',
+          name: 'Clerk',
+          participantId: 'Participant_1',
+          processId: 'Process_1',
+          nodeIds: ['Activity_1'],
+        },
+        { id: 'Lane_2', name: 'Manager', participantId: 'Participant_1', processId: 'Process_1', nodeIds: [] },
+        { id: 'Lane_3', name: 'Ext', participantId: 'Participant_2', processId: 'Process_2', nodeIds: [] },
+        {
+          id: 'Lane_4',
+          name: 'Nested',
+          participantId: 'Participant_1',
+          processId: 'Process_1',
+          parentLaneId: 'Lane_1',
+          nodeIds: [],
+        },
+      ],
+    };
+    expect(flowNodeLaneAssignment(task, graph)).toEqual({
+      lanes: [
+        { id: 'Lane_1', name: 'Clerk' },
+        { id: 'Lane_2', name: 'Manager' },
+        { id: 'Lane_4', name: 'Nested' },
+      ],
+      currentLaneId: 'Lane_1',
+    });
+    expect(flowNodeLaneAssignment(task, { ...graph, lanes: [] })).toEqual({ lanes: [] });
+    expect(flowNodeLaneAssignment({ id: 'Participant_1', type: 'bpmn:Participant' }, graph).lanes).toEqual([]);
+    expect(flowNodeLaneAssignment({ id: 'Lane_1', type: 'bpmn:Lane' }, graph).lanes).toEqual([]);
+    expect(
+      flowNodeLaneAssignment({ id: 'Boundary_1', type: 'bpmn:BoundaryEvent' }, graph).lanes,
+    ).toEqual([]);
   });
 
   it('treats XOR/OR as conditional flow sources', () => {

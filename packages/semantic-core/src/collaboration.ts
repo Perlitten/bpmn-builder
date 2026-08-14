@@ -45,9 +45,12 @@ function ensureHostPool(draft: Process): Participant {
 }
 
 function nodeIdsForProcess(draft: Process, processId: string): string[] {
-  const nodes =
-    processId === draft.id ? draft.nodes : (draft.processes.find((g) => g.id === processId)?.nodes ?? []);
-  return nodes.filter((n) => n.type !== 'boundaryEvent').map((n) => n.id);
+  const graph = processId === draft.id ? draft : draft.processes.find((g) => g.id === processId);
+  if (!graph) return [];
+  const root =
+    graph.scopes.find((s) => s.ownerId == null && s.parentId == null) ?? graph.scopes[0];
+  const allowed = new Set(root?.nodeIds ?? graph.nodes.map((n) => n.id));
+  return graph.nodes.filter((n) => n.type !== 'boundaryEvent' && allowed.has(n.id)).map((n) => n.id);
 }
 
 function participantIdOf(draft: Process, id: string): string | undefined {

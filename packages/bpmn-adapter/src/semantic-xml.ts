@@ -3,6 +3,8 @@ import {
   detectStructure,
   getNode,
   happyPathIds,
+  type BpmnPreserve,
+  type DefinitionsMeta,
   type ExtensionValue,
   type FlowNode,
   type FlowNodeType,
@@ -16,17 +18,63 @@ import {
   visibleNodeName,
 } from '../../semantic-core/src/index.js';
 import {
+  appendExtras,
+  applyPreserve,
+  applyXmlns,
   createModdle,
+  fromPlain,
   idOf,
   isType,
   many,
+  readMany,
+  refId,
   parseDefinitions,
+  registerEl,
+  registerTree,
+  resolveOf,
   restoreExtensions,
   serializeDefinitions,
   snapshotExtensions,
+  snapshotPreserve,
+  toPlain,
+  xmlnsAttrs,
   type Moddle,
   type ModdleEl,
+  type ResolveRef,
 } from './moddle.js';
+
+const NODE_SKIP = new Set([
+  'id',
+  'name',
+  'incoming',
+  'outgoing',
+  'attachedToRef',
+  'cancelActivity',
+  'triggeredByEvent',
+  'extensionElements',
+  'default',
+  'flowElements',
+  'laneSets',
+  'lanes',
+  'artifacts',
+  'childLaneSet',
+  'calledElement',
+]);
+const PROCESS_SKIP = new Set([
+  'id',
+  'name',
+  'flowElements',
+  'laneSets',
+  'lanes',
+  'artifacts',
+  'extensionElements',
+  'isExecutable',
+]);
+const FLOW_SKIP = new Set(['id', 'name', 'sourceRef', 'targetRef', 'conditionExpression', 'extensionElements']);
+
+function withPreserve<T extends object>(obj: T, preserve?: BpmnPreserve): T {
+  return preserve ? { ...obj, bpmnPreserve: preserve } : obj;
+}
 
 const DEFAULT_BPMN: Record<FlowNodeType, string> = {
   start: 'bpmn:StartEvent',
@@ -37,6 +85,7 @@ const DEFAULT_BPMN: Record<FlowNodeType, string> = {
   parallelGateway: 'bpmn:ParallelGateway',
   inclusiveGateway: 'bpmn:InclusiveGateway',
   eventBasedGateway: 'bpmn:EventBasedGateway',
+  complexGateway: 'bpmn:ComplexGateway',
   intermediateCatch: 'bpmn:IntermediateCatchEvent',
   boundaryEvent: 'bpmn:BoundaryEvent',
 };
@@ -57,7 +106,8 @@ function withExt<T extends object>(obj: T, ext?: ExtensionValue[]): T {
 }
 
 function eventDefinitionName(el: ModdleEl): string | undefined {
-  const def = many(el, 'eventDefinitions')[0];
+  const defs = el.get('eventDefinitions');
+  const def = Array.isArray(defs) ? (defs[0] as ModdleEl | undefined) : undefined;
   if (!def?.$type) return undefined;
   return def.$type.replace(/^bpmn:/, '');
 }
@@ -79,6 +129,7 @@ function mapNode(el: ModdleEl): FlowNode | null {
   else if (isType(el, 'bpmn:ParallelGateway')) node = { ...base, type: 'parallelGateway' };
   else if (isType(el, 'bpmn:InclusiveGateway')) node = { ...base, type: 'inclusiveGateway' };
   else if (isType(el, 'bpmn:EventBasedGateway')) node = { ...base, type: 'eventBasedGateway' };
+  else if (isType(el, 'bpmn:ComplexGateway')) node = { ...base, type: 'complexGateway' };
   else if (isType(el, 'bpmn:IntermediateCatchEvent')) node = { ...base, type: 'intermediateCatch' };
   else if (isType(el, 'bpmn:BoundaryEvent')) {
     const attachedTo = idOf(el.get('attachedToRef'));
@@ -100,7 +151,9 @@ function mapNode(el: ModdleEl): FlowNode | null {
   if (node.type === 'start' || node.type === 'end') {
     node = { ...node, name: visibleNodeName(node.type, node.name) };
   }
-  return withExt(node, ext);
+  const called = el.get('calledElement');
+  if (typeof called === 'string' && called.trim()) node = { ...node, calledElement: called.trim() };
+  return withExt(withPreserve(node, snapshotPreserve(el, NODE_SKIP)), ext);
 }
 
 function mapFlow(el: ModdleEl, defaults: Map<string, string>): SequenceFlow | null {
@@ -112,14 +165,17 @@ function mapFlow(el: ModdleEl, defaults: Map<string, string>): SequenceFlow | nu
   const expr = el.get('conditionExpression') as ModdleEl | undefined;
   const condition = expr ? String(expr.get('body') ?? expr.$body ?? '') : '';
   return withExt(
-    {
-      id,
-      source,
-      target,
-      ...(name ? { name } : {}),
-      ...(condition ? { condition } : {}),
-      ...(defaults.get(source) === id ? { isDefault: true } : {}),
-    },
+    withPreserve(
+      {
+        id,
+        source,
+        target,
+        ...(name ? { name } : {}),
+        ...(condition ? { condition } : {}),
+        ...(defaults.get(source) === id ? { isDefault: true } : {}),
+      },
+      snapshotPreserve(el, FLOW_SKIP),
+    ),
     snapshotExtensions(el),
   );
 }
@@ -147,11 +203,15 @@ function emptyProcess(id: string): Process {
 function mapLanes(processEl: ModdleEl, processId: string, participantId?: string): Lane[] {
   const out: Lane[] = [];
   const walk = (laneSet: ModdleEl, parentLaneId?: string) => {
-    for (const lane of many(laneSet, 'lanes')) {
+    const listed = readMany(laneSet, 'lanes');
+    const lanes = listed.length
+      ? listed
+      : (laneSet.$children ?? []).filter((child) => isType(child, 'bpmn:Lane'));
+    for (const lane of lanes) {
       const id = idOf(lane);
       if (!id) continue;
       const name = typeof lane.get('name') === 'string' ? (lane.get('name') as string) : '';
-      const nodeIds = many(lane, 'flowNodeRef').map(idOf).filter(Boolean);
+      const nodeIds = readMany(lane, 'flowNodeRef').map(refId).filter(Boolean);
       out.push(
         withExt(
           {
@@ -165,12 +225,49 @@ function mapLanes(processEl: ModdleEl, processId: string, participantId?: string
           snapshotExtensions(lane),
         ),
       );
-      const child = lane.get('childLaneSet') as ModdleEl | undefined;
+      const child = (lane.get('childLaneSet') as ModdleEl | undefined) ?? readMany(lane, 'childLaneSet')[0];
       if (child) walk(child, id);
     }
   };
-  for (const set of many(processEl, 'laneSets')) walk(set);
+  for (const set of readMany(processEl, 'laneSets')) walk(set);
   return out;
+}
+
+function collectFlowExtras(containerEl: ModdleEl): ExtensionValue[] {
+  const extras: ExtensionValue[] = [];
+  const flowEls = containerEl.get('flowElements');
+  if (Array.isArray(flowEls)) {
+    for (const child of flowEls as ModdleEl[]) {
+      if (isType(child, 'bpmn:SequenceFlow') || isType(child, 'bpmn:FlowNode')) continue;
+      extras.push(toPlain(child));
+    }
+  }
+  const arts = containerEl.get('artifacts');
+  if (Array.isArray(arts)) {
+    for (const art of arts as ModdleEl[]) extras.push(toPlain(art));
+  }
+  return extras;
+}
+
+function attachExtras(owner: FlowNode | undefined, extras: ExtensionValue[]): void {
+  if (!owner || !extras.length) return;
+  owner.bpmnPreserve = {
+    ...owner.bpmnPreserve,
+    props: { ...owner.bpmnPreserve?.props, flowExtras: extras },
+  };
+}
+
+function extraIds(value: unknown, into: string[] = []): string[] {
+  if (!value || typeof value !== 'object') return into;
+  if (Array.isArray(value)) {
+    for (const item of value) extraIds(item, into);
+    return into;
+  }
+  const rec = value as Record<string, unknown>;
+  if (typeof rec.id === 'string') into.push(rec.id);
+  if (typeof rec.$ref === 'string') into.push(rec.$ref);
+  for (const nested of Object.values(rec)) extraIds(nested, into);
+  return into;
 }
 
 function mapContainer(
@@ -178,7 +275,7 @@ function mapContainer(
   scopeId: string,
   parentScopeId: string | null,
   ownerId: string | null,
-  acc: { nodes: FlowNode[]; flows: SequenceFlow[]; scopes: Scope[]; seq: number },
+  acc: { nodes: FlowNode[]; flows: SequenceFlow[]; scopes: Scope[]; seq: number; artifacts: ExtensionValue[] },
 ): void {
   const nodeIds: string[] = [];
   const flowIds: string[] = [];
@@ -202,6 +299,9 @@ function mapContainer(
       flowIds.push(flow.id);
     }
   }
+  const extras = collectFlowExtras(containerEl);
+  if (ownerId) attachExtras(acc.nodes.find((n) => n.id === ownerId), extras);
+  else acc.artifacts.push(...extras);
   acc.scopes.push({ id: scopeId, parentId: parentScopeId, ownerId, nodeIds, flowIds });
   for (const sub of nested) {
     acc.seq += 1;
@@ -216,15 +316,37 @@ function mapProcessEl(processEl: ModdleEl): {
   flows: SequenceFlow[];
   lanes: Lane[];
   scopes: Scope[];
+  isExecutable?: boolean;
+  artifacts?: ExtensionValue[];
+  bpmnPreserve?: BpmnPreserve;
   extensionElements?: ExtensionValue[];
 } {
   const id = idOf(processEl) || 'Process_1';
   const name = typeof processEl.get('name') === 'string' ? (processEl.get('name') as string) : 'Process';
-  const acc = { nodes: [] as FlowNode[], flows: [] as SequenceFlow[], scopes: [] as Scope[], seq: 1 };
+  const acc = {
+    nodes: [] as FlowNode[],
+    flows: [] as SequenceFlow[],
+    scopes: [] as Scope[],
+    seq: 1,
+    artifacts: [] as ExtensionValue[],
+  };
   mapContainer(processEl, 'Scope_1', null, null, acc);
   acc.flows.sort((a, b) => a.id.localeCompare(b.id));
+  const exec = processEl.get('isExecutable');
   return withExt(
-    { id, name, nodes: acc.nodes, flows: acc.flows, lanes: mapLanes(processEl, id), scopes: acc.scopes },
+    withPreserve(
+      {
+        id,
+        name,
+        nodes: acc.nodes,
+        flows: acc.flows,
+        lanes: mapLanes(processEl, id),
+        scopes: acc.scopes,
+        ...(typeof exec === 'boolean' ? { isExecutable: exec } : {}),
+        ...(acc.artifacts.length ? { artifacts: acc.artifacts } : {}),
+      },
+      snapshotPreserve(processEl, PROCESS_SKIP),
+    ),
     snapshotExtensions(processEl),
   );
 }
@@ -238,6 +360,9 @@ function detectGraph(
     lanes: Lane[];
     messageFlows: MessageFlow[];
     processes: ProcessGraph[];
+    definitions?: DefinitionsMeta;
+    rootElements?: ExtensionValue[];
+    collaborationArtifacts?: ExtensionValue[];
   },
 ): Process {
   const scopes = mapped.scopes?.length
@@ -245,24 +370,32 @@ function detectGraph(
     : [{ id: 'Scope_1', parentId: null, ownerId: null, nodeIds: mapped.nodes.map((n) => n.id), flowIds: mapped.flows.map((f) => f.id) }];
   return detectStructure(
     withExt(
-      {
-        id: mapped.id,
-        name: mapped.name,
-        rootScopeId: scopes[0]?.id ?? 'Scope_1',
-        idSeq: extra.idSeq,
-        scopes,
-        nodes: mapped.nodes,
-        flows: mapped.flows,
-        regions: [],
-        unstructured: [],
-        feedback: [],
-        exceptionBranches: [],
-        ...(extra.collaborationId ? { collaborationId: extra.collaborationId } : {}),
-        participants: extra.participants,
-        lanes: extra.lanes,
-        messageFlows: extra.messageFlows,
-        processes: extra.processes,
-      },
+      withPreserve(
+        {
+          id: mapped.id,
+          name: mapped.name,
+          rootScopeId: scopes[0]?.id ?? 'Scope_1',
+          idSeq: extra.idSeq,
+          scopes,
+          nodes: mapped.nodes,
+          flows: mapped.flows,
+          regions: [],
+          unstructured: [],
+          feedback: [],
+          exceptionBranches: [],
+          ...(typeof mapped.isExecutable === 'boolean' ? { isExecutable: mapped.isExecutable } : {}),
+          ...(mapped.artifacts?.length ? { artifacts: mapped.artifacts } : {}),
+          ...(extra.definitions ? { definitions: extra.definitions } : {}),
+          ...(extra.rootElements?.length ? { rootElements: extra.rootElements } : {}),
+          ...(extra.collaborationId ? { collaborationId: extra.collaborationId } : {}),
+          ...(extra.collaborationArtifacts?.length ? { collaborationArtifacts: extra.collaborationArtifacts } : {}),
+          participants: extra.participants,
+          lanes: extra.lanes,
+          messageFlows: extra.messageFlows,
+          processes: extra.processes,
+        },
+        mapped.bpmnPreserve,
+      ),
       mapped.extensionElements,
     ),
   );
@@ -270,20 +403,42 @@ function detectGraph(
 
 function asGraph(p: Process): ProcessGraph {
   return withExt(
-    {
-      id: p.id,
-      name: p.name,
-      rootScopeId: p.rootScopeId,
-      scopes: p.scopes,
-      nodes: p.nodes,
-      flows: p.flows,
-      regions: p.regions,
-      unstructured: p.unstructured,
-      feedback: p.feedback,
-      exceptionBranches: p.exceptionBranches,
-    },
+    withPreserve(
+      {
+        id: p.id,
+        name: p.name,
+        rootScopeId: p.rootScopeId,
+        scopes: p.scopes,
+        nodes: p.nodes,
+        flows: p.flows,
+        regions: p.regions,
+        unstructured: p.unstructured,
+        feedback: p.feedback,
+        exceptionBranches: p.exceptionBranches,
+        ...(typeof p.isExecutable === 'boolean' ? { isExecutable: p.isExecutable } : {}),
+        ...(p.artifacts?.length ? { artifacts: p.artifacts } : {}),
+      },
+      p.bpmnPreserve,
+    ),
     p.extensionElements,
   );
+}
+
+function snapshotDefinitions(definitions: ModdleEl): DefinitionsMeta | undefined {
+  const str = (name: string) => {
+    const value = definitions.get(name);
+    return typeof value === 'string' && value ? value : undefined;
+  };
+  const meta: DefinitionsMeta = {
+    ...(idOf(definitions) ? { id: idOf(definitions) } : {}),
+    ...(str('targetNamespace') ? { targetNamespace: str('targetNamespace') } : {}),
+    ...(str('exporter') ? { exporter: str('exporter') } : {}),
+    ...(str('exporterVersion') ? { exporterVersion: str('exporterVersion') } : {}),
+    ...(str('expressionLanguage') ? { expressionLanguage: str('expressionLanguage') } : {}),
+    ...(str('typeLanguage') ? { typeLanguage: str('typeLanguage') } : {}),
+    ...(xmlnsAttrs(definitions) ? { attrs: xmlnsAttrs(definitions) } : {}),
+  };
+  return Object.keys(meta).length ? meta : undefined;
 }
 
 /** BPMN XML → semantic graph. Ignores DI; coordinates are layout output. */
@@ -293,10 +448,13 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
   const roots = many(definitions, 'rootElements');
   const processEls = roots.filter((el) => isType(el, 'bpmn:Process'));
   const collab = roots.find((el) => isType(el, 'bpmn:Collaboration'));
+  const rootElements = roots.filter((el) => !isType(el, 'bpmn:Process') && !isType(el, 'bpmn:Collaboration')).map(toPlain);
+  const definitionsMeta = snapshotDefinitions(definitions);
 
   const participants: Participant[] = [];
   const messageFlows: MessageFlow[] = [];
   let collaborationId: string | undefined;
+  let collaborationArtifacts: ExtensionValue[] | undefined;
   if (collab) {
     collaborationId = idOf(collab) || undefined;
     for (const part of many(collab, 'participants')) {
@@ -316,13 +474,26 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
       const name = typeof mf.get('name') === 'string' ? (mf.get('name') as string) : undefined;
       messageFlows.push(withExt({ id, source, target, ...(name ? { name } : {}) }, snapshotExtensions(mf)));
     }
+    const collabArts = (collab.get('artifacts') as ModdleEl[] | undefined) ?? [];
+    const collabPlain = collabArts.map(toPlain);
+    if (collabPlain.length) collaborationArtifacts = collabPlain;
   }
+
+  const extra = {
+    definitions: definitionsMeta,
+    rootElements,
+    collaborationArtifacts,
+  };
 
   if (!processEls.length) {
     if (!participants.length) return emptyProcess('Process_1');
-    const ids = [collaborationId, ...participants.map((p) => p.id), ...messageFlows.map((m) => m.id)].filter(
-      Boolean,
-    ) as string[];
+    const ids = [
+      collaborationId,
+      ...participants.map((p) => p.id),
+      ...messageFlows.map((m) => m.id),
+      ...extraIds(rootElements),
+      ...extraIds(collaborationArtifacts),
+    ].filter(Boolean) as string[];
     return detectGraph(
       { id: 'Process_1', name: 'Process', nodes: [], flows: [], lanes: [], scopes: [] },
       {
@@ -332,6 +503,7 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
         lanes: [],
         messageFlows,
         processes: [],
+        ...extra,
       },
     );
   }
@@ -360,6 +532,12 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
     ...messageFlows.map((m) => m.id),
     ...rootMapped.scopes.map((s) => s.id),
     ...peersMapped.flatMap((g) => g.scopes.map((s) => s.id)),
+    ...extraIds(rootElements),
+    ...extraIds(collaborationArtifacts),
+    ...extraIds(rootMapped.artifacts),
+    ...extraIds(peersMapped.flatMap((g) => g.artifacts ?? [])),
+    ...extraIds(rootMapped.nodes.map((n) => n.bpmnPreserve)),
+    ...extraIds(peersMapped.flatMap((g) => g.nodes.map((n) => n.bpmnPreserve))),
     'Scope_1',
   ].filter((id): id is string => !!id);
 
@@ -382,6 +560,7 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
     lanes: [...rootMapped.lanes, ...peersMapped.flatMap((g) => g.lanes)],
     messageFlows,
     processes,
+    ...extra,
   });
 }
 
@@ -402,19 +581,23 @@ function applyExt(moddle: Moddle, el: ModdleEl, values?: ExtensionValue[]): void
   if (values?.length) el.set('extensionElements', restoreExtensions(moddle, values));
 }
 
-function createNodeEl(moddle: Moddle, node: FlowNode): ModdleEl {
+function createNodeEl(moddle: Moddle, node: FlowNode, resolve: ResolveRef, registry: Map<string, ModdleEl>): ModdleEl {
   const bpmnType = node.bpmnType ?? DEFAULT_BPMN[node.type];
   const attrs: Record<string, unknown> = { id: node.id };
   const name =
     node.type === 'start' || node.type === 'end' ? visibleNodeName(node.type, node.name) : node.name;
   if (name) attrs.name = name;
+  if (node.calledElement) attrs.calledElement = node.calledElement;
   if (node.type === 'boundaryEvent' && node.cancelActivity === false) attrs.cancelActivity = false;
   if (node.type === 'subProcess' && node.triggeredByEvent) attrs.triggeredByEvent = true;
   const el = moddle.create(bpmnType, attrs);
-  if (node.eventDefinition) {
-    const defs = many(el, 'eventDefinitions');
-    defs.push(moddle.create(`bpmn:${node.eventDefinition}`));
-    el.set('eventDefinitions', defs);
+  registerEl(registry, el);
+  applyPreserve(moddle, el, node.bpmnPreserve, resolve);
+  const defs = el.get('eventDefinitions');
+  if (!(Array.isArray(defs) && defs.length) && node.eventDefinition) {
+    const created = many(el, 'eventDefinitions');
+    created.push(moddle.create(`bpmn:${node.eventDefinition}`));
+    el.set('eventDefinitions', created);
   }
   applyExt(moddle, el, node.extensionElements);
   return el;
@@ -429,7 +612,8 @@ function writeLaneSets(
   laneEls: Map<string, ModdleEl>,
 ): void {
   const ofProcess = lanes.filter((l) => l.processId === processId);
-  const roots = ofProcess.filter((l) => !l.parentLaneId);
+  const ids = new Set(ofProcess.map((l) => l.id));
+  const roots = ofProcess.filter((l) => !l.parentLaneId || !ids.has(l.parentLaneId));
   if (!roots.length) return;
   const writeLane = (lane: Lane): ModdleEl => {
     const el = moddle.create('bpmn:Lane', { id: lane.id, ...(lane.name ? { name: lane.name } : {}) });
@@ -458,17 +642,24 @@ function writeGraph(
     nodes: FlowNode[];
     flows: SequenceFlow[];
     scopes?: Scope[];
+    isExecutable?: boolean;
+    artifacts?: ExtensionValue[];
     extensionElements?: ExtensionValue[];
+    bpmnPreserve?: BpmnPreserve;
   },
   lanes: Lane[],
   nodes: FlowNode[],
   laneEls: Map<string, ModdleEl>,
+  resolve: ResolveRef,
+  registry: Map<string, ModdleEl>,
 ): { processEl: ModdleEl; nodeEls: Map<string, ModdleEl>; flowEls: Map<string, ModdleEl>; flows: SequenceFlow[] } {
   const processEl = moddle.create('bpmn:Process', {
     id: graph.id,
     name: graph.name,
-    isExecutable: false,
+    isExecutable: graph.isExecutable ?? false,
   });
+  registerEl(registry, processEl);
+  applyPreserve(moddle, processEl, graph.bpmnPreserve, resolve);
   applyExt(moddle, processEl, graph.extensionElements);
   const nodeEls = new Map<string, ModdleEl>();
   const flowEls = new Map<string, ModdleEl>();
@@ -483,12 +674,14 @@ function writeGraph(
     const flowElements = many(containerEl, 'flowElements');
     const local = scope.nodeIds.map((id) => nodeById.get(id)).filter((n): n is FlowNode => !!n);
     for (const node of local) {
-      const el = createNodeEl(moddle, node);
+      const el = createNodeEl(moddle, node, resolve, registry);
       nodeEls.set(node.id, el);
       flowElements.push(el);
       if (node.type === 'subProcess') {
         const inner = scopes.find((s) => s.ownerId === node.id);
         if (inner) writeScope(el, inner);
+        const extras = node.bpmnPreserve?.props?.flowExtras;
+        if (Array.isArray(extras)) appendExtras(moddle, el, extras as ExtensionValue[], resolve, registry);
       }
     }
     for (const node of local) {
@@ -505,9 +698,11 @@ function writeGraph(
       const attrs: Record<string, unknown> = { id: flow.id, sourceRef: source, targetRef: target };
       if (flow.name) attrs.name = flow.name;
       const flowEl = moddle.create('bpmn:SequenceFlow', attrs);
+      registerEl(registry, flowEl);
       if (flow.condition) {
         flowEl.set('conditionExpression', moddle.create('bpmn:FormalExpression', { body: flow.condition }));
       }
+      applyPreserve(moddle, flowEl, flow.bpmnPreserve, resolve);
       applyExt(moddle, flowEl, flow.extensionElements);
       many(source, 'outgoing').push(flowEl);
       many(target, 'incoming').push(flowEl);
@@ -523,6 +718,7 @@ function writeGraph(
   };
 
   writeScope(processEl, root);
+  appendExtras(moddle, processEl, graph.artifacts, resolve, registry);
   writeLaneSets(moddle, processEl, lanes, graph.id, nodeEls, laneEls);
   return { processEl, nodeEls, flowEls, flows };
 }
@@ -573,24 +769,41 @@ function diLabel(moddle: Moddle, box: LayoutResult['labels'][string] | undefined
 /** Semantic graph + layout DI → BPMN 2.0 XML via bpmn-moddle. */
 export function processToXml(process: Process, di: LayoutResult): string {
   const moddle = createModdle();
+  const registry = new Map<string, ModdleEl>();
+  const resolve = resolveOf(registry);
   const definitions = moddle.create('bpmn:Definitions', {
-    id: `Definitions_${process.id}`,
-    targetNamespace: 'http://bpmn.io/schema/bpmn',
+    id: process.definitions?.id ?? `Definitions_${process.id}`,
+    targetNamespace: process.definitions?.targetNamespace ?? 'http://bpmn.io/schema/bpmn',
+    ...(process.definitions?.exporter ? { exporter: process.definitions.exporter } : {}),
+    ...(process.definitions?.exporterVersion ? { exporterVersion: process.definitions.exporterVersion } : {}),
+    ...(process.definitions?.expressionLanguage ? { expressionLanguage: process.definitions.expressionLanguage } : {}),
+    ...(process.definitions?.typeLanguage ? { typeLanguage: process.definitions.typeLanguage } : {}),
   });
+  applyXmlns(definitions, process.definitions?.attrs);
+  registerEl(registry, definitions);
   const participants = process.participants ?? [];
   const lanes = process.lanes ?? [];
   const messageFlows = process.messageFlows ?? [];
   const peers = process.processes ?? [];
   const hasCollab = participants.length > 0;
 
+  for (const item of process.rootElements ?? []) {
+    const el = fromPlain(moddle, item, resolve);
+    registerTree(registry, el);
+    many(definitions, 'rootElements').push(el);
+  }
+
   const collabEl = hasCollab
     ? moddle.create('bpmn:Collaboration', { id: process.collaborationId ?? `Collaboration_${process.id}` })
     : undefined;
-  if (collabEl) many(definitions, 'rootElements').push(collabEl);
+  if (collabEl) {
+    registerEl(registry, collabEl);
+    many(definitions, 'rootElements').push(collabEl);
+  }
 
   const laneEls = new Map<string, ModdleEl>();
   const rootNodes = orderedNodes(process);
-  const root = writeGraph(moddle, process, lanes, rootNodes, laneEls);
+  const root = writeGraph(moddle, process, lanes, rootNodes, laneEls, resolve, registry);
   many(definitions, 'rootElements').push(root.processEl);
   const nodeEls = new Map(root.nodeEls);
   const flowEls = new Map(root.flowEls);
@@ -600,7 +813,7 @@ export function processToXml(process: Process, di: LayoutResult): string {
 
   for (const peer of peers) {
     const peerNodes = [...peer.nodes].sort((a, b) => a.id.localeCompare(b.id));
-    const written = writeGraph(moddle, peer, lanes, peerNodes, laneEls);
+    const written = writeGraph(moddle, peer, lanes, peerNodes, laneEls, resolve, registry);
     many(definitions, 'rootElements').push(written.processEl);
     processEls.set(peer.id, written.processEl);
     for (const [id, el] of written.nodeEls) nodeEls.set(id, el);
@@ -615,6 +828,7 @@ export function processToXml(process: Process, di: LayoutResult): string {
       const attrs: Record<string, unknown> = { id: part.id };
       if (part.name) attrs.name = part.name;
       const el = moddle.create('bpmn:Participant', attrs);
+      registerEl(registry, el);
       applyExt(moddle, el, part.extensionElements);
       const proc = part.processId ? processEls.get(part.processId) : undefined;
       if (proc) el.set('processRef', proc);
@@ -628,10 +842,12 @@ export function processToXml(process: Process, di: LayoutResult): string {
       const attrs: Record<string, unknown> = { id: mf.id, sourceRef: source, targetRef: target };
       if (mf.name) attrs.name = mf.name;
       const el = moddle.create('bpmn:MessageFlow', attrs);
+      registerEl(registry, el);
       applyExt(moddle, el, mf.extensionElements);
       many(collabEl, 'messageFlows').push(el);
       flowEls.set(mf.id, el);
     }
+    appendExtras(moddle, collabEl, process.collaborationArtifacts, resolve, registry);
   }
 
   const diagram = moddle.create('bpmndi:BPMNDiagram', { id: 'BPMNDiagram_1' });
@@ -667,6 +883,21 @@ export function processToXml(process: Process, di: LayoutResult): string {
   for (const mf of messageFlows) {
     const el = flowEls.get(mf.id);
     if (el) pushEdge(moddle, planeElement, di, mf.id, el);
+  }
+
+  const extraEls = [
+    ...(process.artifacts ?? []),
+    ...(process.collaborationArtifacts ?? []),
+    ...peers.flatMap((g) => g.artifacts ?? []),
+  ];
+  for (const item of extraEls) {
+    const id = typeof item.id === 'string' ? item.id : '';
+    if (!id) continue;
+    const el = registry.get(id);
+    if (!el) continue;
+    const type = String(item.$type ?? '');
+    if (type.endsWith(':Association')) pushEdge(moddle, planeElement, di, id, el);
+    else pushShape(moddle, planeElement, di, id, el);
   }
 
   return serializeDefinitions(definitions);
