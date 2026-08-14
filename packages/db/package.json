@@ -1,0 +1,25 @@
+{
+  "name": "@bpmn/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "migrate": "tsx src/migrate-cli.ts",
+    "generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "better-sqlite3": "^11.9.0",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.44.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2"
+  }
+}

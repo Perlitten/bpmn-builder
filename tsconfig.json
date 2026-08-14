@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@bpmn/*": ["packages/*/src/index.ts"]
+    }
+  },
+  "include": ["api/**/*.ts", "middleware.ts", "packages/**/*.ts"]
+}
