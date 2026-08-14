@@ -32,7 +32,8 @@ import {
 import { exportProcessXml, xmlToProcess } from '@bpmn/bpmn-adapter';
 import type { BpmnComponentDefinition } from '@bpmn/semantic-core';
 import type { FlowKind } from '../inspector/inspectorModel';
-import { participantSetKey, shouldFitCanvas } from '../fitCanvas';
+import type { InsertTarget } from '../palette/insertTarget';
+import { hasNewNodes, participantSetKey, shouldFitCanvas } from '../fitCanvas';
 import { dropSlot } from './dropSlot';
 
 /** Modeler instance is keyed by processId only. Autosave xml is an output. */
@@ -89,7 +90,8 @@ export function diagramImportError(error: unknown): Error {
   return next;
 }
 
-export type ImportXmlOptions = { fit?: boolean };
+/** `reveal` = this import added flow nodes, so an off-screen result must be brought into view. */
+export type ImportXmlOptions = { fit?: boolean; reveal?: boolean };
 
 export type DiagramWriter = {
   importXml: (xml: string, selectId?: string | string[], options?: ImportXmlOptions) => Promise<void>;
@@ -100,7 +102,7 @@ export type SemanticEditor = {
   process: () => Process;
   xml: () => string;
   bootstrap: () => Promise<string>;
-  create: (catalogId: string, afterId?: string) => Promise<{ id: string; xml: string }>;
+  create: (catalogId: string, afterId?: string, target?: InsertTarget) => Promise<{ id: string; xml: string }>;
   applyPlan: (tools: ToolCall[], scope?: AgentScope) => Promise<string>;
   applyProcess: (next: Process, selectId?: string) => Promise<string>;
   rename: (id: string, name: string) => string;
@@ -151,8 +153,9 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
     const next = xml();
     const nextSet = participantSetKey(process);
     const fit = shouldFitCanvas(displayedSet, nextSet);
+    const reveal = hasNewNodes(previous, process);
     try {
-      await writer.importXml(next, selectId, { fit });
+      await writer.importXml(next, selectId, { fit, reveal });
       displayedSet = nextSet;
       return next;
     } catch (error) {
@@ -175,10 +178,14 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
     async bootstrap() {
       return commit();
     },
-    async create(catalogId, afterId) {
+    async create(catalogId, afterId, target) {
       const previous = process;
       const place = createIntoLane(process, catalogId, afterId);
-      const applied = createFromComponent(process, catalogId, place.after ? { after: place.after } : {});
+      const applied = createFromComponent(process, catalogId, {
+        ...(place.after ? { after: place.after } : {}),
+        ...(target?.branchId ? { branchId: target.branchId } : {}),
+        ...(target?.onFlow ? { onFlow: target.onFlow } : {}),
+      });
       const next = place.laneId
         ? assignCreatedToLane(applied.process, applied.id, place.laneId)
         : applied.process;

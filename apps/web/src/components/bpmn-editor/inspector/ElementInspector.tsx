@@ -368,33 +368,32 @@ export function ElementInspector({
         {outgoing.length > 0 ? (
           <>
             <h3>Outgoing</h3>
-            {outgoing.map((flow) => {
-              const isDefault = isDefaultOutgoing(element, flow);
-              const targetName = flow.target ? elementName(flow.target) || flow.target.id : flow.id;
-              return (
-                <div key={flow.id} className="element-inspector-flow">
-                  <span className="element-inspector-flow-name">{targetName}</span>
-                  <label>
-                    <input
-                      type="radio"
-                      name={`default-${element.id}`}
-                      checked={isDefault}
-                      onChange={() => onDefaultOutgoing(flow.id)}
-                    />{' '}
-                    Default
-                  </label>
+            {outgoing.map((flow) => (
+              <div key={flow.id} className="element-inspector-flow">
+                <span className="element-inspector-flow-name">{flow.label}</span>
+                {flow.target ? (
+                  <span className="element-inspector-flow-target">to {flow.target}</span>
+                ) : null}
+                <label>
                   <input
-                    type="text"
-                    defaultValue={flow.businessObject?.conditionExpression?.body ?? ''}
-                    key={`${flow.id}:${flow.businessObject?.conditionExpression?.body ?? ''}`}
-                    placeholder="Condition"
-                    aria-label={`Condition for ${targetName}`}
-                    disabled={isDefault}
-                    onBlur={(event) => onCondition(flow.id, event.target.value)}
-                  />
-                </div>
-              );
-            })}
+                    type="radio"
+                    name={`default-${element.id}`}
+                    checked={flow.isDefault}
+                    onChange={() => onDefaultOutgoing(flow.id)}
+                  />{' '}
+                  Default
+                </label>
+                <input
+                  type="text"
+                  defaultValue={flow.condition}
+                  key={`${flow.id}:${flow.condition}`}
+                  placeholder="Condition"
+                  aria-label={`Condition for ${flow.label}`}
+                  disabled={flow.isDefault}
+                  onBlur={(event) => onCondition(flow.id, event.target.value)}
+                />
+              </div>
+            ))}
           </>
         ) : null}
 

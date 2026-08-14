@@ -9,7 +9,6 @@ import type {
   LayoutInput,
   LayoutLane,
   LayoutNode,
-  LayoutParticipant,
   LayoutResult,
   Point,
   SequenceFlow,
@@ -31,9 +30,14 @@ type Ctx = {
   flowGap: number;
 };
 
+/** Vertical band a lane owns. Height comes from lane content, never from pool/laneCount. */
+type LaneBand = { y: number; height: number };
+
+type GraphResult = { result: LayoutResult; bands: Map<string, LaneBand> };
+
 export function layout(input: LayoutInput): LayoutResult {
-  const inner = layoutGraph(input, collaborationFlowGap(input));
-  if (!hasCollaboration(input)) return inner;
+  const inner = layoutGraph(input, collaborationFlowGap(input), hostLanes(input));
+  if (!hasCollaboration(input)) return inner.result;
   return layoutCollaboration(input, inner);
 }
 
@@ -56,15 +60,18 @@ function collaborationFlowGap(input: LayoutInput): number {
 function layoutGraph(
   input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
   flowGap: number = TOKENS.forwardFlowGap,
-): LayoutResult {
+  lanes: LayoutLane[] = [],
+): GraphResult {
   const ctx = index(input, flowGap);
   const placed = new Map<string, Bounds>();
   placeChain(buildMainChain(input, ctx), ORIGIN_X, BASELINE_CY, placed, ctx);
   placeLooseEventSubprocesses(input.regions ?? [], placed, ctx);
   placeRemainder(input, placed, ctx);
-  const artifactEdges = placeArtifacts(input.artifacts ?? [], placed);
+  placeArtifacts(input.artifacts ?? [], placed);
+  /* Lane membership moves nodes vertically only; the canonical chain owns X. */
+  const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx) : new Map<string, LaneBand>();
 
-  const edges: LayoutResult['edges'] = { ...artifactEdges };
+  const edges: LayoutResult['edges'] = associationEdges(input.artifacts ?? [], placed);
   for (const flow of [...input.sequenceFlows].sort((a, b) => a.id.localeCompare(b.id))) {
     const from = placed.get(flow.source);
     const to = placed.get(flow.target);
@@ -72,14 +79,16 @@ function layoutGraph(
   }
   const shapes = sortRecord(placed);
   return {
-    shapes,
-    edges,
-    labels: collectLabels(input.nodes, input.sequenceFlows, shapes, edges),
+    result: {
+      shapes,
+      edges,
+      labels: collectLabels(input.nodes, input.sequenceFlows, shapes, edges),
+    },
+    bands,
   };
 }
 
-function bbox(shapes: Record<string, Bounds>, extra?: Record<string, Bounds>): Bounds | null {
-  const boxes = [...Object.values(shapes), ...Object.values(extra ?? {})];
+function unionBounds(boxes: Bounds[]): Bounds | null {
   if (!boxes.length) return null;
   let minX = Infinity;
   let minY = Infinity;
@@ -92,6 +101,182 @@ function bbox(shapes: Record<string, Bounds>, extra?: Record<string, Bounds>): B
     maxY = Math.max(maxY, b.y + b.height);
   }
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+function bbox(shapes: Record<string, Bounds>, extra?: Record<string, Bounds>): Bounds | null {
+  return unionBounds([...Object.values(shapes), ...Object.values(extra ?? {})]);
+}
+
+function intersects(a: Bounds, b: Bounds): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function ceilToGrid(value: number, grid = TOKENS.baseGrid): number {
+  return Math.ceil(value / grid) * grid;
+}
+
+/** Top-level lanes of one participant, in declaration order. */
+function topLanes(lanes: LayoutLane[], participantId: string): LayoutLane[] {
+  return lanes.filter((l) => l.participantId === participantId && !l.parentLaneId);
+}
+
+/** Lanes that band the root process: the host pool's, or every lane when there is no pool. */
+function hostLanes(input: LayoutInput): LayoutLane[] {
+  const top = (input.lanes ?? []).filter((l) => !l.parentLaneId);
+  if (!top.length) return [];
+  const participants = input.participants ?? [];
+  if (!participants.length) return top;
+  const host = participants.find((p) => p.processId != null && p.processId === input.processId);
+  return host ? topLanes(top, host.id) : [];
+}
+
+function bandStack(lanes: LayoutLane[], bands: Map<string, LaneBand>): Bounds | null {
+  const boxes = lanes
+    .map((lane) => bands.get(lane.id))
+    .filter((b): b is LaneBand => b != null)
+    .map((b) => ({ x: 0, y: b.y, width: 0, height: b.height }));
+  return unionBounds(boxes);
+}
+
+/**
+ * Groups that must keep their relative geometry when a lane band moves:
+ * subprocess contents follow their container, boundary events follow their host.
+ */
+function clusterOwners(
+  input: Pick<LayoutInput, 'nodes' | 'regions'>,
+  ctx: Ctx,
+): Map<string, string> {
+  const owner = new Map<string, string>();
+  const claim = (region: StructuredRegion, root: string): void => {
+    for (const branch of region.branches) {
+      for (const id of branch.nodes) if (id !== root && !owner.has(id)) owner.set(id, root);
+    }
+    for (const nested of region.nested ?? []) {
+      for (const id of [nested.split, nested.join]) {
+        if (id && id !== root && !owner.has(id)) owner.set(id, root);
+      }
+      claim(nested, root);
+    }
+  };
+  for (const region of flattenRegions(input.regions ?? [])) {
+    if (isContainerRegion(region, ctx) && !owner.has(region.split)) claim(region, region.split);
+  }
+  for (const node of input.nodes) {
+    if (node.attachedTo) owner.set(node.id, owner.get(node.attachedTo) ?? node.attachedTo);
+  }
+  return owner;
+}
+
+/** Lane index per placed shape: flowNodeRef first, then flow/association neighbours, then lane 1. */
+function laneIndexByShape(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
+  lanes: LayoutLane[],
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): Map<string, number> {
+  const owner = clusterOwners(input, ctx);
+  const rootOf = (id: string): string => owner.get(id) ?? id;
+  const laneOfCluster = new Map<string, number>();
+  lanes.forEach((lane, i) => {
+    for (const id of lane.nodeIds) if (rootOf(id) === id && !laneOfCluster.has(id)) laneOfCluster.set(id, i);
+  });
+  lanes.forEach((lane, i) => {
+    for (const id of lane.nodeIds) {
+      const root = rootOf(id);
+      if (!laneOfCluster.has(root)) laneOfCluster.set(root, i);
+    }
+  });
+
+  const links = [
+    ...input.sequenceFlows.map((f) => ({ id: f.id, source: f.source, target: f.target })),
+    ...(input.artifacts ?? [])
+      .filter((a) => a.kind === 'association' && a.source && a.target)
+      .map((a) => ({ id: a.id, source: a.source!, target: a.target! })),
+  ].sort((a, b) => a.id.localeCompare(b.id));
+  for (let pass = 0; pass <= links.length; pass++) {
+    let grew = false;
+    for (const link of links) {
+      const source = rootOf(link.source);
+      const target = rootOf(link.target);
+      const inSource = laneOfCluster.get(source);
+      const inTarget = laneOfCluster.get(target);
+      if (inSource != null && inTarget == null) {
+        laneOfCluster.set(target, inSource);
+        grew = true;
+      } else if (inTarget != null && inSource == null) {
+        laneOfCluster.set(source, inTarget);
+        grew = true;
+      }
+    }
+    if (!grew) break;
+  }
+
+  const out = new Map<string, number>();
+  for (const id of placed.keys()) out.set(id, laneOfCluster.get(rootOf(id)) ?? 0);
+  return out;
+}
+
+/**
+ * Moves every placed shape into the vertical band of the lane that claims it.
+ * Band height follows lane content (empty lanes keep `laneMinHeight`), never `pool / laneCount`.
+ */
+function applyLaneBands(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
+  lanes: LayoutLane[],
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): Map<string, LaneBand> {
+  const pad = TOKENS.poolPad;
+  const labels = collectLabels(input.nodes, [], sortRecord(placed), {});
+  const laneOf = laneIndexByShape(input, lanes, placed, ctx);
+  const members = lanes.map<string[]>(() => []);
+  for (const id of [...placed.keys()].sort((a, b) => a.localeCompare(b))) {
+    members[laneOf.get(id) ?? 0]!.push(id);
+  }
+  const content = members.map((ids) =>
+    unionBounds(ids.flatMap((id) => (labels[id] ? [placed.get(id)!, labels[id]!] : [placed.get(id)!]))),
+  );
+  const heightOf = (box: Bounds | null): number =>
+    Math.max(TOKENS.laneMinHeight, box ? ceilToGrid(box.height + 2 * pad) : 0);
+
+  const bands: LaneBand[] = new Array(lanes.length);
+  const anchor = content.findIndex((box) => box != null);
+  if (anchor === -1) {
+    let y = snapToGrid(BASELINE_CY - (lanes.length * TOKENS.laneMinHeight) / 2);
+    for (let i = 0; i < lanes.length; i++) {
+      bands[i] = { y, height: TOKENS.laneMinHeight };
+      y += TOKENS.laneMinHeight;
+    }
+    return new Map(lanes.map((lane, i) => [lane.id, bands[i]!]));
+  }
+
+  /* The first lane with content keeps its canonical Y; the rest stack around it. */
+  const anchorBox = content[anchor]!;
+  bands[anchor] = {
+    y: anchorBox.y - pad,
+    height: Math.max(TOKENS.laneMinHeight, anchorBox.height + 2 * pad),
+  };
+  let above = bands[anchor]!.y;
+  for (let i = anchor - 1; i >= 0; i--) {
+    const height = heightOf(content[i] ?? null);
+    above -= height;
+    bands[i] = { y: above, height };
+  }
+  let below = bands[anchor]!.y + bands[anchor]!.height;
+  for (let i = anchor + 1; i < lanes.length; i++) {
+    const height = heightOf(content[i] ?? null);
+    bands[i] = { y: below, height };
+    below += height;
+  }
+
+  for (let i = 0; i < lanes.length; i++) {
+    const box = content[i];
+    if (!box || i === anchor) continue;
+    const dy = snapToGrid(bands[i]!.y + bands[i]!.height / 2 - (box.y + box.height / 2));
+    if (!dy) continue;
+    for (const id of members[i]!) placed.get(id)!.y += dy;
+  }
+  return new Map(lanes.map((lane, i) => [lane.id, bands[i]!]));
 }
 
 function translateResult(result: LayoutResult, dx: number, dy: number): void {
@@ -120,7 +305,8 @@ function snapBoxOut(x: number, y: number, width: number, height: number): Bounds
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
-function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutResult {
+function layoutCollaboration(input: LayoutInput, root: GraphResult): LayoutResult {
+  const inner = root.result;
   const shapes = { ...inner.shapes };
   const edges = { ...inner.edges };
   const labels = { ...inner.labels };
@@ -161,20 +347,21 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
   for (const part of ordered) {
     const isHost = host != null && part.id === host.id && hostCore != null;
     const peer = part.processId ? peers.get(part.processId) : undefined;
+    const partLanes = topLanes(lanes, part.id);
+    let bands = isHost ? root.bands : new Map<string, LaneBand>();
     let pool: Bounds;
 
     if (isHost && hostCore) {
-      const emptyLanes = lanes.filter(
-        (l) => l.participantId === part.id && !l.parentLaneId && l.nodeIds.length === 0,
-      ).length;
+      /* Lanes own the pool height: the band stack, not content ÷ laneCount. */
+      const stack = bandStack(partLanes, bands);
       pool = {
         x: poolX,
-        y: hostCore.y,
+        y: stack ? stack.y : hostCore.y,
         width: commonWidth,
-        height: hostCore.height + emptyLanes * TOKENS.laneMinHeight,
+        height: stack ? stack.height : hostCore.height,
       };
     } else if (peer) {
-      const peerInner = layoutGraph(
+      const peerGraph = layoutGraph(
         {
           nodes: peer.nodes,
           sequenceFlows: peer.sequenceFlows,
@@ -182,15 +369,21 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
           artifacts: peer.artifacts,
         },
         TOKENS.poolInnerFlowGap,
+        partLanes,
       );
+      const peerInner = peerGraph.result;
       const peerBox = bbox(peerInner.shapes, peerInner.labels);
+      const stack = bandStack(partLanes, peerGraph.bands);
       if (!peerBox) {
         pool = { x: poolX, y: cursorY, width: commonWidth, height: TOKENS.blackBox.height };
       } else {
         const width = Math.max(commonWidth, header + pad + peerBox.width + pad);
-        const height = peerBox.height + 2 * pad;
+        const height = stack ? stack.height : peerBox.height + 2 * pad;
+        const dy = stack ? cursorY - stack.y : cursorY + pad - peerBox.y;
         pool = { x: poolX, y: cursorY, width, height };
-        translateResult(peerInner, pool.x + header + pad - peerBox.x, pool.y + pad - peerBox.y);
+        translateResult(peerInner, pool.x + header + pad - peerBox.x, dy);
+        for (const band of peerGraph.bands.values()) band.y += dy;
+        bands = peerGraph.bands;
         Object.assign(shapes, peerInner.shapes);
         Object.assign(edges, peerInner.edges);
         Object.assign(labels, peerInner.labels);
@@ -200,12 +393,12 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
     }
 
     shapes[part.id] = pool;
-    placeLanes(shapes, lanes, part, pool, header);
+    placeLanes(shapes, partLanes, pool, header, bands);
     cursorY = pool.y + pool.height + TOKENS.poolGap;
   }
 
   if (!participants.length) {
-    placeLanesOnly(shapes, lanes, content);
+    placeLanesOnly(shapes, lanes.filter((l) => !l.parentLaneId), content, root.bands);
   }
 
   messageFlows.forEach((mf, i) => {
@@ -226,55 +419,43 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
 
 function placeLanes(
   shapes: Record<string, Bounds>,
-  lanes: LayoutLane[],
-  part: LayoutParticipant,
+  top: LayoutLane[],
   pool: Bounds,
   header: number,
+  bands: Map<string, LaneBand>,
 ): void {
-  const top = lanes.filter((l) => l.participantId === part.id && !l.parentLaneId);
   if (!top.length) return;
-  const laneX = pool.x + header;
-  const laneW = pool.width - header;
-  const owned = top.filter((l) => l.nodeIds.length);
-  const empty = top.filter((l) => !l.nodeIds.length);
-  if (owned.length <= 1) {
-    const mainH = pool.height - empty.length * TOKENS.laneMinHeight;
-    let y = pool.y;
-    for (const lane of owned) {
-      shapes[lane.id] = { x: laneX, y, width: laneW, height: mainH };
-      y += mainH;
-    }
-    if (!owned.length) {
-      /* equal split of the whole pool when every lane is empty */
-      const h = pool.height / top.length;
-      for (const lane of top) {
-        shapes[lane.id] = { x: laneX, y, width: laneW, height: h };
-        y += h;
-      }
-      return;
-    }
-    for (const lane of empty) {
-      shapes[lane.id] = { x: laneX, y, width: laneW, height: TOKENS.laneMinHeight };
-      y += TOKENS.laneMinHeight;
+  stackLanes(shapes, top, { x: pool.x + header, y: pool.y, width: pool.width - header, height: pool.height }, bands);
+}
+
+function placeLanesOnly(
+  shapes: Record<string, Bounds>,
+  top: LayoutLane[],
+  content: Bounds | null,
+  bands: Map<string, LaneBand>,
+): void {
+  if (!top.length || !content) return;
+  stackLanes(shapes, top, content, bands);
+}
+
+/** Bands drive lane geometry; without them lanes split the box in whole pixels. */
+function stackLanes(
+  shapes: Record<string, Bounds>,
+  top: LayoutLane[],
+  box: Bounds,
+  bands: Map<string, LaneBand>,
+): void {
+  if (bands.size) {
+    for (const lane of top) {
+      const band = bands.get(lane.id);
+      if (band) shapes[lane.id] = { x: box.x, y: band.y, width: box.width, height: band.height };
     }
     return;
   }
-  const h = pool.height / top.length;
-  let y = pool.y;
-  for (const lane of top) {
-    shapes[lane.id] = { x: laneX, y, width: laneW, height: h };
-    y += h;
-  }
-}
-
-function placeLanesOnly(shapes: Record<string, Bounds>, lanes: LayoutLane[], content: Bounds | null): void {
-  const top = lanes.filter((l) => !l.parentLaneId);
-  if (!top.length || !content) return;
-  const h = content.height / top.length;
-  let y = content.y;
-  for (const lane of top) {
-    shapes[lane.id] = { x: content.x, y, width: content.width, height: h };
-    y += h;
+  for (let i = 0; i < top.length; i++) {
+    const y = box.y + Math.round((box.height * i) / top.length);
+    const next = box.y + Math.round((box.height * (i + 1)) / top.length);
+    shapes[top[i]!.id] = { x: box.x, y, width: box.width, height: next - y };
   }
 }
 
@@ -625,20 +806,22 @@ function artifactSize(kind: LayoutArtifact['kind']): { width: number; height: nu
   return { width: TOKENS.group.width, height: TOKENS.group.height };
 }
 
-function placeArtifacts(artifacts: LayoutArtifact[], placed: Map<string, Bounds>): Record<string, Point[]> {
+function placeArtifacts(artifacts: LayoutArtifact[], placed: Map<string, Bounds>): void {
   const shapes = artifacts
     .filter((item) => item.kind !== 'association' && item.id && !placed.has(item.id))
     .sort((a, b) => a.id.localeCompare(b.id));
-  if (shapes.length) {
-    const content = bbox(Object.fromEntries(placed));
-    let x = content?.x ?? ORIGIN_X;
-    const y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
-    for (const item of shapes) {
-      const size = artifactSize(item.kind);
-      placed.set(item.id, { x, y, width: size.width, height: size.height });
-      x += size.width + TOKENS.artifactGap;
-    }
+  if (!shapes.length) return;
+  const content = bbox(Object.fromEntries(placed));
+  let x = content?.x ?? ORIGIN_X;
+  const y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
+  for (const item of shapes) {
+    const size = artifactSize(item.kind);
+    placed.set(item.id, { x, y, width: size.width, height: size.height });
+    x += size.width + TOKENS.artifactGap;
   }
+}
+
+function associationEdges(artifacts: LayoutArtifact[], placed: Map<string, Bounds>): Record<string, Point[]> {
   const edges: Record<string, Point[]> = {};
   for (const item of artifacts.filter((a) => a.kind === 'association').sort((a, b) => a.id.localeCompare(b.id))) {
     if (!item.source || !item.target) continue;
@@ -853,13 +1036,27 @@ function collectLabels(
     const box = shapes[node.id];
     if (box) labels.set(node.id, externalLabelBox(box, name));
   }
-  for (const edge of namedEdges) {
+  const taken = [...labels.values()];
+  for (const edge of [...namedEdges].sort((a, b) => a.id.localeCompare(b.id))) {
     const name = edge.name?.trim();
     if (!name) continue;
     const points = edges[edge.id];
-    if (points?.length) labels.set(edge.id, flowLabelBox(points, name));
+    if (!points?.length) continue;
+    /* Branch labels ("Yes" / "No") share a midpoint when branches are short — stack them. */
+    const box = clearOfLabels(flowLabelBox(points, name), taken);
+    labels.set(edge.id, box);
+    taken.push(box);
   }
   return sortRecord(labels);
+}
+
+function clearOfLabels(box: Bounds, taken: Bounds[]): Bounds {
+  const step = TOKENS.label.height + TOKENS.baseGrid;
+  let out = box;
+  for (let i = 1; i <= 8 && taken.some((other) => intersects(out, other)); i++) {
+    out = { ...box, y: box.y + i * step };
+  }
+  return out;
 }
 
 function sortRecord<T>(placed: Map<string, T>): Record<string, T> {

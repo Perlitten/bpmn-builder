@@ -1,10 +1,12 @@
 import { type BpmnComponentDefinition } from '@bpmn/semantic-core';
 import type { DiagramElement } from '../diagramElement';
+import { editorNoticeText } from '../editorNotice';
 import { isActivity, isPoolOrLane, isSequenceFlowSource, SEQUENCE_FLOW_HINT } from './contextFilter';
 import { createKind } from './catalogPresentation';
+import type { InsertTarget } from './insertTarget';
 
 export type SemanticCreate = {
-  create: (catalogId: string, afterId?: string) => Promise<boolean>;
+  create: (catalogId: string, afterId?: string, target?: InsertTarget) => Promise<boolean>;
 };
 
 export type PickResult = { hint?: string };
@@ -13,10 +15,15 @@ export async function pickCatalogItem(
   item: BpmnComponentDefinition,
   source: DiagramElement | null,
   semantic: SemanticCreate,
+  target?: InsertTarget,
 ): Promise<PickResult | undefined> {
   if (!item.implemented) {
     return { hint: `${item.title} is not in the semantic first slice yet` };
   }
+
+  /** The branch / flow target only travels when the contextual `+` knows one. */
+  const create = (catalogId: string, afterId?: string) =>
+    target ? semantic.create(catalogId, afterId, target) : semantic.create(catalogId, afterId);
 
   const kind = createKind(item);
   if (kind === 'connect-sequence') {
@@ -25,10 +32,10 @@ export async function pickCatalogItem(
         return { hint: 'Select a sequence flow or a source with one outgoing flow' };
       }
       try {
-        const applied = await semantic.create(item.id, source.id);
+        const applied = await create(item.id, source.id);
         if (applied) return undefined;
       } catch (err) {
-        return { hint: err instanceof Error ? err.message : String(err) };
+        return { hint: editorNoticeText(err) };
       }
       return { hint: `${item.title} is not in the semantic first slice yet` };
     }
@@ -40,10 +47,10 @@ export async function pickCatalogItem(
       return { hint: 'Select an activity to attach a boundary event' };
     }
     try {
-      const applied = await semantic.create(item.id, source.id);
+      const applied = await create(item.id, source.id);
       if (applied) return undefined;
     } catch (err) {
-      return { hint: err instanceof Error ? err.message : String(err) };
+      return { hint: editorNoticeText(err) };
     }
     return { hint: `${item.title} is not in the semantic first slice yet` };
   }
@@ -53,10 +60,10 @@ export async function pickCatalogItem(
       return { hint: 'Select an element to associate with a text annotation' };
     }
     try {
-      const applied = await semantic.create(item.id, source.id);
+      const applied = await create(item.id, source.id);
       if (applied) return undefined;
     } catch (err) {
-      return { hint: err instanceof Error ? err.message : String(err) };
+      return { hint: editorNoticeText(err) };
     }
     return { hint: `${item.title} is not in the semantic first slice yet` };
   }
@@ -68,15 +75,18 @@ export async function pickCatalogItem(
     else if (source && isSequenceFlowSource(source)) afterId = source.id;
     else if (source?.type === 'bpmn:Lane' && item.canCreate({ parentBpmnType: 'bpmn:Lane' })) {
       afterId = source.id;
+    } else if (source?.type === 'bpmn:Participant') {
+      /* A selected pool is the insertion target: the kernel places into that pool's process. */
+      afterId = source.id;
     }
-    const applied = await semantic.create(item.id, afterId);
+    const applied = await create(item.id, afterId);
     if (applied) return undefined;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (/no semantic create op/i.test(message) || /unknown component/i.test(message)) {
       return { hint: `${item.title} is not in the semantic first slice yet` };
     }
-    return { hint: message };
+    return { hint: editorNoticeText(message) };
   }
   return { hint: `${item.title} is not in the semantic first slice yet` };
 }

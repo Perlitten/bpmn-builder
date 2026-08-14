@@ -3,7 +3,6 @@ import { bpmnComponentRegistry } from '@bpmn/semantic-core';
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronRight,
   Circle,
   Diamond,
   FileText,
@@ -198,7 +197,6 @@ export function CatalogFlyout({
                           <span className="palette-suggested-label">{label}</span>
                           <span className="palette-suggested-description">{entry.reason ?? description}</span>
                         </span>
-                        <ChevronRight size={16} aria-hidden />
                       </button>
                     </li>
                   );

@@ -1,10 +1,9 @@
 import { addAssociation, addDataObject, addDataStore, addGroup, addTextAnnotation, resolveAssociationEnds } from './artifacts.js';
 import { BPMN, TASK_TYPES } from './components/define.js';
 import { bpmnComponentRegistry } from './components/index.js';
-import { addLane, addMessageInteraction, addPool } from './collaboration.js';
+import { addLane, addMessageInteraction, addPool, applyInPool, poolTargetOf } from './collaboration.js';
 import { defaultInsertAfter, getNode, happyPathIds, isActivity, outgoingFlows } from './graph.js';
 import {
-  addAfter,
   addTask,
   attachBoundaryEvent,
   setEventDefinition,
@@ -34,6 +33,8 @@ export function createFromComponent(
   componentId: string,
   spec: {
     after?: string;
+    branchId?: string;
+    onFlow?: string;
     name?: string;
     from?: string;
     to?: string;
@@ -45,17 +46,29 @@ export function createFromComponent(
   const def = bpmnComponentRegistry.get(componentId);
   if (!def) throw new Error(`unknown component: ${componentId}`);
 
+  const placement = def.layoutBehavior.placement;
+  if (placement === 'flowNode' || placement === 'container') {
+    const pool = poolTargetOf(process, spec.after);
+    if (pool) {
+      return applyInPool(process, pool, (graph) =>
+        createFromComponent(graph, componentId, { ...spec, after: undefined }),
+      );
+    }
+  }
+
   const after = spec.after;
   const name = spec.name ?? def.title;
+  /** Semantic target of the insertion: node, gateway branch, or one sequence flow. */
+  const target = { after, branchId: spec.branchId, onFlow: spec.onFlow };
 
   if (TASK_SET.has(def.bpmnType) || def.bpmnType === BPMN.callActivity) {
-    const place = {
+    return addTask(process, {
+      ...target,
       name,
       bpmnType: def.bpmnType,
       type: 'task' as const,
       ...(spec.calledElement && def.bpmnType === BPMN.callActivity ? { calledElement: spec.calledElement } : {}),
-    };
-    return after ? addAfter(process, after, place) : addTask(process, place);
+    });
   }
 
   if (componentId === 'start.none') throw new Error('A process already has a start event');
@@ -101,8 +114,8 @@ export function createFromComponent(
   }
 
   if (def.bpmnType === BPMN.catch && def.eventDefinition && CATCH_DEFS.has(def.eventDefinition)) {
-    const splitAfter = after ?? defaultInsertAfter(process);
-    return addAfter(process, splitAfter, {
+    return addTask(process, {
+      ...target,
       name,
       type: 'intermediateCatch',
       bpmnType: BPMN.catch,
@@ -119,7 +132,7 @@ export function createFromComponent(
   }
 
   if (componentId === 'flow.conditional' || componentId === 'flow.default') {
-    const flowId = resolveSequenceFlow(process, after, spec.from);
+    const flowId = spec.onFlow ?? resolveSequenceFlow(process, after, spec.from);
     return setFlowKind(
       process,
       flowId,
@@ -140,15 +153,14 @@ export function createFromComponent(
   }
   if (componentId === 'artifact.group') return addGroup(process, { name });
 
-  const splitAfter = after ?? defaultInsertAfter(process);
-  if (componentId === 'gateway.exclusive') return splitExclusive(process, { after: splitAfter, name });
-  if (componentId === 'gateway.parallel') return splitParallel(process, { after: splitAfter, name });
-  if (componentId === 'gateway.inclusive') return splitInclusive(process, { after: splitAfter, name });
-  if (componentId === 'gateway.eventBased') return splitEventBased(process, { after: splitAfter, name });
-  if (componentId === 'gateway.complex') return splitComplex(process, { after: splitAfter, name });
+  if (componentId === 'gateway.exclusive') return splitExclusive(process, { ...target, name });
+  if (componentId === 'gateway.parallel') return splitParallel(process, { ...target, name });
+  if (componentId === 'gateway.inclusive') return splitInclusive(process, { ...target, name });
+  if (componentId === 'gateway.eventBased') return splitEventBased(process, { ...target, name });
+  if (componentId === 'gateway.complex') return splitComplex(process, { ...target, name });
 
   if (componentId === 'activity.subProcess' || componentId === 'activity.transaction' || componentId === 'activity.adHocSubProcess') {
-    return addSubProcess(process, { after: splitAfter, name, bpmnType: def.bpmnType });
+    return addSubProcess(process, { ...target, name, bpmnType: def.bpmnType });
   }
   if (componentId === 'activity.eventSubProcess') {
     const parent =

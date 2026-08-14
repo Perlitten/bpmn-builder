@@ -17,3 +17,12 @@ export function shouldFitCanvas(previousKey: string | undefined, nextKey: string
 export function shouldApplyFit(alreadyFitted: boolean, participantSetChanged: boolean): boolean {
   return !alreadyFitted || participantSetChanged;
 }
+
+type NodeSet = { nodes: ReadonlyArray<{ id: string }> };
+
+/** True when the commit introduced flow nodes — a rename or a move never does. */
+export function hasNewNodes(previous: NodeSet | undefined, next: NodeSet): boolean {
+  if (!previous) return false;
+  const before = new Set(previous.nodes.map((node) => node.id));
+  return next.nodes.some((node) => !before.has(node.id));
+}

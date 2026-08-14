@@ -72,6 +72,27 @@ describe('palette keyboard a11y', () => {
     expect(css).toMatch(/\.palette-rail-btn\.is-tool-active[\s\S]*?color:\s*var\(--color-canvas\)/);
   });
 
+  it('treats Suggested rows as pick-to-create, not submenu chevrons', () => {
+    const html = renderToStaticMarkup(
+      createElement(CatalogFlyout, {
+        view: 'home',
+        query: '',
+        selection: null,
+        hasParticipant: false,
+        onQueryChange: noop,
+        onViewChange: noop,
+        onPick: noop,
+        onClose: noop,
+      }),
+    );
+    expect(html).toContain('palette-suggested');
+    expect(html).toMatch(/<button[^>]*class="palette-suggested-item is-highlighted"/);
+    expect(html).toContain('Add Task');
+    expect(html).not.toMatch(/lucide-chevron-right/);
+    expect(html).not.toContain('ChevronRight');
+    expect(hasNestedButtons(html)).toBe(false);
+  });
+
   it('renders catalog rows as buttons so keyboard can create', () => {
     const html = renderToStaticMarkup(
       createElement(CatalogFlyout, {
@@ -88,6 +109,7 @@ describe('palette keyboard a11y', () => {
     expect(html).toMatch(/<button[^>]*class="palette-item"/);
     expect(html).toContain('Task');
     expect(html).not.toMatch(/<div[^>]*class="palette-item"/);
+    expect(html).not.toMatch(/lucide-chevron-right/);
     expect(hasNestedButtons(html)).toBe(false);
   });
 

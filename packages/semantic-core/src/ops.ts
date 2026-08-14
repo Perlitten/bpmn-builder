@@ -1,3 +1,4 @@
+import { syncProcessName } from './collaboration.js';
 import { bpmnComponentRegistry } from './components/index.js';
 import { rebuildStructure } from './detect.js';
 import {
@@ -9,8 +10,10 @@ import {
   findRegion,
   flowAfter,
   flowBefore,
+  getFlow,
   getNode,
   incomingFlows,
+  insertionFlow,
   insertOnFlow,
   isActivity,
   makeNode,
@@ -19,6 +22,7 @@ import {
   scopeOf,
 } from './graph.js';
 import { nextId } from './ids.js';
+import type { InsertSpec } from './graph.js';
 import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, Process } from './types.js';
 
 function apply(prev: Process, fn: (draft: Process) => string): Applied {
@@ -108,8 +112,21 @@ export function addBefore(process: Process, beforeId: string, spec: PlaceSpec = 
   });
 }
 
+/** Split one named sequence flow — the precise target when a `+` sits on an edge. */
+export function addOnFlow(process: Process, flowId: string, spec: PlaceSpec = {}): Applied {
+  return apply(process, (draft) => {
+    const type = placeType(spec);
+    if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
+    if (type === 'end') throw new Error('cannot insert an end with an outgoing flow');
+    const node = makeNode(draft, type, placeName(spec), spec.id, spec.bpmnType, placeExtra(spec));
+    insertOnFlow(draft, getFlow(draft, flowId).id, node);
+    return node.id;
+  });
+}
+
 export function addTask(process: Process, spec: PlaceSpec = {}): Applied {
   if (spec.before) return addBefore(process, spec.before, spec);
+  if (spec.onFlow) return addOnFlow(process, spec.onFlow, spec);
   if (spec.after) return addAfter(process, spec.after, spec);
   if (spec.branchId) {
     const { afterId, branchId } = branchTailAfter(process, spec.branchId);
@@ -158,6 +175,7 @@ export function renameElement(process: Process, id: string, name: string): Appli
     const participant = (draft.participants ?? []).find((p) => p.id === id);
     if (participant) {
       participant.name = name;
+      syncProcessName(draft, participant, name);
       return id;
     }
     const lane = (draft.lanes ?? []).find((l) => l.id === id);
@@ -197,12 +215,7 @@ function catchEventDefinition(name: string, index: number): string {
 
 function splitGateway(
   process: Process,
-  spec: {
-    after: string;
-    kind: GatewayKind;
-    name?: string;
-    branches?: Array<{ name: string; id?: string }>;
-  },
+  spec: SplitSpec & { kind: GatewayKind },
 ): Applied {
   const branches = spec.branches ?? defaultSplitBranches(spec.kind);
   if (branches.length < 2) throw new Error(`split ${spec.kind} needs 2+ branches`);
@@ -210,7 +223,7 @@ function splitGateway(
   const joinType: FlowNodeType = spec.kind === 'eventBased' ? 'exclusiveGateway' : splitType;
   return apply(process, (draft) => {
     const split = makeNode(draft, splitType, spec.name ?? '');
-    insertOnFlow(draft, flowAfter(draft, spec.after).id, split);
+    insertOnFlow(draft, insertionFlow(draft, spec).id, split);
     const join = makeNode(draft, joinType, '');
     insertOnFlow(draft, outgoingFlows(draft, split.id)[0].id, join);
     const first = outgoingFlows(draft, split.id)[0];
@@ -254,38 +267,26 @@ function splitGateway(
   });
 }
 
-export function splitExclusive(
-  process: Process,
-  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
-): Applied {
+/** Where the split lands: after a node, on a gateway branch, or on one named flow. */
+export type SplitSpec = InsertSpec & { name?: string; branches?: Array<{ name: string; id?: string }> };
+
+export function splitExclusive(process: Process, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'exclusive' });
 }
 
-export function splitParallel(
-  process: Process,
-  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
-): Applied {
+export function splitParallel(process: Process, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'parallel' });
 }
 
-export function splitInclusive(
-  process: Process,
-  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
-): Applied {
+export function splitInclusive(process: Process, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'inclusive' });
 }
 
-export function splitEventBased(
-  process: Process,
-  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
-): Applied {
+export function splitEventBased(process: Process, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'eventBased' });
 }
 
-export function splitComplex(
-  process: Process,
-  spec: { after: string; name?: string; branches?: Array<{ name: string; id?: string }> },
-): Applied {
+export function splitComplex(process: Process, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'complex' });
 }
 

@@ -1,4 +1,4 @@
-import { addLane, addMessageInteraction, addPool, addTask, attachBoundaryTimer, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
+import { addLane, addMessageInteraction, addPool, addTask, assignLane, attachBoundaryTimer, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { layout, layoutProcess } from './layout.js';
 import { centerY, isOrthogonal } from './route.js';
@@ -179,6 +179,21 @@ function unmatchedNestedXor(): LayoutInput {
       { id: 'f_t10_e3', source: 't10', target: 'end3' },
     ],
   };
+}
+
+/** Requester / Manager / Finance, with Review assigned to Manager and Finance left empty. */
+function threeLanes() {
+  let p = createProcess();
+  p = addTask(p, { name: 'Submit' }).process;
+  p = addLane(p, { name: 'Requester' }).process;
+  p = addLane(p, { name: 'Manager' }).process;
+  p = addLane(p, { name: 'Finance' }).process;
+  p = addTask(p, { name: 'Review' }).process;
+  const oneLane = layoutProcess(p);
+  p = assignLane(p, p.nodes.find((n) => n.name === 'Review')!.id, p.lanes[1]!.id).process;
+  const node = (name: string) => p.nodes.find((n) => n.name === name)!.id;
+  const lane = (name: string) => p.lanes.find((l) => l.name === name)!.id;
+  return { process: p, di: layoutProcess(p), oneLane, node, lane };
 }
 
 describe('layout', () => {
@@ -558,6 +573,72 @@ describe('layout', () => {
     expect(centerY(result.shapes.catchC!)).toBe(centerY(result.shapes.c!));
     expect(result.shapes.a!.y).toBeGreaterThan(result.shapes.main!.y);
     allOrthogonal(result);
+  });
+
+  it('puts every node in the band of the lane that claims it', () => {
+    const { process, di, oneLane, lane, node } = threeLanes();
+    const requester = di.shapes[lane('Requester')]!;
+    const manager = di.shapes[lane('Manager')]!;
+    const finance = di.shapes[lane('Finance')]!;
+    expectDistinctBands([requester, manager, finance]);
+
+    for (const band of process.lanes) {
+      const box = di.shapes[band.id]!;
+      for (const id of band.nodeIds) {
+        const shape = di.shapes[id]!;
+        expect(shape.y, `${id} above ${band.name}`).toBeGreaterThanOrEqual(box.y);
+        expect(shape.y + shape.height, `${id} below ${band.name}`).toBeLessThanOrEqual(box.y + box.height);
+      }
+    }
+    /* the reported blocker: a Manager task drawn inside the Requester band */
+    const review = di.shapes[node('Review')]!;
+    expect(review.y).toBeGreaterThanOrEqual(manager.y);
+    expect(review.y + review.height).toBeLessThanOrEqual(manager.y + manager.height);
+    expect(review.y).toBeGreaterThan(requester.y + requester.height);
+    /* only the band moves: X still comes from the canonical chain */
+    for (const name of ['Submit', 'Review']) {
+      expect(di.shapes[node(name)]!.x, name).toBe(oneLane.shapes[node(name)]!.x);
+    }
+    allOrthogonal(di);
+  });
+
+  it('keeps an empty lane as a visible band and the pool as the band stack', () => {
+    const { process, di, lane } = threeLanes();
+    const finance = di.shapes[lane('Finance')]!;
+    expect(finance.height).toBeGreaterThanOrEqual(TOKENS.laneMinHeight);
+    const pool = di.shapes[process.participants[0]!.id]!;
+    const bands = process.lanes.map((l) => di.shapes[l.id]!);
+    expect(bands[0]!.y).toBe(pool.y);
+    expect(bands.at(-1)!.y + bands.at(-1)!.height).toBe(pool.y + pool.height);
+    expect(bands.reduce((sum, b) => sum + b.height, 0)).toBe(pool.height);
+    for (const band of bands) expect(band.x).toBe(pool.x + TOKENS.poolHeader);
+  });
+
+  it('emits whole-pixel lane geometry, never pool height ÷ lane count', () => {
+    const { di } = threeLanes();
+    for (const [id, box] of Object.entries(di.shapes)) {
+      for (const [key, value] of Object.entries(box)) {
+        expect(Number.isInteger(value), `${id}.${key} = ${value}`).toBe(true);
+      }
+    }
+    for (const [id, box] of Object.entries(di.labels)) {
+      for (const [key, value] of Object.entries(box)) {
+        expect(Number.isInteger(value), `${id}.${key} = ${value}`).toBe(true);
+      }
+    }
+  });
+
+  it('separates the two XOR branch labels instead of stacking them on one point', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'A' }).process;
+    p = splitExclusive(p, { after: p.nodes.find((n) => n.name === 'A')!.id }).process;
+    const named = p.flows.filter((f) => f.name);
+    expect(named.map((f) => f.name)).toEqual(['Yes', 'No']);
+    const di = layoutProcess(p);
+    const [yes, no] = named.map((f) => di.labels[f.id]!);
+    expect(yes).toBeDefined();
+    expect(no).toBeDefined();
+    expect(overlaps(yes!, no!)).toBe(false);
   });
 
   it('places data objects and annotations with canonical DI, not imported XY', () => {

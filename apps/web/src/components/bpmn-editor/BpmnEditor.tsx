@@ -224,7 +224,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     setCanDelete(next ? canDeleteElement(modeler, next) : false);
     const registry = modeler.get('elementRegistry') as { filter: (fn: (el: DiagramElement) => boolean) => unknown[] };
     setHasParticipant(registry.filter((el) => el.type === 'bpmn:Participant').length > 0);
-    if (next && isSequenceFlowSource(next) && host) {
+    if (next && (isSequenceFlowSource(next) || isSequenceFlowElement(next)) && host) {
       setAnchor(gfxAnchor(modeler, next, host));
     } else {
       setAnchor(null);

@@ -241,6 +241,8 @@ export type PlaceSpec = {
   after?: string;
   before?: string;
   branchId?: string;
+  /** Sequence flow to split. Wins over `after` / `branchId` when the target edge is known. */
+  onFlow?: string;
   type?: FlowNodeType;
   bpmnType?: string;
   componentId?: string;

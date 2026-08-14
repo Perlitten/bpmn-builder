@@ -1,5 +1,5 @@
 import { rebuildStructure } from './detect.js';
-import { allRegions, defaultInsertAfter, flowAfter, getNode, incomingFlows, innerScope, insertOnFlow, makeNode, outgoingFlows, rootScope, scopeOf } from './graph.js';
+import { allRegions, getNode, incomingFlows, innerScope, insertionFlow, insertOnFlow, makeNode, outgoingFlows, rootScope, scopeOf } from './graph.js';
 import { nextId } from './ids.js';
 import type { Applied, PlaceSpec, Process, StructuredRegion } from './types.js';
 
@@ -71,9 +71,8 @@ function resolveParentScope(draft: Process, parent?: string) {
 /** Insert an expanded embedded subprocess on a sequence (inner start → end). */
 export function addSubProcess(process: Process, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
-    const afterId = spec.after ?? defaultInsertAfter(draft);
     const node = makeNode(draft, 'subProcess', spec.name ?? 'Subprocess', spec.id, spec.bpmnType ?? 'bpmn:SubProcess');
-    insertOnFlow(draft, flowAfter(draft, afterId, spec.branchId).id, node);
+    insertOnFlow(draft, insertionFlow(draft, spec).id, node);
     seedInnerProcess(draft, node.id, false);
     return node.id;
   });

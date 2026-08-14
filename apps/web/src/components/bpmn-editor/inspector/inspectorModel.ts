@@ -260,3 +260,26 @@ export function flowNodeLaneAssignment(
 export function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {
   return (element.outgoing ?? []).filter((flow) => flow.type === 'bpmn:SequenceFlow');
 }
+
+export type OutgoingFlowRow = {
+  id: string;
+  /** Flow name — the branch answer ("Yes" / "No"). Falls back to the target, never to a raw id first. */
+  label: string;
+  target?: string;
+  isDefault: boolean;
+  condition: string;
+};
+
+export function outgoingFlowRows(element: DiagramElement): OutgoingFlowRow[] {
+  return outgoingSequenceFlows(element).map((flow) => {
+    const target = flow.target ? elementName(flow.target).trim() || flow.target.id : '';
+    const label = elementName(flow).trim() || target || flow.id;
+    return {
+      id: flow.id,
+      label,
+      ...(target && target !== label ? { target } : {}),
+      isDefault: isDefaultOutgoing(element, flow),
+      condition: flow.businessObject?.conditionExpression?.body ?? '',
+    };
+  });
+}

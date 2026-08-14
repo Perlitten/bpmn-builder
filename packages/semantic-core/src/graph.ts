@@ -245,3 +245,34 @@ export function branchTailAfter(p: Process, branchId: string): { afterId: string
   const afterId = branch.nodeIds.length ? branch.nodeIds[branch.nodeIds.length - 1] : region.split;
   return { afterId, branchId };
 }
+
+/** Semantic insertion target: a flow, a branch, or a node. Never coordinates. */
+export type InsertSpec = { after?: string; branchId?: string; onFlow?: string };
+
+/** The sequence flow a create must split for `spec`. */
+export function insertionFlow(p: Process, spec: InsertSpec): SequenceFlow {
+  if (spec.onFlow) return getFlow(p, spec.onFlow);
+  if (spec.branchId && !spec.after) {
+    const tail = branchTailAfter(p, spec.branchId);
+    return flowAfter(p, tail.afterId, tail.branchId);
+  }
+  return flowAfter(p, spec.after ?? defaultInsertAfter(p), spec.branchId);
+}
+
+export type BranchTarget = { flowId: string; branchId?: string; label: string };
+
+/**
+ * Continuations leaving `nodeId`, one per outgoing sequence flow, named like the branch.
+ * The editor offers these when `flowAfter` alone would be ambiguous.
+ */
+export function branchTargetsAfter(p: Process, nodeId: string): BranchTarget[] {
+  const regions = allRegions(p).filter((region) => region.split === nodeId);
+  return outgoingFlows(p, nodeId)
+    .filter((flow) => !flow.exception)
+    .map((flow, index) => {
+      const branch = regions.flatMap((region) => region.branches).find((item) => item.entryFlowId === flow.id);
+      const target = p.nodes.find((node) => node.id === flow.target);
+      const label = branch?.name?.trim() || flow.name?.trim() || target?.name?.trim() || `Path ${index + 1}`;
+      return { flowId: flow.id, ...(branch ? { branchId: branch.id } : {}), label };
+    });
+}

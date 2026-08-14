@@ -25,8 +25,11 @@ export type {
 export { DEFAULT_BPMN_TYPE, FEEDBACK, FLOW_NODE_TYPES, UNSTRUCTURED } from './types.js';
 
 export { detectStructure } from './detect.js';
+export type { BranchTarget, InsertSpec } from './graph.js';
 export {
   allRegions,
+  branchTailAfter,
+  branchTargetsAfter,
   defaultInsertAfter,
   findBranch,
   findRegion,
@@ -35,6 +38,7 @@ export {
   happyPathIds,
   incomingFlows,
   innerScope,
+  insertionFlow,
   isActivity,
   isEventSubProcess,
   isSubProcess,
@@ -43,10 +47,12 @@ export {
   scopeOf,
   successors,
 } from './graph.js';
+export type { SplitSpec } from './ops.js';
 export {
   addAfter,
   addBefore,
   addBranch,
+  addOnFlow,
   addTask,
   attachBoundaryTimer,
   attachBoundaryEvent,
@@ -85,7 +91,7 @@ export {
   setTimerDuration,
 } from './preserve.js';
 export type { MultiInstanceSpec } from './preserve.js';
-export { addLane, addMessageInteraction, addPool, assignLane } from './collaboration.js';
+export { addLane, addMessageInteraction, addPool, applyInPool, assignLane, poolTargetOf } from './collaboration.js';
 export { addSubProcess, createEventSubprocess, wrapInSubprocess } from './subprocess.js';
 export { addAssociation, addDataObject, addDataStore, addGroup, addTextAnnotation, resolveAssociationEnds } from './artifacts.js';
 export { createFromComponent } from './create.js';

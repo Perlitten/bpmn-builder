@@ -1,7 +1,8 @@
 import { rebuildStructure } from './detect.js';
 import { getNode } from './graph.js';
 import { nextId } from './ids.js';
-import type { Applied, Lane, Participant, Process, ProcessGraph } from './types.js';
+import { DEFAULT_BPMN_TYPE } from './types.js';
+import type { Applied, FlowNode, Lane, Participant, Process, ProcessGraph, SequenceFlow } from './types.js';
 
 function apply(prev: Process, fn: (draft: Process) => string): Applied {
   const draft = structuredClone(prev);
@@ -42,6 +43,122 @@ function ensureHostPool(draft: Process): Participant {
   };
   draft.participants.unshift(host);
   return host;
+}
+
+function asGraph(source: Process | ProcessGraph): ProcessGraph {
+  return {
+    id: source.id,
+    name: source.name,
+    rootScopeId: source.rootScopeId,
+    scopes: source.scopes,
+    nodes: source.nodes,
+    flows: source.flows,
+    regions: source.regions,
+    unstructured: source.unstructured,
+    feedback: source.feedback,
+    exceptionBranches: source.exceptionBranches,
+    ...(source.extensionElements ? { extensionElements: source.extensionElements } : {}),
+    ...(source.isExecutable != null ? { isExecutable: source.isExecutable } : {}),
+    ...(source.artifacts ? { artifacts: source.artifacts } : {}),
+    ...(source.bpmnPreserve ? { bpmnPreserve: source.bpmnPreserve } : {}),
+  };
+}
+
+/** Peer graph seen as a Process so kernel ops run unchanged. Ids stay unique across the collaboration. */
+function poolView(draft: Process, peer: ProcessGraph): Process {
+  return {
+    ...asGraph(peer),
+    idSeq: draft.idSeq,
+    ...(draft.collaborationId ? { collaborationId: draft.collaborationId } : {}),
+    participants: draft.participants,
+    lanes: draft.lanes.filter((lane) => lane.processId === peer.id),
+    messageFlows: draft.messageFlows,
+    processes: [asGraph(draft), ...draft.processes.filter((graph) => graph.id !== peer.id)],
+  };
+}
+
+function mergePool(draft: Process, peerId: string, result: Process): void {
+  const index = draft.processes.findIndex((graph) => graph.id === peerId);
+  const graph = asGraph(result);
+  if (index >= 0) draft.processes[index] = graph;
+  else draft.processes.push(graph);
+  draft.idSeq = result.idSeq;
+  draft.participants = result.participants;
+  draft.messageFlows = result.messageFlows;
+  draft.lanes = [...draft.lanes.filter((lane) => lane.processId !== peerId), ...result.lanes];
+}
+
+/** A pool the user filled by hand is no longer a black box: give it Start → End to insert between. */
+function seedPool(draft: Process, peer: ProcessGraph): void {
+  if (peer.nodes.length) return;
+  if (!peer.scopes.length) {
+    peer.rootScopeId = nextId(draft, 'Scope');
+    peer.scopes.push({ id: peer.rootScopeId, parentId: null, ownerId: null, nodeIds: [], flowIds: [] });
+  }
+  const start: FlowNode = {
+    id: nextId(draft, 'StartEvent'),
+    type: 'start',
+    name: 'Start',
+    bpmnType: DEFAULT_BPMN_TYPE.start,
+  };
+  const end: FlowNode = {
+    id: nextId(draft, 'EndEvent'),
+    type: 'end',
+    name: 'End',
+    bpmnType: DEFAULT_BPMN_TYPE.end,
+  };
+  const flow: SequenceFlow = { id: nextId(draft, 'SequenceFlow'), source: start.id, target: end.id };
+  peer.nodes.push(start, end);
+  peer.flows.push(flow);
+  const scope = peer.scopes.find((item) => item.id === peer.rootScopeId) ?? peer.scopes[0]!;
+  scope.nodeIds.push(start.id, end.id);
+  scope.flowIds.push(flow.id);
+}
+
+/** Pool a selection means for insertion: a participant, a lane, or nothing. */
+export function poolTargetOf(process: Process, id: string | undefined): string | undefined {
+  if (!id) return undefined;
+  const lane = (process.lanes ?? []).find((item) => item.id === id);
+  const participantId = lane?.participantId ?? id;
+  return (process.participants ?? []).some((part) => part.id === participantId) ? participantId : undefined;
+}
+
+/**
+ * Runs a kernel op inside the process owned by `participantId` instead of the host process.
+ * Materialises a process for a black-box pool and seeds Start → End for an empty one.
+ */
+export function applyInPool(
+  process: Process,
+  participantId: string,
+  run: (graph: Process) => Applied,
+): Applied {
+  const participant = (process.participants ?? []).find((part) => part.id === participantId);
+  if (!participant) throw new Error(`unknown participant: ${participantId}`);
+  if (participant.processId === process.id) return run(process);
+  return apply(process, (draft) => {
+    const owner = draft.participants.find((part) => part.id === participantId)!;
+    let peer = draft.processes.find((graph) => graph.id === owner.processId);
+    if (!peer) {
+      peer = emptyPeerGraph(draft, owner.name || 'Pool');
+      draft.processes.push(peer);
+      owner.processId = peer.id;
+    }
+    seedPool(draft, peer);
+    const applied = run(poolView(draft, peer));
+    mergePool(draft, peer.id, applied.process);
+    return applied.id;
+  });
+}
+
+/** Pool label is the source of truth: the process it references follows the participant name. */
+export function syncProcessName(draft: Process, participant: Participant, name: string): void {
+  if (!participant.processId) return;
+  if (participant.processId === draft.id) {
+    draft.name = name;
+    return;
+  }
+  const peer = (draft.processes ?? []).find((graph) => graph.id === participant.processId);
+  if (peer) peer.name = name;
 }
 
 function nodeIdsForProcess(draft: Process, processId: string): string[] {
