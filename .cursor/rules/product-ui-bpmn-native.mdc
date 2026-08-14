@@ -1,0 +1,55 @@
+---
+description: HARD product-UI for apps/web — BPMN-native, never generic SaaS/Miro. Ban board/canvas-as-product copy.
+globs: apps/web/**
+alwaysApply: true
+---
+
+# Product UI is BPMN-native (not generic SaaS)
+
+`apps/web` is a **semantic BPMN 2.0 editor**. Users edit **semantics**. Layout is canonical/derived. Never sell Miro. Details: `ARCHITECTURE.md`. Catalog: `.cursor/rules/semantic-component-library.mdc`.
+
+## Litmus test (HARD)
+
+Every prominent element must expose a BPMN-specific capability (process, gateway, lane, compliance, XML, quality). If the screen could be a CRM, whiteboard, PM, or notes app after relabeling, the design has **FAILED**.
+
+```
+❌ "Your boards" + search + pastel cards + "Create"
+✅ Process list with BPMN previews, rule findings, NL → process
+```
+
+## Forbidden product copy
+
+Never: **board**, infinite canvas (as a promise), freeform, drag anywhere, flow buddy, cute mascot-as-brand.
+
+Say: process, model, diagram, BPMN — never “start a board”.
+
+## Editor chrome (HARD)
+
+Compact left rail is **navigation into a semantic catalog**, not a shape strip.
+
+```
+❌ Clone/extend bpmn-js PaletteProvider (hand/lasso/space/connect + 10 generics; rest in Replace menu)
+❌ 50-icon SAP toolbar
+❌ Space Tool (create/remove space) — layout owns geometry
+❌ Global connect as free Visio arrows
+✅ Select, Pan, Add, then Events / Activities / Gateways / Flows / Participants / Data / Artifacts
+✅ Searchable catalog + contextual + + agent — one BpmnComponentRegistry
+```
+
+Unimplemented catalog rows stay visible in search, disabled, with a reason — never hidden only inside bpmn-js.
+
+## Domain honesty
+
+Do not invent product entities ahead of architecture. No Draft / Published / Archived (or similar lifecycle chrome) unless those statuses exist in the domain/API.
+
+## Tone and chrome
+
+Strict, systemic, engineering, BPMN-native (Linear × Figma × JetBrains). Less radius, less shadow, fewer pills, dense hierarchy, mono + one accent.
+
+## Home in 10 seconds
+
+Must communicate: (1) real BPMN artifacts (2) quality/status (3) NL process creation (4) not a drawing tool.
+
+## Hygiene
+
+Delete dead UI you replace. Never `open http://` or launch the user’s OS browser.

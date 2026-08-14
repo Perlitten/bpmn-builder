@@ -1,0 +1,50 @@
+---
+description: Semantic BPMN 2.0 Builder north star — not a board or free-form canvas; coordinates are derived.
+alwaysApply: true
+---
+
+# Semantic BPMN editor (not a canvas)
+
+This product is a **semantic BPMN 2.0 editor**. Users and agents edit process **structure**. Geometry is a compiler output. Details: `ARCHITECTURE.md`. Product UI: `.cursor/rules/product-ui-bpmn-native.mdc`. Component vocabulary: `.cursor/rules/semantic-component-library.mdc`.
+
+**Banned product language:** board, infinite canvas (as a promise), freeform drawing, drag-anywhere. Never sell Miro / draw.io. Users edit semantics; layout is canonical.
+
+## Pipeline (source of truth → render)
+
+`Intent → Semantic Process Graph → validation → Structured Layout → BPMN DI → render`
+
+Coordinates, waypoints, and alignment are **OUTPUT**. Users and AI **MUST NOT** set or persist BPMN DI XY as intent. Drag means `moveAfter` / `moveToBranch` / `assignLane`, never `x=637`.
+
+## Five rule layers (keep separate)
+
+1. BPMN 2.0.2 compliance (invalid model)
+2. Execution profile (Camunda 8 / Zeebe / neutral)
+3. Modeling style (explicit gateways, happy path, naming)
+4. Geometry (grid, gaps, orthogonal routing)
+5. Quality heuristics (complexity, mixed abstraction)
+
+Do not dump these into one lint bag.
+
+## LLM / agent
+
+- **MUST NOT** emit BPMN XML or coordinates.
+- **MUST** call semantic tools only (`addTask`, `splitExclusive`, `moveToBranch`, …), resolved through `BpmnComponentRegistry` — never a private agent type list.
+- Mutations are atomic undoable transactions, scoped (process / subprocess / region / branch / selection).
+- Build the agent **last**, on a proven semantic API. Never let AI be the only editor path.
+
+## Build order (do not skip)
+
+semantic kernel → structured regions → canonical layout → rule engine → editor interactions → **then** agent
+
+## First creatable slice
+
+Start, End, Task (task types as registry entries), XOR / AND / OR / Event-based, Sequence / conditional / default flow, Subprocess, Boundary Timer / Error, Pool, Lane, Message Flow.
+
+Full catalog lives in `BpmnComponentRegistry`. Unsupported entries stay searchable (`semanticMeaning`) with `canCreate=false`. Unknown BPMN **round-trips safely** (stable IDs, preserve `extensionElements`). Do not invent kernel ops for the full BPMN surface yet. Do not hide types only in bpmn-js replace menus.
+
+## Code
+
+- Atomic components + design tokens. Delete dead code you replace.
+- Core packages (`semantic-core`, `layout-engine`, `rules`, agent tools) **must not** depend on UI state. `apps/web` is a consumer.
+- Do not fight parallel UI work (header, templates, list). Do not turn the diagram into draw.io or a **board**. Do not clone bpmn-js `PaletteProvider` or ship **Space Tool**.
+- **Never** `open http://` or launch the user’s OS browser.

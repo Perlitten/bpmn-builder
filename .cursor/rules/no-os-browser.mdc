@@ -1,0 +1,22 @@
+---
+description: Never open the user's OS browser; preview via Cursor Simple Browser / Glass only
+alwaysApply: true
+---
+
+# Preview in Cursor only
+
+Never open http(s) URLs in Safari, Chrome, or any other OS browser.
+
+Do not run:
+
+- `open http://...` / `open https://...` (macOS)
+- `xdg-open` / `start` for web URLs
+- Playwright, Puppeteer, or system Chrome that appears as the user's browser
+
+How to preview:
+
+1. Call MCP `cursor-app-control` → `open_resource` with the http(s) URI (Cursor Simple Browser / Glass).
+2. If that fails with `unknown agent` (common for subagents), do **not** fall back to the OS browser. Have the parent/main agent call `open_resource`, or ask the user to open Simple Browser inside Cursor.
+3. Do not use `cursor --open-url vscode://vscode.simple-browser/...` — it tries to install an extension and does not open a preview. Cursor CLI has no `--open` flag for Simple Browser.
+
+Never "just open it in the browser" via the OS.

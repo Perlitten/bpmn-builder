@@ -1,0 +1,43 @@
+---
+description: Semantic Component Library — one BpmnComponentRegistry; compact catalog not a bpmn-js SAP toolbar; no Space Tool.
+alwaysApply: true
+---
+
+# Semantic Component Library
+
+Do **not** clone or extend default bpmn-js `PaletteProvider` into a 50-icon SAP toolbar. Types must not exist only in bpmn-js Replace/Change menu. Spec: `ARCHITECTURE.md`.
+
+## One registry
+
+`BpmnComponentRegistry` is the vocabulary for UI, agent, validation, and layout. No second list in `apps/web`.
+
+```
+❌ PaletteProvider.getPaletteEntries() + 50 create-icons / replace-menu-only types
+✅ Rail → catalog.search / listByCategory → semantic create(id, context)
+```
+
+## Compact toolbar = catalog navigation
+
+Select, Pan, Add, then category doors: Events / Activities / Gateways / Flows / Participants / Data / Artifacts. A category opens a searchable grouped catalog — not a flat icon strip.
+
+## Three creation paths (same registry)
+
+1. Palette catalog — user picks a BPMN construction
+2. Contextual `+` — only `canCreate(context)` continuations; Decision maps to XOR / OR / AND / Event-based
+3. Agent tools — same ids / semantic API (`addTask`, `splitExclusive`, …)
+
+## Context + geometry
+
+- Filter by context (cancel end only inside a transaction).
+- Ban **Space Tool** and other free-form geometry tools. Layout owns space.
+- Global connect picks a legal BPMN flow (sequence / message / …) and a **canonical** route — not Visio arrows.
+
+## First creatable slice
+
+`canCreate=true`: Start, End, Task (task types as registry entries), XOR / AND / OR / Event-based, Sequence / conditional / default flow, Subprocess, Boundary timer / error, Pool, Lane, Message flow.
+
+All other catalog entries stay listed and searchable (`semanticMeaning`) with `canCreate=false` until the kernel supports them.
+
+## Acceptance
+
+Every supported component is discoverable, searchable, creatable via semantic API, available to the agent, context-validated, and known to layout.
