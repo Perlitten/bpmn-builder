@@ -1,7 +1,22 @@
 import { useState } from 'react';
-import { ArrowLeft, Ellipsis, PlayCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Ellipsis,
+  FileCode,
+  FileImage,
+  FileText,
+  LayoutTemplate,
+  PlayCircle,
+  RotateCcw,
+  Undo2,
+  type LucideIcon,
+} from 'lucide-react';
 import { Button, ChromeMenu, ChromeMenuItem, ConfirmDialog, SaveStatus, TextField } from '../ui';
 import { useCompactViewport } from '../bpmn-editor/compactViewport';
+
+function MenuIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return <Icon size={14} strokeWidth={1.75} aria-hidden />;
+}
 
 type EditorChromeProps = {
   name: string;
@@ -82,7 +97,12 @@ export function EditorChrome({
       ) : null}
       {notice && !compact ? <span className="max-w-[10rem] truncate text-xs text-accent">{notice}</span> : null}
       {simulating && simStatus && !compact ? (
-        <span className="hidden font-mono text-xs text-muted lg:inline">{simStatus}</span>
+        <span
+          className="hidden min-w-0 max-w-[min(28rem,40vw)] truncate font-mono text-xs text-ink sm:inline"
+          title={simStatus}
+        >
+          {simStatus}
+        </span>
       ) : null}
       <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
         <Button
@@ -90,7 +110,18 @@ export function EditorChrome({
           size="sm"
           disabled={busy}
           aria-pressed={simulating}
-          aria-label={simulating ? 'Stop token simulation' : 'Simulate tokens'}
+          aria-label={
+            simulating
+              ? simStatus
+                ? `Stop token simulation. ${simStatus}`
+                : 'Stop token simulation'
+              : 'Simulate BPMN tokens on the process'
+          }
+          title={
+            simulating
+              ? (simStatus ?? 'Token simulation on')
+              : 'Play a BPMN token through the process'
+          }
           onClick={onToggleSimulate}
         >
           <PlayCircle size={14} aria-hidden />
@@ -106,20 +137,26 @@ export function EditorChrome({
             </>
           }
         >
-          {simulating ? <ChromeMenuItem onSelect={onResetSimulation}>Reset tokens</ChromeMenuItem> : null}
-          <ChromeMenuItem onSelect={onExport}>Download BPMN</ChromeMenuItem>
-          <ChromeMenuItem disabled={busy} onSelect={onExportSvg}>
+          {simulating ? (
+            <ChromeMenuItem icon={<MenuIcon icon={Undo2} />} onSelect={onResetSimulation}>
+              Reset tokens
+            </ChromeMenuItem>
+          ) : null}
+          <ChromeMenuItem icon={<MenuIcon icon={FileCode} />} onSelect={onExport}>
+            Download BPMN
+          </ChromeMenuItem>
+          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={FileImage} />} onSelect={onExportSvg}>
             Download diagram
             <span className="text-[11px] font-normal text-muted">SVG · vector</span>
           </ChromeMenuItem>
-          <ChromeMenuItem disabled={busy} onSelect={onExportPdf}>
+          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={FileText} />} onSelect={onExportPdf}>
             Download diagram
             <span className="text-[11px] font-normal text-muted">PDF · printable</span>
           </ChromeMenuItem>
-          <ChromeMenuItem disabled={busy} onSelect={onSaveTemplate}>
+          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={LayoutTemplate} />} onSelect={onSaveTemplate}>
             Save as template
           </ChromeMenuItem>
-          <ChromeMenuItem disabled={busy} onSelect={() => setConfirmClear(true)}>
+          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={RotateCcw} />} onSelect={() => setConfirmClear(true)}>
             Reset process
           </ChromeMenuItem>
         </ChromeMenu>

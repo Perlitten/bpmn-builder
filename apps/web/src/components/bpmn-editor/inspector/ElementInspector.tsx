@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allFindings, suggestName, type LintResult } from '@bpmn/rules';
 import { bpmnComponentRegistry, type BpmnComponentDefinition } from '@bpmn/semantic-core';
 import { ScoreChips } from '../../lint/ScoreChips';
 import { isActivity } from '../palette/contextFilter';
 import { iconClassFor } from '../palette/catalogPresentation';
 import type { DiagramElement } from '../diagramElement';
+import { createInspectorCreateGate } from './inspectorCreateGesture';
 import {
   attachActions,
   changeToOptions,
@@ -13,8 +14,12 @@ import {
   flowKind,
   type FlowKind,
   isDefaultOutgoing,
+  isLaneElement,
+  isParticipant,
   isXorOr,
   outgoingSequenceFlows,
+  poolLaneCreate,
+  type PoolLaneRow,
 } from './inspectorModel';
 import { nameContextFromElement } from './nameContext';
 import './inspector.css';
@@ -26,13 +31,48 @@ type ElementInspectorProps = {
   framed?: boolean;
   replaceWorks: (def: BpmnComponentDefinition) => boolean;
   onRename: (name: string) => void;
+  onRenameLane?: (laneId: string, name: string) => void;
   onChangeTo: (def: BpmnComponentDefinition) => void;
   onDelete: () => void;
   onFlowKind: (kind: FlowKind) => void;
   onCondition: (flowId: string, body: string) => void;
   onDefaultOutgoing: (flowId: string) => void;
   onAttach: (def: BpmnComponentDefinition) => void;
+  onCreate: (def: BpmnComponentDefinition) => void;
+  poolLanes?: PoolLaneRow[];
 };
+
+function LaneNameField({
+  laneId,
+  name: initial,
+  onRename,
+}: {
+  laneId: string;
+  name: string;
+  onRename?: (laneId: string, name: string) => void;
+}) {
+  const [name, setName] = useState(initial);
+  useEffect(() => {
+    setName(initial);
+  }, [laneId, initial]);
+  return (
+    <label>
+      <span className="sr-only">Lane name</span>
+      <input
+        type="text"
+        value={name}
+        aria-label="Lane name"
+        onChange={(event) => setName(event.target.value)}
+        onBlur={() => {
+          if (name !== initial) onRename?.(laneId, name);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur();
+        }}
+      />
+    </label>
+  );
+}
 
 export function ElementInspector({
   element,
@@ -41,16 +81,20 @@ export function ElementInspector({
   framed = true,
   replaceWorks,
   onRename,
+  onRenameLane,
   onChangeTo,
   onDelete,
   onFlowKind,
   onCondition,
   onDefaultOutgoing,
   onAttach,
+  onCreate,
+  poolLanes = [],
 }: ElementInspectorProps) {
   const registry = bpmnComponentRegistry;
   const [query, setQuery] = useState('');
   const [name, setName] = useState(elementName(element));
+  const addLaneGate = useRef(createInspectorCreateGate());
   const currentId = currentComponentId(registry, element);
   const current = currentId ? registry.get(currentId) : undefined;
   const options = useMemo(
@@ -58,6 +102,8 @@ export function ElementInspector({
     [element, query, replaceWorks, registry],
   );
   const attach = isActivity(element) ? attachActions(registry, element) : [];
+  const poolLane = poolLaneCreate(registry, element);
+  const showReplace = !isParticipant(element) && !isLaneElement(element);
   const isFlow = element.type === 'bpmn:SequenceFlow';
   const kind = isFlow ? flowKind(element) : null;
   const outgoing = isXorOr(element.type) ? outgoingSequenceFlows(element) : [];
@@ -69,6 +115,7 @@ export function ElementInspector({
   useEffect(() => {
     setQuery('');
     setName(elementName(element));
+    addLaneGate.current.reset();
   }, [element.id]);
 
   useEffect(() => {
@@ -127,7 +174,44 @@ export function ElementInspector({
           </>
         ) : null}
 
-        {options.length > 0 || query.trim() ? (
+        {poolLane ? (
+          <>
+            <h3>Lanes</h3>
+            {poolLanes.length === 0 ? (
+              <p className="element-inspector-empty">No lanes yet</p>
+            ) : (
+              <ul className="element-inspector-lanes">
+                {poolLanes.map((lane) => (
+                  <li key={lane.id}>
+                    <LaneNameField laneId={lane.id} name={lane.name} onRename={onRenameLane} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="element-inspector-action"
+              disabled={!poolLane.enabled}
+              title={poolLane.reason ?? 'Add a swimlane in this pool'}
+              aria-label="Add lane to this pool"
+              onPointerDown={(event) => {
+                if (!addLaneGate.current.pointerDown(event.button)) return;
+                event.stopPropagation();
+                onCreate(poolLane.def);
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!addLaneGate.current.click(event.detail)) return;
+                onCreate(poolLane.def);
+              }}
+            >
+              Add lane
+            </button>
+          </>
+        ) : null}
+
+        {showReplace && (options.length > 0 || query.trim()) ? (
           <>
             <h3>Change to</h3>
             <label>

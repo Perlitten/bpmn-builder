@@ -11,10 +11,24 @@ export class ProcessValidationError extends Error {
   }
 }
 
+export class ProcessConflictError extends Error {
+  readonly currentVersion: number;
+
+  constructor(currentVersion: number) {
+    super('version conflict');
+    this.name = 'ProcessConflictError';
+    this.currentVersion = currentVersion;
+  }
+}
+
 export function sendProcessError(res: Response, error: unknown, fallback: string): void {
   if (error instanceof ProcessValidationError) {
     res.status(400).json({ error: error.message, issues: error.issues });
     return;
   }
-  res.status(500).json({ error: error instanceof Error ? error.message : fallback });
+  if (error instanceof ProcessConflictError) {
+    res.status(409).json({ error: error.message, currentVersion: error.currentVersion });
+    return;
+  }
+  res.status(500).json({ error: fallback });
 }

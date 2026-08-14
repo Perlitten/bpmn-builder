@@ -1,6 +1,7 @@
-import { isToolPlanError } from '../../../agent-tools/src/index.js';
+import { isToolPlanError, userFacingPlanError } from '../../../agent-tools/src/index.js';
 import type { Application, Request, Response } from 'express';
-import { friendlyAiError, isConfigError } from '../ai/errors.js';
+import { friendlyAiError, isConfigError, isUpstreamError } from '../ai/errors.js';
+import { isGreetingMessage } from '../ai/greeting.js';
 import { getAiClient, getAiProviderInfo } from '../ai/provider.js';
 import { runAssistant } from '../ai/runAssistant.js';
 import {
@@ -42,8 +43,9 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
       return;
     }
 
+    const greeting = !hasTools && isGreetingMessage(message);
     const info = getAiProviderInfo();
-    if (!hasTools && !info.configured) {
+    if (!hasTools && !greeting && !info.configured) {
       sendJson(res, 503, {
         error: 'AI agent is not configured. Add the selected provider API key and restart the server.',
         configured: false,
@@ -69,7 +71,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     };
     res.once('close', onClose);
 
-    const work = runAssistant(hasTools ? null : getClient(), {
+    const work = runAssistant(hasTools || greeting ? null : getClient(), {
       message,
       tools,
       history: parseHistory(req.body?.history),
@@ -98,7 +100,11 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
         return;
       }
       if (isToolPlanError(error)) {
-        sendJson(res, 400, { error: error.message });
+        sendJson(res, 400, { error: userFacingPlanError(error.message) });
+        return;
+      }
+      if (isUpstreamError(error)) {
+        sendJson(res, 502, { error: friendlyAiError(error) });
         return;
       }
       const status = isConfigError(error) ? 503 : 500;

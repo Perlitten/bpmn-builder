@@ -64,6 +64,14 @@ describe('pickCatalogItem', () => {
     expect(create).toHaveBeenCalledWith('participant.lane', 'Participant_1');
 
     create.mockClear();
+    await pickCatalogItem(def('participant.lane'), { id: 'Activity_1', type: 'bpmn:Task' }, { create });
+    expect(create).toHaveBeenCalledWith('participant.lane', undefined);
+
+    create.mockClear();
+    await pickCatalogItem(def('participant.lane'), null, { create });
+    expect(create).toHaveBeenCalledWith('participant.lane', undefined);
+
+    create.mockClear();
     const result = await pickCatalogItem(def('flow.message'), null, { create });
     expect(create).toHaveBeenCalledWith('flow.message', undefined);
     expect(result).toBeUndefined();

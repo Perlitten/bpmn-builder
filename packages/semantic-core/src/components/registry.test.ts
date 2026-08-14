@@ -86,7 +86,7 @@ describe('BpmnComponentRegistry', () => {
     expect(canCreate('gateway.exclusive', {})).toBe(true);
     expect(canCreate('flow.sequence', {})).toBe(true);
     expect(canCreate('participant.pool', {})).toBe(true);
-    expect(canCreate('participant.lane', {})).toBe(false);
+    expect(canCreate('participant.lane', {})).toBe(true);
     expect(canCreate('flow.message', {})).toBe(false);
     expect(canCreate('start.none', { inEventSubProcess: true })).toBe(false);
     expect(canCreate('no-such-component', {})).toBe(false);

@@ -15,6 +15,7 @@ import {
   type ListTab,
 } from '../components/process-list/listTabs';
 import { ProcessRow } from '../components/process-list/ProcessRow';
+import { DuplicateProcessDialog } from '../components/process-list/DuplicateProcessDialog';
 import { RenameProcessDialog } from '../components/process-list/RenameProcessDialog';
 import { draftNameFromTemplate, TemplatesSection } from '../components/process-list/TemplatesSection';
 import { Button } from '../components/ui/Button';
@@ -51,6 +52,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const [importFailure, setImportFailure] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ file: File; xml: string } | null>(null);
   const [renameTarget, setRenameTarget] = useState<ProcessSummary | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<ProcessSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProcessSummary | null>(null);
   const [rowActionBusy, setRowActionBusy] = useState(false);
   const [rowActionError, setRowActionError] = useState<string | null>(null);
@@ -164,7 +166,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     setRowActionBusy(true);
     setRowActionError(null);
     try {
-      const renamed = await api.renameProcess(renameTarget.id, name);
+      const renamed = await api.renameProcess(renameTarget.id, name, renameTarget.version);
       setProcesses((current) => current.map((process) =>
         process.id === renamed.id
           ? { ...process, name: renamed.name, updatedAt: renamed.updatedAt, version: renamed.version }
@@ -174,6 +176,21 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
       setReloadToken((current) => current + 1);
     } catch (err) {
       setRowActionError(err instanceof Error ? err.message : 'Failed to rename process');
+    } finally {
+      setRowActionBusy(false);
+    }
+  };
+
+  const handleDuplicate = async (name: string) => {
+    if (!duplicateTarget) return;
+    setRowActionBusy(true);
+    setRowActionError(null);
+    try {
+      await api.duplicateProcess(duplicateTarget.id, name);
+      setDuplicateTarget(null);
+      setReloadToken((current) => current + 1);
+    } catch (err) {
+      setRowActionError(err instanceof Error ? err.message : 'Failed to duplicate process');
     } finally {
       setRowActionBusy(false);
     }
@@ -326,7 +343,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         {initialLoading ? (
           <div>
             {[0, 1, 2, 3].map((key) => (
-              <div key={key} className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+              <div key={key} className="flex items-center gap-3 border-b border-border px-4 py-3">
                 <Skeleton className="h-3 w-40 rounded-sm" />
                 <Skeleton className="h-3 flex-1 rounded-sm" />
                 <Skeleton className="h-3 w-16 rounded-sm" />
@@ -374,6 +391,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
                 process={process}
                 onOpen={onOpenProcess}
                 onRename={setRenameTarget}
+                onDuplicate={setDuplicateTarget}
                 onDelete={setDeleteTarget}
               />
             ))}
@@ -409,6 +427,18 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         onClose={() => {
           if (rowActionBusy) return;
           setRenameTarget(null);
+          setRowActionError(null);
+        }}
+      />
+
+      <DuplicateProcessDialog
+        process={duplicateTarget}
+        busy={rowActionBusy}
+        error={duplicateTarget ? rowActionError : null}
+        onConfirm={(name) => void handleDuplicate(name)}
+        onClose={() => {
+          if (rowActionBusy) return;
+          setDuplicateTarget(null);
           setRowActionError(null);
         }}
       />

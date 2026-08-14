@@ -68,12 +68,44 @@ describe('compact editor chrome', () => {
     expect(html).not.toMatch(/>Save as template</);
   });
 
+  it('puts a lucide icon on every More overflow row', () => {
+    const src = readFileSync(join(dir, '../shell/EditorChrome.tsx'), 'utf8');
+    expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileCode\}[\s\S]*?Download BPMN/);
+    expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileImage\}[\s\S]*?SVG · vector/);
+    expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileText\}[\s\S]*?PDF · printable/);
+    expect(src).toMatch(/icon=\{<MenuIcon icon=\{LayoutTemplate\}[\s\S]*?Save as template/);
+    expect(src).toMatch(/icon=\{<MenuIcon icon=\{RotateCcw\}[\s\S]*?Reset process/);
+    expect(src).not.toMatch(/text-danger[\s\S]*Reset process|Reset process[\s\S]*text-danger/);
+  });
+
   it('uses the same predictable action hierarchy on desktop', () => {
     const html = renderToStaticMarkup(createElement(EditorChrome, { ...chromeProps, compact: false }));
     expect(html).toContain('Simulate');
     expect(html).toMatch(/aria-label="More editor actions"/);
     expect(html).not.toContain('Save draft');
     expect(html).not.toContain('Clear');
+  });
+
+  it('shows token simulation status while simulating', () => {
+    const status = 'Token on Review — click a sequence flow to choose XOR branch';
+    const html = renderToStaticMarkup(
+      createElement(EditorChrome, {
+        ...chromeProps,
+        compact: false,
+        simulating: true,
+        simStatus: status,
+      }),
+    );
+    expect(html).toContain(status);
+    expect(html).toContain('Stop');
+    expect(html).toMatch(/sm:inline/);
+    expect(html).not.toMatch(/lg:inline/);
+    const css = readFileSync(join(dir, '../../index.css'), 'utf8');
+    expect(css).toMatch(/sim-choice/);
+    expect(css).toMatch(/stroke-dasharray/);
+    expect(css).toMatch(/sim-click/);
+    const palette = readFileSync(join(dir, 'palette/palette.css'), 'utf8');
+    expect(palette).toMatch(/\.palette-hint\.is-sim/);
   });
 
   it('gives zoom controls a focus-visible ring', () => {

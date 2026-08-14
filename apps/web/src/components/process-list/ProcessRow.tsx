@@ -16,6 +16,7 @@ type ProcessRowProps = {
   process: ProcessSummary;
   onOpen: (id: string) => void;
   onRename?: (process: ProcessSummary) => void;
+  onDuplicate?: (process: ProcessSummary) => void;
   onDelete?: (process: ProcessSummary) => void;
 };
 
@@ -44,7 +45,7 @@ function analyzeRow(xml: string): RowAnalysis {
   return result;
 }
 
-export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, onDelete }: ProcessRowProps) {
+export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, onDuplicate, onDelete }: ProcessRowProps) {
   const now = useSyncExternalStore(
     subscribeRelativeTime,
     relativeTimeSnapshot,
@@ -52,20 +53,20 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
   );
   const { lint, structure } = analyzeRow(process.bpmnXml);
   const quality = listQualitySignal(lint);
-  const actions = Boolean(onRename || onDelete);
+  const actions = Boolean(onRename || onDuplicate || onDelete);
 
   return (
     <div className="relative border-b border-border">
       <button
         type="button"
-        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 px-4 py-2 text-left hover:bg-surface ${actions ? 'pr-14' : ''}`}
+        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-surface ${actions ? 'pr-16' : ''}`}
         onClick={() => onOpen(process.id)}
       >
         <span className="min-w-0 truncate text-sm font-medium text-ink">{process.name}</span>
         <time
           dateTime={process.updatedAt}
           title={absoluteTime(process.updatedAt)}
-          className="whitespace-nowrap text-[11px] text-muted"
+          className="whitespace-nowrap pt-0.5 text-[11px] text-muted"
         >
           {relativeTime(process.updatedAt, now)}
         </time>
@@ -79,9 +80,10 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
         </span>
       </button>
       {actions ? (
-        <div className="absolute right-2 top-1.5">
+        <div className="absolute right-2 top-2.5">
           <ChromeMenu label="•••" ariaLabel={`Actions for ${process.name}`}>
             {onRename ? <ChromeMenuItem onSelect={() => onRename(process)}>Rename</ChromeMenuItem> : null}
+            {onDuplicate ? <ChromeMenuItem onSelect={() => onDuplicate(process)}>Duplicate</ChromeMenuItem> : null}
             {onDelete ? <ChromeMenuItem onSelect={() => onDelete(process)}>Delete</ChromeMenuItem> : null}
           </ChromeMenu>
         </div>

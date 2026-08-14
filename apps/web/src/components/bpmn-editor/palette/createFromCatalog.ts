@@ -1,6 +1,6 @@
 import { type BpmnComponentDefinition } from '@bpmn/semantic-core';
 import type { DiagramElement } from '../diagramElement';
-import { isActivity, isSequenceFlowSource, SEQUENCE_FLOW_HINT } from './contextFilter';
+import { isActivity, isPoolOrLane, isSequenceFlowSource, SEQUENCE_FLOW_HINT } from './contextFilter';
 import { createKind } from './catalogPresentation';
 
 export type SemanticCreate = {
@@ -37,12 +37,10 @@ export async function pickCatalogItem(
   }
 
   try {
-    const afterId =
-      kind === 'lane' || kind === 'connect-message' || kind === 'participant'
-        ? source?.id
-        : source && isSequenceFlowSource(source)
-          ? source.id
-          : undefined;
+    let afterId: string | undefined;
+    if (kind === 'lane') afterId = isPoolOrLane(source) ? source.id : undefined;
+    else if (kind === 'connect-message' || kind === 'participant') afterId = source?.id;
+    else if (source && isSequenceFlowSource(source)) afterId = source.id;
     const applied = await semantic.create(item.id, afterId);
     if (applied) return undefined;
   } catch (err) {

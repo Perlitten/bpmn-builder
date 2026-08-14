@@ -183,4 +183,12 @@ describe('ProcessListPage', () => {
     expect(html).toContain('Name Z–A');
     expect(html).not.toContain('aria-pressed');
   });
+
+  it('does not show the duplicate dialog until the user confirms from the row menu', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+    );
+    expect(html).not.toContain('Duplicate process');
+    expect(html).not.toContain('Make a copy');
+  });
 });

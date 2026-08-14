@@ -3,6 +3,7 @@ export type LayoutNode = {
   type: string;
   name?: string;
   triggeredByEvent?: boolean;
+  attachedTo?: string;
 };
 
 export type SequenceFlow = {

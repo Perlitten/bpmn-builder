@@ -27,10 +27,11 @@ type Ctx = {
   regionBySplit: Map<string, StructuredRegion>;
   topLevelBySplit: Map<string, StructuredRegion>;
   interior: Set<string>;
+  flowGap: number;
 };
 
 export function layout(input: LayoutInput): LayoutResult {
-  const inner = layoutGraph(input);
+  const inner = layoutGraph(input, collaborationFlowGap(input));
   if (!hasCollaboration(input)) return inner;
   return layoutCollaboration(input, inner);
 }
@@ -47,11 +48,19 @@ function hasCollaboration(input: LayoutInput): boolean {
   );
 }
 
-function layoutGraph(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>): LayoutResult {
-  const ctx = index(input);
+function collaborationFlowGap(input: LayoutInput): number {
+  return hasCollaboration(input) ? TOKENS.poolInnerFlowGap : TOKENS.forwardFlowGap;
+}
+
+function layoutGraph(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>,
+  flowGap: number = TOKENS.forwardFlowGap,
+): LayoutResult {
+  const ctx = index(input, flowGap);
   const placed = new Map<string, Bounds>();
   placeChain(buildMainChain(input, ctx), ORIGIN_X, BASELINE_CY, placed, ctx);
   placeLooseEventSubprocesses(input.regions ?? [], placed, ctx);
+  placeRemainder(input, placed, ctx);
 
   const edges: LayoutResult['edges'] = {};
   for (const flow of [...input.sequenceFlows].sort((a, b) => a.id.localeCompare(b.id))) {
@@ -100,6 +109,15 @@ function translateResult(result: LayoutResult, dx: number, dy: number): void {
   }
 }
 
+function snapBoxOut(x: number, y: number, width: number, height: number): Bounds {
+  const grid = TOKENS.baseGrid;
+  const x0 = Math.floor(x / grid) * grid;
+  const y0 = Math.floor(y / grid) * grid;
+  const x1 = Math.ceil((x + width) / grid) * grid;
+  const y1 = Math.ceil((y + height) / grid) * grid;
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
 function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutResult {
   const shapes = { ...inner.shapes };
   const edges = { ...inner.edges };
@@ -121,40 +139,54 @@ function layoutCollaboration(input: LayoutInput, inner: LayoutResult): LayoutRes
 
   let poolX = ORIGIN_X;
   let commonWidth: number = TOKENS.blackBox.width;
+  let hostCore: Bounds | null = null;
   if (content) {
-    poolX = snapToGrid(content.x - header - pad);
-    commonWidth = Math.max(commonWidth, header + pad + content.width + pad);
+    hostCore = snapBoxOut(
+      content.x - header - pad,
+      content.y - pad,
+      header + pad + content.width + pad,
+      content.height + 2 * pad,
+    );
+    poolX = hostCore.x;
+    commonWidth = Math.max(commonWidth, hostCore.width);
   }
 
   const host = participants.find((p) => p.processId != null && p.processId === rootId);
   const ordered = host ? [host, ...participants.filter((p) => p.id !== host.id)] : participants;
   let cursorY =
-    content != null ? snapToGrid(content.y - pad) : snapToGrid(BASELINE_CY - TOKENS.blackBox.height / 2);
+    hostCore != null ? hostCore.y : snapToGrid(BASELINE_CY - TOKENS.blackBox.height / 2);
 
   for (const part of ordered) {
-    const isHost = host != null && part.id === host.id && content != null;
+    const isHost = host != null && part.id === host.id && hostCore != null;
     const peer = part.processId ? peers.get(part.processId) : undefined;
     let pool: Bounds;
 
-    if (isHost && content) {
+    if (isHost && hostCore) {
       const emptyLanes = lanes.filter(
         (l) => l.participantId === part.id && !l.parentLaneId && l.nodeIds.length === 0,
       ).length;
-      const height = content.height + 2 * pad + emptyLanes * TOKENS.laneMinHeight;
-      pool = { x: poolX, y: snapToGrid(content.y - pad), width: commonWidth, height };
+      pool = {
+        x: poolX,
+        y: hostCore.y,
+        width: commonWidth,
+        height: hostCore.height + emptyLanes * TOKENS.laneMinHeight,
+      };
     } else if (peer) {
-      const peerInner = layoutGraph({
-        nodes: peer.nodes,
-        sequenceFlows: peer.sequenceFlows,
-        regions: peer.regions,
-      });
+      const peerInner = layoutGraph(
+        {
+          nodes: peer.nodes,
+          sequenceFlows: peer.sequenceFlows,
+          regions: peer.regions,
+        },
+        TOKENS.poolInnerFlowGap,
+      );
       const peerBox = bbox(peerInner.shapes, peerInner.labels);
-      const innerW = peerBox?.width ?? TOKENS.blackBox.width;
-      const innerH = peerBox?.height ?? TOKENS.event.height;
-      const width = Math.max(commonWidth, header + pad + innerW + pad);
-      const height = innerH + 2 * pad;
-      pool = { x: poolX, y: cursorY, width, height };
-      if (peerBox) {
+      if (!peerBox) {
+        pool = { x: poolX, y: cursorY, width: commonWidth, height: TOKENS.blackBox.height };
+      } else {
+        const width = Math.max(commonWidth, header + pad + peerBox.width + pad);
+        const height = peerBox.height + 2 * pad;
+        pool = { x: poolX, y: cursorY, width, height };
         translateResult(peerInner, pool.x + header + pad - peerBox.x, pool.y + pad - peerBox.y);
         Object.assign(shapes, peerInner.shapes);
         Object.assign(edges, peerInner.edges);
@@ -243,7 +275,10 @@ function placeLanesOnly(shapes: Record<string, Bounds>, lanes: LayoutLane[], con
   }
 }
 
-function index(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>): Ctx {
+function index(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>,
+  flowGap: number,
+): Ctx {
   const nodes = new Map(input.nodes.map((n) => [n.id, n]));
   const outgoing = new Map<string, SequenceFlow[]>();
   for (const flow of input.sequenceFlows) {
@@ -277,7 +312,7 @@ function index(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>):
     }
   }
 
-  return { nodes, outgoing, regionBySplit, topLevelBySplit, interior };
+  return { nodes, outgoing, regionBySplit, topLevelBySplit, interior, flowGap };
 }
 
 function flattenRegions(regions: StructuredRegion[]): StructuredRegion[] {
@@ -354,7 +389,7 @@ function placeChain(
 ): number {
   let cursor = x;
   for (let i = 0; i < items.length; i++) {
-    if (i > 0) cursor += TOKENS.forwardFlowGap;
+    if (i > 0) cursor += ctx.flowGap;
     const item = items[i]!;
     if (item.kind === 'node') {
       const size = sizeOf(item.type);
@@ -461,6 +496,110 @@ function placeLooseEventSubprocesses(
   }
 }
 
+function walkUnplacedChain(startId: string, placed: Map<string, Bounds>, ctx: Ctx): ChainItem[] {
+  const items: ChainItem[] = [];
+  let id: string | undefined = startId;
+  const seen = new Set<string>();
+  while (id && !seen.has(id) && !placed.has(id)) {
+    seen.add(id);
+    if (!ctx.nodes.has(id)) break;
+    const nested = ctx.regionBySplit.get(id);
+    if (nested && !isEventContainer(nested, ctx)) {
+      items.push({ kind: 'region', region: nested });
+      seen.add(nested.join);
+      id = ctx.outgoing.get(nested.join)?.[0]?.target;
+      continue;
+    }
+    items.push({ kind: 'node', id, type: typeOf(ctx, id) });
+    const next = (ctx.outgoing.get(id) ?? []).find((f) => !placed.has(f.target) && !seen.has(f.target));
+    id = next?.target;
+  }
+  return items;
+}
+
+function placeOpenBranches(
+  splitId: string,
+  chains: ChainItem[][],
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): void {
+  const splitBox = placed.get(splitId);
+  if (!splitBox) return;
+  const extents = chains.map((items) => measureChain(items, ctx));
+  const { total, bandCys } = stackMetrics(extents);
+  let belowY = splitBox.y + splitBox.height;
+  for (const flow of ctx.outgoing.get(splitId) ?? []) {
+    const box = placed.get(flow.target);
+    if (box) belowY = Math.max(belowY, box.y + box.height);
+  }
+  const innerLeft = splitBox.x + splitBox.width + ctx.flowGap;
+  const cy = belowY + TOKENS.branchGap + total / 2;
+  for (let i = 0; i < chains.length; i++) {
+    if (!chains[i]!.length) continue;
+    placeChain(chains[i]!, innerLeft, cy - total / 2 + bandCys[i]!, placed, ctx);
+  }
+}
+
+function fanUnplaced(placed: Map<string, Bounds>, ctx: Ctx): boolean {
+  let grew = false;
+  for (const id of [...placed.keys()].sort()) {
+    const missing = (ctx.outgoing.get(id) ?? [])
+      .filter((f) => f.target && !placed.has(f.target) && ctx.nodes.has(f.target))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    if (!missing.length) continue;
+    const chains = missing.map((f) => walkUnplacedChain(f.target, placed, ctx)).filter((c) => c.length);
+    if (!chains.length) continue;
+    placeOpenBranches(id, chains, placed, ctx);
+    grew = true;
+  }
+  return grew;
+}
+
+function placeBoundaryEvents(input: Pick<LayoutInput, 'nodes'>, placed: Map<string, Bounds>): boolean {
+  let grew = false;
+  const boundaries = input.nodes
+    .filter((n) => n.attachedTo && !placed.has(n.id) && placed.has(n.attachedTo))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  for (const node of boundaries) {
+    const host = placed.get(node.attachedTo!)!;
+    const size = sizeOf(node.type);
+    placed.set(node.id, {
+      x: snapToGrid(host.x + host.width / 2 - size.width / 2),
+      y: snapToGrid(host.y + host.height - size.height / 2),
+      width: size.width,
+      height: size.height,
+    });
+    grew = true;
+  }
+  return grew;
+}
+
+function placeOrphans(input: Pick<LayoutInput, 'nodes'>, placed: Map<string, Bounds>, ctx: Ctx): void {
+  const leftover = input.nodes.filter((n) => n.id && !placed.has(n.id)).sort((a, b) => a.id.localeCompare(b.id));
+  if (!leftover.length) return;
+  const content = bbox(Object.fromEntries(placed));
+  let x = content?.x ?? ORIGIN_X;
+  let y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
+  for (const node of leftover) {
+    const size = sizeOf(node.type);
+    placed.set(node.id, { x, y, width: size.width, height: size.height });
+    x += size.width + ctx.flowGap;
+  }
+}
+
+function placeRemainder(
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>,
+  placed: Map<string, Bounds>,
+  ctx: Ctx,
+): void {
+  const limit = input.nodes.length + 2;
+  for (let i = 0; i < limit; i++) {
+    const grew = fanUnplaced(placed, ctx) || placeBoundaryEvents(input, placed);
+    if (!grew) break;
+  }
+  placeOrphans(input, placed, ctx);
+}
+
 function placeRegion(
   region: StructuredRegion,
   x: number,
@@ -481,7 +620,7 @@ function placeRegion(
   const extents = chains.map((items) => measureChain(items, ctx));
   const innerW = Math.max(0, ...extents.map((e) => e.width));
   const { total, bandCys } = stackMetrics(extents);
-  const innerLeft = innerW > 0 ? x + splitSize.width + TOKENS.forwardFlowGap : x + splitSize.width;
+  const innerLeft = innerW > 0 ? x + splitSize.width + ctx.flowGap : x + splitSize.width;
 
   for (let i = 0; i < chains.length; i++) {
     if (!chains[i]!.length) continue;
@@ -491,8 +630,8 @@ function placeRegion(
   const joinSize = sizeOf(typeOf(ctx, region.join));
   const joinX =
     innerW > 0
-      ? innerLeft + innerW + TOKENS.forwardFlowGap
-      : x + splitSize.width + TOKENS.forwardFlowGap;
+      ? innerLeft + innerW + ctx.flowGap
+      : x + splitSize.width + ctx.flowGap;
   placed.set(region.join, {
     x: joinX,
     y: cy - joinSize.height / 2,
@@ -508,7 +647,7 @@ function measureChain(items: ChainItem[], ctx: Ctx): Extent {
   let above = 0;
   let below = 0;
   for (let i = 0; i < items.length; i++) {
-    if (i > 0) width += TOKENS.forwardFlowGap;
+    if (i > 0) width += ctx.flowGap;
     const item = items[i]!;
     const e = item.kind === 'node' ? nodeExtent(item.type) : measureRegion(item.region, ctx);
     width += e.width;
@@ -529,8 +668,8 @@ function measureRegion(region: StructuredRegion, ctx: Ctx): Extent {
   return {
     width:
       split.width +
-      TOKENS.forwardFlowGap +
-      (innerW > 0 ? innerW + TOKENS.forwardFlowGap : 0) +
+      ctx.flowGap +
+      (innerW > 0 ? innerW + ctx.flowGap : 0) +
       join.width,
     above: Math.max(split.above, join.above, half),
     below: Math.max(split.below, join.below, half),

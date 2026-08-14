@@ -213,6 +213,20 @@ describe('assistant routes', () => {
     expect(inside.status).toBe(200);
     const body = (await inside.json()) as { data: { process: { nodes: Array<{ name: string }> } } };
     expect(body.data.process.nodes.some((n) => n.name === 'More yes')).toBe(true);
+
+    const regionPin = await fetch(`${url}/api/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        process: graph,
+        scope: { kind: 'process' },
+        tools: [{ name: 'addTask', args: { name: 'Register customer', branch: graph.regions[0]!.id } }],
+      }),
+    });
+    expect(regionPin.status).toBe(200);
+    const pinned = (await regionPin.json()) as { data: { process: { nodes: Array<{ name: string }> } }; error?: string };
+    expect(pinned.error).toBeUndefined();
+    expect(pinned.data.process.nodes.some((n) => n.name === 'Register customer')).toBe(true);
   });
 
   it('returns 504 JSON when the model never answers', async () => {
@@ -266,6 +280,81 @@ describe('assistant routes', () => {
     const text = await response.text();
     expect(text.length).toBeGreaterThan(0);
     expect(JSON.parse(text).error).toMatch(/timed out after 30s/i);
+  });
+
+  it('answers привет without waiting on a hung model', async () => {
+    process.env.AI_PROVIDER = 'nvidia';
+    process.env.NVIDIA_API_KEY = 'nvapi-test';
+    process.env.ASSISTANT_TIMEOUT_MS = '5000';
+    let called = 0;
+    const app = express();
+    app.use(express.json());
+    registerAssistantRoutes(app, () => ({
+      provider: 'nvidia',
+      model: 'nvidia/nemotron-3-super-120b-a12b',
+      generateJson: () => {
+        called += 1;
+        return new Promise(() => {});
+      },
+    }));
+    const { server, url } = await listen(app);
+    servers.push(server);
+    const started = Date.now();
+    const response = await fetch(`${url}/api/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'привет' }),
+    });
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(response.status).toBe(200);
+    expect(called).toBe(0);
+    const body = (await response.json()) as { data: { message: string; tools: unknown[] } };
+    expect(body.data.tools).toEqual([]);
+    expect(body.data.message).toMatch(/процесс/i);
+  });
+
+  it('answers a greeting when AI is not configured', async () => {
+    process.env.AI_PROVIDER = 'nvidia';
+    delete process.env.NVIDIA_API_KEY;
+    const app = express();
+    app.use(express.json());
+    registerAssistantRoutes(app);
+    const { server, url } = await listen(app);
+    servers.push(server);
+    const response = await fetch(`${url}/api/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'hello' }),
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: { message: string; tools: unknown[] } };
+    expect(body.data.tools).toEqual([]);
+    expect(body.data.message).toMatch(/process structure/i);
+  });
+
+  it('returns 502 when the provider is silent', async () => {
+    process.env.AI_PROVIDER = 'nvidia';
+    process.env.NVIDIA_API_KEY = 'nvapi-test';
+    const app = express();
+    app.use(express.json());
+    registerAssistantRoutes(app, () => ({
+      provider: 'nvidia',
+      model: 'nvidia/nemotron-3-super-120b-a12b',
+      generateJson: async () => {
+        const error = new Error('AI provider did not respond. Check the API key and network, then retry.');
+        error.name = 'UpstreamError';
+        throw error;
+      },
+    }));
+    const { server, url } = await listen(app);
+    servers.push(server);
+    const response = await fetch(`${url}/api/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'add a task' }),
+    });
+    expect(response.status).toBe(502);
+    expect(((await response.json()) as { error: string }).error).toMatch(/did not respond/i);
   });
 
   it('returns 400 when posted BPMN XML cannot be read', async () => {

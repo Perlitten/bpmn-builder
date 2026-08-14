@@ -208,4 +208,62 @@ describe('semantic editor session', () => {
     expect(xml).toContain('<dc:Bounds');
     expect(imports.at(-1)).toBe(xml);
   });
+
+  it('undo restores the graph after create', async () => {
+    const imports: string[] = [];
+    const editor = await createSemanticEditor(
+      {
+        importXml: async (xml) => {
+          imports.push(xml);
+        },
+      },
+      exportProcessXml(createProcess()),
+    );
+    const before = editor.process().nodes.map((n) => n.id).sort();
+    expect(editor.canUndo()).toBe(false);
+    await editor.create('activity.task');
+    expect(editor.canUndo()).toBe(true);
+    expect(editor.process().nodes.some((n) => n.type === 'task')).toBe(true);
+    const xml = await editor.undo();
+    expect(editor.process().nodes.map((n) => n.id).sort()).toEqual(before);
+    expect(editor.process().nodes.some((n) => n.type === 'task')).toBe(false);
+    expect(xml).toContain('StartEvent_1');
+    expect(editor.canRedo()).toBe(true);
+    await editor.redo();
+    expect(editor.process().nodes.some((n) => n.type === 'task')).toBe(true);
+    expect(imports.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('create participant.lane on a selected pool adds a lane there, not a partner', async () => {
+    const selected: Array<string | string[] | undefined> = [];
+    const editor = await createSemanticEditor(
+      {
+        importXml: async (_xml, selectId) => {
+          selected.push(selectId);
+        },
+      },
+      exportProcessXml(createProcess()),
+    );
+    await editor.create('participant.pool');
+    expect(editor.process().participants).toHaveLength(2);
+    expect(editor.process().lanes).toHaveLength(0);
+    const host = editor.process().participants[0]!;
+    const partner = editor.process().participants[1]!;
+
+    const onPartner = await editor.create('participant.lane', partner.id);
+    expect(editor.process().participants).toHaveLength(2);
+    expect(editor.process().lanes).toHaveLength(1);
+    expect(editor.process().lanes[0]).toMatchObject({ id: onPartner.id, participantId: partner.id });
+    expect(selected.at(-1)).toBe(partner.id);
+    expect(onPartner.xml).toMatch(/bpmn:lane/i);
+
+    const onHost = await editor.create('participant.lane', host.id);
+    expect(editor.process().participants).toHaveLength(2);
+    expect(editor.process().lanes.map((lane) => lane.participantId)).toEqual([partner.id, host.id]);
+    expect(selected.at(-1)).toBe(host.id);
+
+    editor.rename(onPartner.id, 'Treasury');
+    editor.rename(onHost.id, 'Clerk');
+    expect(editor.process().lanes.map((lane) => lane.name)).toEqual(['Treasury', 'Clerk']);
+  });
 });

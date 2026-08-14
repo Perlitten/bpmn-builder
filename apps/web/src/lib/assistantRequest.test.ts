@@ -54,4 +54,10 @@ describe('mapAssistantError', () => {
       mapAssistantError(new Error("Cannot read properties of undefined (reading 'root-0')"), false).message,
     ).toMatch(/left unchanged/i);
   });
+
+  it('maps raw addTask unknown branch to a BPMN sentence', () => {
+    const message = mapAssistantError(new Error('addTask: unknown branch: Region_1'), false).message;
+    expect(message).not.toMatch(/unknown branch: Region_1/);
+    expect(message).toMatch(/gateway branch|region/i);
+  });
 });

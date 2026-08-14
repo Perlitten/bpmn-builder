@@ -3,9 +3,16 @@ import { and, asc, desc, eq, ne, or, sql } from 'drizzle-orm';
 import { getProcessesTable, getQueryDb } from '../../../db/src/index.js';
 import { BpmnImportError, bpmnToWorkflow, importBpmnXml, workflowToBpmn } from '../../../bpmn-adapter/src/index.js';
 import type { Process, ProcessPatch, ProcessSummary, WorkflowDocument } from '../../../domain/src/index.js';
-import { validateProcess, validateProcessPatch, validateWorkflowDocument } from '../../../domain/src/index.js';
+import {
+  PROCESS_NAME_MAX,
+  PROCESS_DESCRIPTION_MAX,
+  copyProcessName,
+  validateProcess,
+  validateProcessPatch,
+  validateWorkflowDocument,
+} from '../../../domain/src/index.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
-import { ProcessValidationError } from './errors.js';
+import { ProcessConflictError, ProcessValidationError } from './errors.js';
 import type { ProcessListQuery } from './processListQuery.js';
 
 type ProcessRow = {
@@ -180,6 +187,8 @@ export async function listTemplates(): Promise<ProcessSummary[]> {
   return rows.map(toSummary);
 }
 
+export { copyProcessName };
+
 export async function createProcess(input: {
   name: string;
   description?: string | null;
@@ -188,6 +197,12 @@ export async function createProcess(input: {
 }): Promise<Process> {
   const name = input.name.trim();
   if (!name) throw new ProcessValidationError('name is required');
+  if (name.length > PROCESS_NAME_MAX) {
+    throw new ProcessValidationError(`name must be at most ${PROCESS_NAME_MAX} characters`);
+  }
+  if (input.description && input.description.length > PROCESS_DESCRIPTION_MAX) {
+    throw new ProcessValidationError(`description must be at most ${PROCESS_DESCRIPTION_MAX} characters`);
+  }
 
   let bpmnXml = DEFAULT_BPMN_XML;
   if (input.bpmnXml?.trim()) {
@@ -217,6 +232,16 @@ export async function createProcess(input: {
   return toProcess(row);
 }
 
+export async function duplicateProcess(id: string, name?: string): Promise<Process | null> {
+  const existing = await getProcessById(id);
+  if (!existing) return null;
+  return createProcess({
+    name: name !== undefined ? name : copyProcessName(existing.name),
+    description: existing.description ?? undefined,
+    bpmnXml: existing.bpmnXml,
+  });
+}
+
 export async function createTemplateFromProcess(id: string): Promise<Process | null> {
   const existing = await getProcessById(id);
   if (!existing) return null;
@@ -244,6 +269,8 @@ export async function updateProcess(id: string, patch: ProcessPatch): Promise<Pr
   const existing = await getProcessById(id);
   if (!existing) return null;
   assertPatch(patch);
+  if (patch.version === undefined) throw new ProcessValidationError('version is required');
+  if (patch.version !== existing.version) throw new ProcessConflictError(existing.version);
 
   let bpmnXml = patch.bpmnXml ?? existing.bpmnXml;
   let workflowJson = existing.workflowJson;
@@ -284,8 +311,12 @@ export async function updateProcess(id: string, patch: ProcessPatch): Promise<Pr
     workflowJson: next.workflowJson ? JSON.stringify(next.workflowJson) : null,
     version: next.version,
     updatedAt: next.updatedAt,
-  }).where(eq(table.id, id));
-  return getProcessById(id);
+  }).where(and(eq(table.id, id), eq(table.version, existing.version)));
+  const stored = await getProcessById(id);
+  if (!stored || stored.version !== next.version) {
+    throw new ProcessConflictError(stored?.version ?? existing.version);
+  }
+  return stored;
 }
 
 export async function deleteProcess(id: string): Promise<boolean> {

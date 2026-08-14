@@ -21,7 +21,7 @@ export function TemplatesSection({ templates, busy, onUse, onOpen }: TemplatesSe
         <div
           key={template.id}
           data-process-id={template.id}
-          className="grid grid-cols-[minmax(8rem,1fr)_auto] items-center gap-3 border-b border-border px-4 py-2"
+          className="grid grid-cols-[minmax(8rem,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3"
         >
           <span className="min-w-0 truncate text-sm font-medium text-ink">{template.name}</span>
           <div className="flex items-center gap-1">

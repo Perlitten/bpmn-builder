@@ -9,8 +9,14 @@ const streamResponse = (content: string) =>
   });
 
 describe('NVIDIA client', () => {
+  const snapshot = { ...process.env };
+
   afterEach(() => {
     vi.unstubAllGlobals();
+    for (const key of Object.keys(process.env)) {
+      if (!(key in snapshot)) delete process.env[key];
+    }
+    Object.assign(process.env, snapshot);
   });
 
   it('parses streamed JSON without leaking the key into the body', async () => {
@@ -65,5 +71,22 @@ describe('NVIDIA client', () => {
     await expect(pending).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 30s/ });
     expect(cancelled).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails fast when NVIDIA never sends headers', async () => {
+    process.env.ASSISTANT_TIMEOUT_MS = '5000';
+    process.env.ASSISTANT_CONNECT_TIMEOUT_MS = '40';
+    const fetchMock = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = createNvidiaClient('key', 'nvidia/nemotron-3-super-120b-a12b');
+    const started = Date.now();
+    await expect(client.generateJson({ systemInstruction: 'Return JSON.', prompt: 'add a task' })).rejects.toMatchObject({
+      name: 'UpstreamError',
+      message: /did not respond/i,
+    });
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    delete process.env.ASSISTANT_TIMEOUT_MS;
+    delete process.env.ASSISTANT_CONNECT_TIMEOUT_MS;
   });
 });

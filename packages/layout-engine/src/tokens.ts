@@ -5,10 +5,12 @@ export const TOKENS = {
   gateway: { width: 48, height: 48 },
   event: { width: 40, height: 40 },
   forwardFlowGap: 96,
+  /** Wider sequence-flow gap for graphs laid out inside a pool/lane. */
+  poolInnerFlowGap: 144,
   branchGap: 64,
   edgeClearance: 24,
   poolHeader: 32,
-  poolPad: 24,
+  poolPad: 48,
   poolGap: 64,
   blackBox: { width: 480, height: 160 },
   laneMinHeight: 80,

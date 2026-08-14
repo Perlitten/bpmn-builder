@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { selectableElement } from './inspector/selectable';
 import {
   createSelectMarqueeModule,
   isMarqueeSurface,
@@ -7,9 +8,11 @@ import {
 } from './selectMarquee';
 
 describe('select marquee', () => {
-  it('treats empty process / pool as a box-select surface, not a task', () => {
+  it('marquees only the canvas root, not a pool, lane, or task', () => {
     expect(isMarqueeSurface({ type: 'bpmn:Process' })).toBe(true);
-    expect(isMarqueeSurface({ type: 'bpmn:Participant', parent: {} })).toBe(true);
+    expect(isMarqueeSurface({ type: 'bpmn:Collaboration' })).toBe(true);
+    expect(isMarqueeSurface({ type: 'bpmn:Participant', parent: {} })).toBe(false);
+    expect(isMarqueeSurface({ type: 'bpmn:Lane', parent: {} })).toBe(false);
     expect(isMarqueeSurface({ type: 'bpmn:Task', parent: {} })).toBe(false);
     expect(isMarqueeSurface({ type: 'bpmn:SequenceFlow', waypoints: [] })).toBe(false);
   });
@@ -34,6 +37,21 @@ describe('select marquee', () => {
     expect(onSelectMarqueeDown(task, () => 'select', lasso, hand)).toBeUndefined();
     expect(lasso.activateLasso).not.toHaveBeenCalled();
     expect(hand.activateMove).not.toHaveBeenCalled();
+  });
+
+  it('clicking a pool header or lane does not start lasso; selection keeps that id', () => {
+    const lasso = { isActive: () => false, activateLasso: vi.fn() };
+    const hand = { isActive: () => false, activateMove: vi.fn() };
+    const mouse = { button: 0 } as MouseEvent;
+    const pool = { id: 'Participant_1', type: 'bpmn:Participant', parent: {} };
+    const lane = { id: 'Lane_1', type: 'bpmn:Lane', parent: pool };
+
+    expect(onSelectMarqueeDown({ element: pool, originalEvent: mouse }, () => 'select', lasso, hand)).toBeUndefined();
+    expect(onSelectMarqueeDown({ element: lane, originalEvent: mouse }, () => 'select', lasso, hand)).toBeUndefined();
+    expect(lasso.activateLasso).not.toHaveBeenCalled();
+
+    const selected = [pool, lane].map(selectableElement);
+    expect(selected.map((el) => el?.id)).toEqual(['Participant_1', 'Lane_1']);
   });
 
   it('does not restore Space Tool or global connect', () => {

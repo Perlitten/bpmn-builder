@@ -29,7 +29,8 @@ type ApiClient = {
     templateId?: string;
     bpmnXml?: string;
   }, signal?: AbortSignal) => Promise<{ id: string }>;
-  renameProcess: (id: string, name: string, signal?: AbortSignal) => Promise<Process>;
+  renameProcess: (id: string, name: string, version: number, signal?: AbortSignal) => Promise<Process>;
+  duplicateProcess: (id: string, name?: string, signal?: AbortSignal) => Promise<{ id: string }>;
   deleteProcess: (id: string, signal?: AbortSignal) => Promise<void>;
 };
 
@@ -68,13 +69,32 @@ export const api: ApiClient = {
     });
     return data.process;
   },
-  renameProcess: async (id, name, signal) => {
+  renameProcess: async (id, name, version, signal) => {
     const data = await request<{ process: Process }>(`/api/processes/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, version }),
       signal,
     });
     return data.process;
+  },
+  duplicateProcess: async (id, name, signal) => {
+    const data = await request<{ process: { id: string; name: string; version: number } }>(
+      `/api/processes/${id}/duplicate`,
+      {
+        method: 'POST',
+        body: JSON.stringify(name !== undefined ? { name } : {}),
+        signal,
+      },
+    );
+    const process = data.process;
+    const trimmed = name?.trim();
+    if (!trimmed || process.name === trimmed) return process;
+    const renamed = await request<{ process: { id: string } }>(`/api/processes/${process.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: trimmed, version: process.version }),
+      signal,
+    });
+    return renamed.process;
   },
   deleteProcess: async (id, signal) => {
     await request<{ deleted: true; id: string }>(`/api/processes/${id}`, {

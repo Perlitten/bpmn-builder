@@ -1,4 +1,4 @@
-import { createProcess, getNode, setBranchLocked } from '@bpmn/semantic-core';
+import { createProcess, getNode, happyPathIds, setBranchLocked } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { ToolPlanError } from './errors.js';
 import { parseAgentScope } from './scope.js';
@@ -120,5 +120,82 @@ describe('agent scope and branch lock', () => {
       'Tail',
     ]);
     expect(added.process.regions[0]!.branches[1]!.nodeIds).toEqual(p.regions[0]!.branches[1]!.nodeIds);
+  });
+
+  it('addTask with branch: Region_1 maps instead of throwing', () => {
+    const p = xorProcess();
+    const region = p.regions[0]!;
+    const added = executePlan(
+      p,
+      [{ name: 'addTask', args: { name: 'Register customer', branch: region.id } }],
+      { scope: { kind: 'process' } },
+    );
+    expect(getNode(added.process, added.id).name).toBe('Register customer');
+    const next = added.process.regions[0]!;
+    expect(next.branches.flatMap((branch) => branch.nodeIds)).not.toContain(added.id);
+    expect(happyPathIds(added.process)).toContain(added.id);
+  });
+
+  it('whole-process scope addTask does not require a branch', () => {
+    const p = xorProcess();
+    const added = executePlan(p, [{ name: 'addTask', args: { name: 'Age check' } }], {
+      scope: { kind: 'process' },
+    });
+    expect(getNode(added.process, added.id).name).toBe('Age check');
+    expect(added.process.regions[0]!.branches.map((branch) => [...branch.nodeIds])).toEqual(
+      p.regions[0]!.branches.map((branch) => [...branch.nodeIds]),
+    );
+  });
+
+  it('addTask after splitExclusive with $last region maps on whole-process scope', () => {
+    const origin = createProcess();
+    const plan = executePlan(
+      origin,
+      [
+        { name: 'addTask', args: { name: 'Review' } },
+        { name: 'splitExclusive', args: { after: 'Review', branches: [{ name: 'Yes' }, { name: 'No' }] } },
+        { name: 'addTask', args: { name: 'Register', branchId: '$last' } },
+      ],
+      { scope: { kind: 'process' } },
+    );
+    expect(getNode(plan.process, plan.id).name).toBe('Register');
+    expect(plan.process.regions[0]!.branches.flatMap((branch) => branch.nodeIds)).not.toContain(plan.id);
+  });
+
+  it('region scope maps addTask branch: Region_1 onto the happy branch', () => {
+    const p = xorProcess();
+    const region = p.regions[0]!;
+    const added = executePlan(
+      p,
+      [{ name: 'addTask', args: { name: 'Inside xor', branch: region.id } }],
+      { scope: { kind: 'region', id: region.id } },
+    );
+    expect(added.process.regions[0]!.branches[0]!.nodeIds.map((id) => getNode(added.process, id).name)).toEqual([
+      'Handle yes',
+      'Inside xor',
+    ]);
+  });
+
+  it('addTask after: Region_1 inserts after the join', () => {
+    const p = xorProcess();
+    const region = p.regions[0]!;
+    const added = executePlan(p, [{ name: 'addTask', args: { name: 'After xor', after: region.id } }], {
+      scope: { kind: 'process' },
+    });
+    expect(happyPathIds(added.process).slice(-3)).toEqual([region.join, added.id, 'EndEvent_1']);
+  });
+
+  it('unknown branch still fails with a BPMN sentence, not a kernel dump', () => {
+    const p = xorProcess();
+    expect(() =>
+      executePlan(p, [{ name: 'addTask', args: { name: 'Nope', branchId: 'Branch_999' } }], {
+        scope: { kind: 'region', id: p.regions[0]!.id },
+      }),
+    ).toThrow(/gateway branch|not in this process/i);
+    expect(() =>
+      executePlan(p, [{ name: 'addTask', args: { name: 'Nope', branchId: 'Branch_999' } }], {
+        scope: { kind: 'region', id: p.regions[0]!.id },
+      }),
+    ).not.toThrow(/unknown branch: Branch_999/);
   });
 });

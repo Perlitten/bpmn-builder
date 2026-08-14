@@ -254,6 +254,12 @@
   color: var(--color-muted);
 }
 
+.palette-hint.is-sim {
+  max-width: min(36rem, calc(100% - 5.5rem));
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
 .editor-onboarding {
   pointer-events: auto;
   position: absolute;

@@ -23,6 +23,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [simStatus, setSimStatus] = useState<string | null>(null);
+  const versionRef = useRef(0);
 
   useEffect(() => {
     document.title = pageTitle('editor', name);
@@ -39,6 +40,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
         setProcess(data.process);
         setName(data.process.name);
         setSavedAt(data.process.updatedAt);
+        versionRef.current = data.process.version;
       })
       .catch((err: Error) => {
         if (!cancelled) setError(err.message);
@@ -50,7 +52,8 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
 
   const persist = useCallback(
     async (patch: Parameters<typeof saveProcess>[1]) => {
-      const data = await saveProcess(processId, patch);
+      const data = await saveProcess(processId, { ...patch, version: versionRef.current });
+      versionRef.current = data.process.version;
       setProcess((prev) => (prev ? { ...prev, ...data.process, bpmnXml: prev.bpmnXml } : data.process));
       if (patch.name) setName(data.process.name);
       setSavedAt(data.process.updatedAt);

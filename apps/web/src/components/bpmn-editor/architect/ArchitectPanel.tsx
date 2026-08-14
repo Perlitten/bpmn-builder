@@ -14,6 +14,8 @@ import {
   type AgentContext,
 } from './agentScope';
 import type { AssistantApplyResult } from './applyAssistant';
+import { isArchitectComposeSubmitKey } from './architectComposeKey';
+import { greetingReply, isGreetingMessage } from './greeting';
 import { ArchitectShell } from './ArchitectShell';
 import './architect.css';
 
@@ -75,7 +77,25 @@ export function ArchitectPanel({
 
   const submit = (text = draft) => {
     const value = text.trim();
-    if (!value || busy || disabled || configured === false) return;
+    if (!value || busy || disabled) return;
+    if (isGreetingMessage(value)) {
+      abortRef.current?.abort();
+      timeoutRef.current?.dispose();
+      timeoutRef.current = null;
+      abortRef.current = null;
+      cancelledRef.current = false;
+      const reply = greetingReply(value);
+      setError(null);
+      setFailedText(null);
+      setHistory((prev) =>
+        [...prev, { role: 'user' as const, text: value }, { role: 'assistant' as const, text: reply }].slice(-12),
+      );
+      setMessage(reply);
+      setDiff([]);
+      setDraft('');
+      return;
+    }
+    if (configured === false) return;
     abortRef.current?.abort();
     timeoutRef.current?.dispose();
     const ac = new AbortController();
@@ -175,16 +195,15 @@ export function ArchitectPanel({
         <textarea
           ref={textareaRef}
           value={draft}
-          disabled={busy || disabled || configured === false}
+          disabled={busy || disabled}
           rows={3}
           placeholder="Split after Review into approved and rejected"
           aria-label="Describe a semantic edit of this process"
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              submit();
-            }
+            if (!isArchitectComposeSubmitKey(event)) return;
+            event.preventDefault();
+            submit();
           }}
         />
       </label>
@@ -214,7 +233,7 @@ export function ArchitectPanel({
           <button
             type="button"
             className="architect-apply"
-            disabled={disabled || !draft.trim() || configured === false}
+            disabled={disabled || !draft.trim() || (configured === false && !isGreetingMessage(draft))}
             onClick={() => submit()}
           >
             Apply

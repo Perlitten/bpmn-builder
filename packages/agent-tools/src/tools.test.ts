@@ -107,6 +107,19 @@ describe('agent tools', () => {
     expect(next.inverse(next.process)).toEqual(pooled.process);
   });
 
+  it('addTask branch alias accepts a region id after splitExclusive', () => {
+    const origin = createProcess();
+    const split = executePlan(origin, [
+      { name: 'addTask', args: { name: 'Review' } },
+      { name: 'splitExclusive', args: { after: 'Review' } },
+    ]);
+    const added = executePlan(split.process, [
+      { name: 'addTask', args: { name: 'Register', branch: split.process.regions[0]!.id } },
+    ]);
+    expect(getNode(added.process, added.id).name).toBe('Register');
+    expect(pathNames(added.process)).toContain('Register');
+  });
+
   it('addTask componentId uses BpmnComponentRegistry ids only', () => {
     const origin = createProcess();
     expect(() =>

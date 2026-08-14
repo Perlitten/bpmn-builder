@@ -34,7 +34,7 @@ export const COMPACT_FIT_PADDING: FitPadding = {
 
 type FitCanvas = {
   resized: () => void;
-  viewbox: (next?: Box & { scale?: number }) => {
+  viewbox: (next?: Box & { scale?: number }) => Box & {
     inner?: Box;
     outer?: { width: number; height: number };
   };
@@ -174,23 +174,45 @@ export function resolveFitPadding(fallback: FitPadding, host?: HTMLElement | nul
   return paddingFromRemaining(box, remainingCanvas(box, collectFitObstacles(host)));
 }
 
-export function applyFit(canvas: FitCanvas, padding: FitPadding = DESKTOP_FIT_PADDING, host?: HTMLElement | null): void {
-  try {
-    canvas.resized();
-  } catch {
-    return;
-  }
+export function panViewbox(
+  viewbox: Box,
+  outer: { width: number; height: number },
+  shape: Box,
+  pad: FitPadding,
+  gutter = FIT_GUTTER,
+): Box {
+  if (outer.width <= 0 || viewbox.width <= 0) return viewbox;
+  const scale = outer.width / viewbox.width;
+  const visLeft = viewbox.x + pad.left / scale;
+  const visTop = viewbox.y + pad.top / scale;
+  const visRight = viewbox.x + (outer.width - pad.right) / scale;
+  const visBottom = viewbox.y + (outer.height - pad.bottom) / scale;
+  const margin = gutter / scale;
+  let dx = 0;
+  let dy = 0;
+  if (shape.x < visLeft) dx = shape.x - visLeft - margin;
+  else if (shape.x + shape.width > visRight) dx = shape.x + shape.width - visRight + margin;
+  if (shape.y < visTop) dy = shape.y - visTop - margin;
+  else if (shape.y + shape.height > visBottom) dy = shape.y + shape.height - visBottom + margin;
+  if (!dx && !dy) return viewbox;
+  return { ...viewbox, x: viewbox.x + dx, y: viewbox.y + dy };
+}
+
+export function panCanvasToShape(canvas: FitCanvas, shape: Box, host?: HTMLElement | null): void {
   let vb: ReturnType<FitCanvas['viewbox']>;
   try {
     vb = canvas.viewbox();
   } catch {
     return;
   }
-  const inner = vb.inner;
   const outer = vb.outer;
-  if (!inner || !outer) return;
-  const next = fitViewbox(inner, outer, resolveFitPadding(padding, host));
-  if (!next) return;
+  if (!outer) return;
+  const next = panViewbox(
+    { x: vb.x, y: vb.y, width: vb.width, height: vb.height },
+    outer,
+    shape,
+    resolveFitPadding(DESKTOP_FIT_PADDING, host),
+  );
   try {
     canvas.viewbox(next);
   } catch {
@@ -198,6 +220,31 @@ export function applyFit(canvas: FitCanvas, padding: FitPadding = DESKTOP_FIT_PA
   }
 }
 
-export function fitCanvasToChrome(canvas: FitCanvas, host: HTMLElement): void {
-  applyFit(canvas, DESKTOP_FIT_PADDING, host);
+export function applyFit(canvas: FitCanvas, padding: FitPadding = DESKTOP_FIT_PADDING, host?: HTMLElement | null): boolean {
+  try {
+    canvas.resized();
+  } catch {
+    return false;
+  }
+  let vb: ReturnType<FitCanvas['viewbox']>;
+  try {
+    vb = canvas.viewbox();
+  } catch {
+    return false;
+  }
+  const inner = vb.inner;
+  const outer = vb.outer;
+  if (!inner || !outer) return false;
+  const next = fitViewbox(inner, outer, resolveFitPadding(padding, host));
+  if (!next) return false;
+  try {
+    canvas.viewbox(next);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function fitCanvasToChrome(canvas: FitCanvas, host: HTMLElement): boolean {
+  return applyFit(canvas, DESKTOP_FIT_PADDING, host);
 }

@@ -3,6 +3,7 @@ import type { SimSnapshot } from '@bpmn/simulate';
 
 const OVERLAY = 'token-sim';
 const CHOICE = 'sim-choice';
+const CLICK = 'sim-click';
 
 type Overlays = {
   add: (id: string, type: string, spec: { position: { top?: number; right?: number }; html: string }) => unknown;
@@ -16,8 +17,12 @@ type Canvas = {
 
 type Modeler = { get: (name: string) => unknown };
 
+function isChoiceGateway(type: string): boolean {
+  return type === 'exclusiveGateway' || type === 'inclusiveGateway' || type === 'eventBasedGateway';
+}
+
 export function createTokenView(modeler: Modeler) {
-  let marked: string[] = [];
+  let marked: Array<{ id: string; marker: string }> = [];
 
   function overlays(): Overlays {
     return modeler.get('overlays') as Overlays;
@@ -34,14 +39,23 @@ export function createTokenView(modeler: Modeler) {
       /* modeler tearing down */
     }
     const c = canvas();
-    for (const id of marked) {
+    for (const { id, marker } of marked) {
       try {
-        c.removeMarker(id, CHOICE);
+        c.removeMarker(id, marker);
       } catch {
         /* element gone */
       }
     }
     marked = [];
+  }
+
+  function mark(id: string, marker: string): void {
+    try {
+      canvas().addMarker(id, marker);
+      marked.push({ id, marker });
+    } catch {
+      /* not on diagram */
+    }
   }
 
   function addBadge(id: string, text: string): void {
@@ -68,25 +82,25 @@ export function createTokenView(modeler: Modeler) {
       for (const [id, count] of Object.entries(snap.completed)) {
         if (count) addBadge(id, String(count));
       }
-      const c = canvas();
+      const idle = !Object.keys(snap.tokens).length && !Object.keys(snap.joinWait).length;
+      if (idle) {
+        for (const node of process.nodes) {
+          if (node.type === 'start') mark(node.id, CLICK);
+        }
+        return;
+      }
       for (const node of process.nodes) {
         if ((snap.tokens[node.id] ?? 0) < 1) continue;
-        if (
-          node.type !== 'exclusiveGateway' &&
-          node.type !== 'inclusiveGateway' &&
-          node.type !== 'eventBasedGateway'
-        ) {
+        const outs = outgoingFlows(process, node.id);
+        if (isChoiceGateway(node.type) && outs.length > 1) {
+          for (const flow of outs) mark(flow.id, CHOICE);
           continue;
         }
-        const outs = outgoingFlows(process, node.id);
-        if (outs.length < 2) continue;
-        for (const flow of outs) {
-          try {
-            c.addMarker(flow.id, CHOICE);
-            marked.push(flow.id);
-          } catch {
-            /* not on diagram */
-          }
+        mark(node.id, CLICK);
+      }
+      if (!Object.keys(snap.tokens).length && Object.keys(snap.joinWait).length) {
+        for (const node of process.nodes) {
+          if (node.type === 'start') mark(node.id, CLICK);
         }
       }
     },

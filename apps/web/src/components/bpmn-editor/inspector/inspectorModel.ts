@@ -150,6 +150,40 @@ export function attachActions(
   });
 }
 
+export type PoolLaneRow = { id: string; name: string };
+
+export function isParticipant(element: DiagramElement): boolean {
+  return element.type === 'bpmn:Participant';
+}
+
+export function isLaneElement(element: DiagramElement): boolean {
+  return element.type === 'bpmn:Lane';
+}
+
+const LANE_COMPONENT_ID = 'participant.lane';
+
+/** Registry create for a lane inside the selected pool — never a second type list. */
+export function poolLaneCreate(
+  registry: BpmnComponentRegistry,
+  element: DiagramElement,
+): { def: BpmnComponentDefinition; enabled: boolean; reason?: string } | undefined {
+  if (!isParticipant(element)) return undefined;
+  const def = registry.get(LANE_COMPONENT_ID);
+  if (!def) return undefined;
+  const ctx = { parentBpmnType: 'bpmn:Participant' };
+  const enabled = registry.canCreate(LANE_COMPONENT_ID, ctx);
+  return { def, enabled, reason: enabled ? undefined : NOT_IN_PROFILE };
+}
+
+export function lanesInPool(
+  lanes: ReadonlyArray<{ id: string; name?: string; participantId?: string; parentLaneId?: string }>,
+  participantId: string,
+): PoolLaneRow[] {
+  return lanes
+    .filter((lane) => lane.participantId === participantId && !lane.parentLaneId)
+    .map((lane) => ({ id: lane.id, name: lane.name ?? '' }));
+}
+
 export function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {
   return (element.outgoing ?? []).filter((flow) => flow.type === 'bpmn:SequenceFlow');
 }

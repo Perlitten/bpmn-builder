@@ -271,6 +271,26 @@ describe('graph → layoutProcess → DI', () => {
     expect(await readDiFromXml(xml)).toEqual(layoutProcess(p));
     expect(exportProcessXml(g2)).toBe(xml);
   });
+
+  it('writes DI for unmatched XOR branches that never join', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1" />
+    <bpmn:exclusiveGateway id="Gateway_1" />
+    <bpmn:endEvent id="End_yes" />
+    <bpmn:endEvent id="End_no" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Gateway_1" />
+    <bpmn:sequenceFlow id="Flow_yes" sourceRef="Gateway_1" targetRef="End_yes" />
+    <bpmn:sequenceFlow id="Flow_no" sourceRef="Gateway_1" targetRef="End_no" />
+  </bpmn:process>
+</bpmn:definitions>`;
+    const p = await xmlToProcess(xml);
+    const out = exportProcessXml(p);
+    expect(out.match(/<bpmndi:BPMNShape /g)?.length).toBe(p.nodes.length);
+    expect(out.match(/<bpmndi:BPMNEdge /g)?.length).toBe(p.flows.length);
+    expect(await readDiFromXml(out)).toEqual(layoutProcess(p));
+  });
 });
 
 describe('workflow DTO (api-server)', () => {

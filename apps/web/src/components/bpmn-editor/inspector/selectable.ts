@@ -10,7 +10,7 @@ export function selectableElement(element: unknown): DiagramElement | null {
 
 export function isEditableKeyTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
-  return !!target.closest('input, textarea, select, [contenteditable="true"]');
+  return !!target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
 }
 
 export function isEditorChromeKeyTarget(target: EventTarget | null): boolean {

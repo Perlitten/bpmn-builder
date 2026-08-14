@@ -175,9 +175,19 @@ html.is-editor #root {
   color: var(--color-ink);
 }
 
-.djs-element.sim-choice .djs-visual > :nth-child(1) {
+.djs-element.sim-choice .djs-visual > :nth-child(1),
+.djs-element.sim-click .djs-visual > :nth-child(1) {
   stroke: var(--color-accent) !important;
   stroke-width: 3px !important;
+}
+
+.djs-element.sim-choice .djs-visual > :nth-child(1) {
+  stroke-dasharray: 8 4;
+}
+
+.bpmn-editor-stage.is-simulating .djs-element.sim-choice,
+.bpmn-editor-stage.is-simulating .djs-element.sim-click {
+  cursor: pointer;
 }
 
 /* Keep full event names; bpmn-js otherwise clips “Start” to “Star”. */

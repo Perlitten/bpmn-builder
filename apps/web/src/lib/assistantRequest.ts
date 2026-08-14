@@ -1,3 +1,5 @@
+import { userFacingPlanError } from '@bpmn/agent-tools';
+
 export const ASSISTANT_TIMEOUT_MS = 30_000;
 
 export function isAbortError(err: unknown): boolean {
@@ -54,5 +56,5 @@ export function mapAssistantError(err: unknown, userCancelled: boolean): Error {
   if (mapped.message === 'Could not import the generated BPMN diagram') {
     return new Error('Could not apply the generated diagram. The process was left unchanged.');
   }
-  return mapped;
+  return new Error(userFacingPlanError(mapped.message));
 }

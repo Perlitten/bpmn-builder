@@ -4,6 +4,7 @@ import { descriptionInputIssue } from '../../../lib/describeProcess';
 import { MAX_DESCRIPTION_CHARS } from '../../../lib/linearProcess';
 import { useModal } from '../../ui/useModal';
 import { ArchitectMascot } from './ArchitectMascot';
+import { isArchitectComposeSubmitKey } from './architectComposeKey';
 import {
   listArchitectPanelBox,
   listArchitectPanelStyle,
@@ -120,16 +121,15 @@ export function ListArchitect({ busy, error, onDescribe }: ListArchitectProps) {
             data-modal-initial-focus
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                submit();
-              }
+              if (!isArchitectComposeSubmitKey(event)) return;
+              event.preventDefault();
+              submit();
             }}
           />
         </label>
-        <div id="architect-description-meta" className="mt-1 flex justify-between gap-3 text-[11px] text-muted">
-          <span className={inputIssue ? 'text-danger' : ''}>{inputIssue ?? `Up to ${MAX_DESCRIPTION_CHARS.toLocaleString()} characters`}</span>
-          <span className="shrink-0 tabular-nums">{draft.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
+        <div id="architect-description-meta" className="architect-meta">
+          <span className={inputIssue ? 'is-issue' : undefined}>{inputIssue ?? `Up to ${MAX_DESCRIPTION_CHARS.toLocaleString()} characters`}</span>
+          <span className="architect-meta-count">{draft.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
         </div>
         <div className="architect-actions">
           {busy ? (

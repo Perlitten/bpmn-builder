@@ -28,6 +28,8 @@ import { dropSlot } from './dropSlot';
 /** Modeler instance is keyed by processId only. Autosave xml is an output. */
 export const MODELER_REMOUNT_KEYS = ['processId'] as const;
 
+const UNDO_LIMIT = 50;
+
 export function diagramImportError(error: unknown): Error {
   const raw = error instanceof Error ? error.message : String(error || '');
   const next = new Error(
@@ -62,14 +64,30 @@ export type SemanticEditor = {
   drop: (nodeId: string, point: { x: number; y: number }) => Promise<string>;
   copy: (ids: string[]) => SemanticClip | null;
   paste: (afterId?: string) => Promise<string | null>;
+  undo: () => Promise<string>;
+  redo: () => Promise<string>;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 };
 
 export async function createSemanticEditor(writer: DiagramWriter, initialXml: string): Promise<SemanticEditor> {
   let process = await xmlToProcess(initialXml);
   let clipboard: SemanticClip | null = null;
+  const undoStack: Process[] = [];
+  const redoStack: Process[] = [];
 
   function xml(): string {
     return exportProcessXml(process);
+  }
+
+  function recordUndo(previous: Process): void {
+    undoStack.push(previous);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+  }
+
+  function revertUndo(previous: Process): void {
+    if (undoStack[undoStack.length - 1] === previous) undoStack.pop();
   }
 
   async function commit(selectId?: string | string[], previous?: Process): Promise<string> {
@@ -78,12 +96,16 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
       await writer.importXml(next, selectId);
       return next;
     } catch (error) {
-      if (previous) process = previous;
+      if (previous) {
+        process = previous;
+        revertUndo(previous);
+      }
       throw diagramImportError(error);
     }
   }
 
   function applyOp(applied: Applied): void {
+    recordUndo(process);
     process = applied.process;
   }
 
@@ -97,7 +119,11 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
       const previous = process;
       const applied = createFromComponent(process, catalogId, afterId ? { after: afterId } : {});
       applyOp(applied);
-      const next = await commit(applied.id, previous);
+      const stayOnPool =
+        catalogId === 'participant.lane' &&
+        !!afterId &&
+        (previous.participants ?? []).some((participant) => participant.id === afterId);
+      const next = await commit(stayOnPool ? afterId : applied.id, previous);
       return { id: applied.id, xml: next };
     },
     async applyPlan(tools, scope) {
@@ -112,6 +138,7 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
     async applyProcess(next, selectId) {
       if (!isSemanticProcess(next)) throw new Error('not a semantic process graph');
       const previous = process;
+      recordUndo(previous);
       process = structuredClone(next);
       return commit(selectId, previous);
     },
@@ -146,7 +173,9 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
     },
     async adoptXml(raw) {
       const previous = process;
-      process = await xmlToProcess(raw);
+      const next = await xmlToProcess(raw);
+      recordUndo(previous);
+      process = next;
       return commit(undefined, previous);
     },
     async drop(nodeId, point) {
@@ -176,5 +205,22 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
       applyOp(applied);
       return commit(applied.pastedIds, previous);
     },
+    async undo() {
+      const prev = undoStack.pop();
+      if (!prev) return xml();
+      redoStack.push(process);
+      process = prev;
+      return commit();
+    },
+    async redo() {
+      const next = redoStack.pop();
+      if (!next) return xml();
+      undoStack.push(process);
+      if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+      process = next;
+      return commit();
+    },
+    canUndo: () => undoStack.length > 0,
+    canRedo: () => redoStack.length > 0,
   };
 }

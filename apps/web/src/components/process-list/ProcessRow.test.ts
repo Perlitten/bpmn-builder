@@ -75,11 +75,24 @@ describe('ProcessRow', () => {
         process: summary('Approval', XOR),
         onOpen: () => undefined,
         onRename: () => undefined,
+        onDuplicate: () => undefined,
         onDelete: () => undefined,
       }),
     );
     expect(html).toContain('aria-label="Actions for Approval"');
     expect(html).toContain('<time');
     expect(html).toContain('dateTime="2026-08-13T00:00:00.000Z"');
+    expect(html).toContain('py-3');
+  });
+
+  it('keeps row actions when Duplicate is the only overflow action', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProcessRow, {
+        process: summary('Approval', XOR),
+        onOpen: () => undefined,
+        onDuplicate: () => undefined,
+      }),
+    );
+    expect(html).toContain('aria-label="Actions for Approval"');
   });
 });

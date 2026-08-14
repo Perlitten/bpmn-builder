@@ -1,7 +1,9 @@
 import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { migrate, resetDbForTests } from '@bpmn/db';
+import { PROCESS_NAME_MAX } from '../../../domain/src/index.js';
 import { createApp } from '../app.js';
+import { copyProcessName } from '../services/processService.js';
 
 const listen = (app: ReturnType<typeof createApp>) =>
   new Promise<{ server: http.Server; url: string }>((resolve) => {
@@ -12,6 +14,16 @@ const listen = (app: ReturnType<typeof createApp>) =>
       resolve({ server, url: `http://127.0.0.1:${addr.port}` });
     });
   });
+
+describe('copyProcessName', () => {
+  it('appends (copy) and stays within the name limit', () => {
+    expect(copyProcessName('Invoice review')).toBe('Invoice review (copy)');
+    expect(copyProcessName('  ')).toBe('Untitled process (copy)');
+    const long = 'x'.repeat(PROCESS_NAME_MAX);
+    expect(copyProcessName(long).length).toBeLessThanOrEqual(PROCESS_NAME_MAX);
+    expect(copyProcessName(long).endsWith(' (copy)')).toBe(true);
+  });
+});
 
 describe('process template routes', () => {
   const snapshot = { ...process.env };
@@ -51,7 +63,7 @@ describe('process template routes', () => {
     const drafted = await fetch(`${url}/api/processes/${process.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'draft' }),
+      body: JSON.stringify({ status: 'draft', version: 1 }),
     });
     expect(drafted.status, await drafted.text()).toBe(200);
 
@@ -85,6 +97,62 @@ describe('process template routes', () => {
     };
     expect(copy.status).toBe('draft');
     expect(copy.bpmnXml).toBe(template.bpmnXml);
+  });
+
+  it('duplicates a process as a new draft with copied XML and name', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+
+    const created = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Invoice review', description: 'AP flow' }),
+    });
+    expect(created.status).toBe(201);
+    const { process } = (await created.json()) as {
+      process: { id: string; name: string; description: string | null; bpmnXml: string; status: string };
+    };
+
+    const duplicated = await fetch(`${url}/api/processes/${process.id}/duplicate`, { method: 'POST' });
+    expect(duplicated.status).toBe(201);
+    const { process: copy } = (await duplicated.json()) as {
+      process: { id: string; name: string; description: string | null; bpmnXml: string; status: string };
+    };
+    expect(copy.id).not.toBe(process.id);
+    expect(copy.name).toBe('Invoice review (copy)');
+    expect(copy.description).toBe('AP flow');
+    expect(copy.bpmnXml).toBe(process.bpmnXml);
+    expect(copy.status).toBe('draft');
+
+    const listed = await fetch(`${url}/api/processes?kind=process&limit=100`);
+    const page = (await listed.json()) as { processes: { id: string; name: string }[] };
+    expect(page.processes.some((item) => item.id === copy.id && item.name === 'Invoice review (copy)')).toBe(true);
+
+    const missing = await fetch(`${url}/api/processes/not-a-process/duplicate`, { method: 'POST' });
+    expect(missing.status).toBe(404);
+  });
+
+  it('duplicates a process with an explicit name from the request body', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+
+    const created = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Invoice review' }),
+    });
+    expect(created.status).toBe(201);
+    const { process } = (await created.json()) as { process: { id: string } };
+
+    const duplicated = await fetch(`${url}/api/processes/${process.id}/duplicate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'AP clone' }),
+    });
+    expect(duplicated.status).toBe(201);
+    const { process: copy } = (await duplicated.json()) as { process: { id: string; name: string } };
+    expect(copy.id).not.toBe(process.id);
+    expect(copy.name).toBe('AP clone');
   });
 });
 
@@ -277,5 +345,101 @@ describe('process BPMN import', () => {
     );
     expect(emptyProcess.status).toBe(400);
     expect(((await emptyProcess.json()) as { error: string }).error).toMatch(/flow nodes|no process/i);
+  });
+});
+
+describe('process write guards', () => {
+  const snapshot = { ...process.env };
+  const servers: http.Server[] = [];
+
+  beforeEach(async () => {
+    process.env.DB_PROVIDER = 'sqlite';
+    process.env.DATABASE_URL = ':memory:';
+    delete process.env.SQLITE_PATH;
+    resetDbForTests();
+    await migrate();
+  });
+
+  afterEach(async () => {
+    await Promise.all(
+      servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
+    );
+    resetDbForTests();
+    for (const key of Object.keys(process.env)) {
+      if (!(key in snapshot)) delete process.env[key];
+    }
+    Object.assign(process.env, snapshot);
+  });
+
+  it('rejects a 200-character-plus name', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const created = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'n'.repeat(201) }),
+    });
+    expect(created.status).toBe(400);
+  });
+
+  it('returns 409 when PATCH uses a stale version', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const created = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Lock' }),
+    });
+    const { process } = (await created.json()) as { process: { id: string; version: number } };
+    const first = await fetch(`${url}/api/processes/${process.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'One', version: process.version }),
+    });
+    expect(first.status).toBe(200);
+    const second = await fetch(`${url}/api/processes/${process.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Two', version: process.version }),
+    });
+    expect(second.status).toBe(409);
+    const body = (await second.json()) as { error: string; currentVersion: number };
+    expect(body.currentVersion).toBe(2);
+  });
+
+  it('deletes a process and 404s the second delete', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const created = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Gone' }),
+    });
+    const { process } = (await created.json()) as { process: { id: string } };
+    const deleted = await fetch(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
+    expect(deleted.status).toBe(200);
+    expect(await deleted.json()).toEqual({ deleted: true, id: process.id });
+    const again = await fetch(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
+    expect(again.status).toBe(404);
+    const missing = await fetch(`${url}/api/processes/not-a-process`, { method: 'DELETE' });
+    expect(missing.status).toBe(404);
+  });
+
+  it('returns JSON 400 for malformed JSON and JSON 404 for unknown /api', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const bad = await fetch(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    });
+    expect(bad.status).toBe(400);
+    expect(bad.headers.get('content-type')).toMatch(/json/);
+    const body = (await bad.json()) as { error: string };
+    expect(body.error).toBe('invalid JSON');
+    expect(JSON.stringify(body)).not.toMatch(/JSON\.parse|damashkevich/);
+    const unknown = await fetch(`${url}/api/nope`);
+    expect(unknown.status).toBe(404);
+    expect(unknown.headers.get('content-type')).toMatch(/json/);
   });
 });

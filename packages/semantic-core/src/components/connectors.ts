@@ -141,10 +141,16 @@ export const PARTICIPANTS: BpmnComponentDefinition[] = [
     bpmnType: BPMN.lane,
     category: 'participants',
     title: 'Lane',
-    allowedParents: [BPMN.participant, BPMN.lane],
+    allowedParents: [BPMN.participant, BPMN.lane, BPMN.process, BPMN.collaboration, BPMN.definitions],
     canCreate: (ctx) => {
       const parent = ctx.parentBpmnType ?? BPMN.process;
-      return parent === BPMN.participant || parent === BPMN.lane;
+      return (
+        parent === BPMN.participant ||
+        parent === BPMN.lane ||
+        parent === BPMN.process ||
+        parent === BPMN.collaboration ||
+        parent === BPMN.definitions
+      );
     },
     semanticMeaning: 'A subdivision of a pool for responsibility (role, team, system). Does not change token semantics.',
     useFor: ['assign work to a role or team', 'partition a pool'],

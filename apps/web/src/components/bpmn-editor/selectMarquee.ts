@@ -27,16 +27,11 @@ type EventBus = {
   on: (event: string, priority: number, cb: (event: MouseDownEvent) => unknown) => void;
 };
 
-/** Empty process / pool / lane — not a flow node. Drag here marquees in Select. */
+/** Canvas root only. Pools and lanes must stay clickable so Select can hit the header band. */
 export function isMarqueeSurface(element: DiagramNode | null | undefined): boolean {
   if (!element || element.waypoints || element.type === 'label') return false;
   if (!element.parent) return true;
-  return (
-    element.type === 'bpmn:Process' ||
-    element.type === 'bpmn:Collaboration' ||
-    element.type === 'bpmn:Participant' ||
-    element.type === 'bpmn:Lane'
-  );
+  return element.type === 'bpmn:Process' || element.type === 'bpmn:Collaboration';
 }
 
 export function onSelectMarqueeDown(

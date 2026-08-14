@@ -66,6 +66,11 @@ describe('validateProcess', () => {
   it('rejects empty bpmnXml', () => {
     expect(validateProcess({ ...base, bpmnXml: '' }).ok).toBe(false);
   });
+
+  it('rejects oversized names', () => {
+    expect(validateProcess({ ...base, name: 'n'.repeat(201) }).ok).toBe(false);
+    expect(validateProcessPatch({ name: 'n'.repeat(201) }).ok).toBe(false);
+  });
 });
 
 describe('validateProcessPatch', () => {

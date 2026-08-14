@@ -7,7 +7,9 @@ import {
   currentComponentId,
   findMatchingReplaceTarget,
   isXorOr,
+  lanesInPool,
   matchesReplaceTarget,
+  poolLaneCreate,
   toReplaceTarget,
 } from './inspectorModel';
 import { selectableElement } from './selectable';
@@ -34,6 +36,11 @@ describe('selectableElement', () => {
   it('ignores process and collaboration roots', () => {
     expect(selectableElement({ id: 'Process_1', type: 'bpmn:Process' })).toBeNull();
     expect(selectableElement({ id: 'Collaboration_1', type: 'bpmn:Collaboration' })).toBeNull();
+  });
+
+  it('keeps a pool header and a lane as the selected id', () => {
+    expect(selectableElement({ id: 'Participant_1', type: 'bpmn:Participant' })?.id).toBe('Participant_1');
+    expect(selectableElement({ id: 'Lane_1', type: 'bpmn:Lane' })?.id).toBe('Lane_1');
   });
 });
 
@@ -112,6 +119,39 @@ describe('inspector model', () => {
         isInterrupting: false,
       }),
     ).toBe(false);
+  });
+
+  it('exposes Add lane from the registry only for a selected pool', () => {
+    const pool: DiagramElement = { id: 'Participant_1', type: 'bpmn:Participant' };
+    const lane: DiagramElement = { id: 'Lane_1', type: 'bpmn:Lane' };
+    const created = poolLaneCreate(bpmnComponentRegistry, pool);
+    expect(created?.def.id).toBe('participant.lane');
+    expect(created?.enabled).toBe(true);
+    expect(poolLaneCreate(bpmnComponentRegistry, lane)).toBeUndefined();
+    expect(poolLaneCreate(bpmnComponentRegistry, task)).toBeUndefined();
+  });
+
+  it('lists top-level lanes of one pool and skips nested or other-pool bands', () => {
+    expect(
+      lanesInPool(
+        [
+          { id: 'Lane_1', name: 'Clerk', participantId: 'Participant_1' },
+          { id: 'Lane_2', name: 'Manager', participantId: 'Participant_1' },
+          { id: 'Lane_3', name: 'Ext', participantId: 'Participant_2' },
+          { id: 'Lane_4', name: 'Nested', participantId: 'Participant_1', parentLaneId: 'Lane_1' },
+        ],
+        'Participant_1',
+      ),
+    ).toEqual([
+      { id: 'Lane_1', name: 'Clerk' },
+      { id: 'Lane_2', name: 'Manager' },
+    ]);
+  });
+
+  it('keeps a blank lane name so the inspector can edit it', () => {
+    expect(lanesInPool([{ id: 'Lane_1', name: '', participantId: 'Participant_1' }], 'Participant_1')).toEqual([
+      { id: 'Lane_1', name: '' },
+    ]);
   });
 
   it('treats XOR/OR as conditional flow sources', () => {

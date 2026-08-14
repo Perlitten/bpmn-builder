@@ -6,6 +6,7 @@ import {
   createProcess,
   createTemplateFromProcess,
   deleteProcess,
+  duplicateProcess,
   getProcessById,
   listProcesses,
   listTemplates,
@@ -87,6 +88,12 @@ export function registerProcessRoutes(app: Application): void {
       if (body.workflowJson !== undefined) {
         patch.workflowJson = body.workflowJson as ProcessPatch['workflowJson'];
       }
+      if (typeof body.version === 'number' && Number.isInteger(body.version)) {
+        patch.version = body.version;
+      } else if (body.version !== undefined) {
+        res.status(400).json({ error: 'version must be a positive integer' });
+        return;
+      }
 
       const process = await updateProcess(req.params.id, patch);
       if (!process) {
@@ -99,11 +106,38 @@ export function registerProcessRoutes(app: Application): void {
     }
   });
 
+  app.post('/api/processes/:id/duplicate', async (req: Request, res: Response) => {
+    try {
+      const rawName = req.body?.name;
+      let name: string | undefined;
+      if (rawName !== undefined) {
+        if (typeof rawName !== 'string' || !rawName.trim()) {
+          res.status(400).json({ error: 'name is required' });
+          return;
+        }
+        name = rawName.trim();
+      }
+      const process = await duplicateProcess(req.params.id, name);
+      if (!process) {
+        res.status(404).json({ error: 'not found' });
+        return;
+      }
+      res.status(201).json({ process });
+    } catch (error) {
+      sendProcessError(res, error, 'Failed to duplicate process');
+    }
+  });
+
   app.post('/api/processes/:id/template', async (req: Request, res: Response) => {
     try {
       const body = (req.body ?? {}) as Record<string, unknown>;
       if (typeof body.bpmnXml === 'string') {
-        const updated = await updateProcess(req.params.id, { bpmnXml: body.bpmnXml });
+        const current = await getProcessById(req.params.id);
+        if (!current) {
+          res.status(404).json({ error: 'not found' });
+          return;
+        }
+        const updated = await updateProcess(req.params.id, { bpmnXml: body.bpmnXml, version: current.version });
         if (!updated) {
           res.status(404).json({ error: 'not found' });
           return;

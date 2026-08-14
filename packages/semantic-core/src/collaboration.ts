@@ -1,7 +1,7 @@
 import { rebuildStructure } from './detect.js';
 import { getNode } from './graph.js';
 import { nextId } from './ids.js';
-import type { Applied, Lane, Participant, Process } from './types.js';
+import type { Applied, Lane, Participant, Process, ProcessGraph } from './types.js';
 
 function apply(prev: Process, fn: (draft: Process) => string): Applied {
   const draft = structuredClone(prev);
@@ -12,6 +12,23 @@ function apply(prev: Process, fn: (draft: Process) => string): Applied {
   const id = fn(draft);
   rebuildStructure(draft);
   return { process: draft, inverse: () => structuredClone(prev), id };
+}
+
+function emptyPeerGraph(draft: Process, name: string): ProcessGraph {
+  const id = nextId(draft, 'Process');
+  const scopeId = nextId(draft, 'Scope');
+  return {
+    id,
+    name,
+    rootScopeId: scopeId,
+    scopes: [{ id: scopeId, parentId: null, ownerId: null, nodeIds: [], flowIds: [] }],
+    nodes: [],
+    flows: [],
+    regions: [],
+    unstructured: [],
+    feedback: [],
+    exceptionBranches: [],
+  };
 }
 
 function ensureHostPool(draft: Process): Participant {
@@ -52,7 +69,10 @@ export function addPool(process: Process, spec: { name?: string; id?: string } =
   return apply(process, (draft) => {
     ensureHostPool(draft);
     const id = nextId(draft, 'Participant', spec.id);
-    draft.participants.push({ id, name: spec.name ?? 'Pool' });
+    const name = spec.name ?? 'Pool';
+    const peer = emptyPeerGraph(draft, name);
+    draft.processes.push(peer);
+    draft.participants.push({ id, name, processId: peer.id });
     return id;
   });
 }

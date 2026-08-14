@@ -6,7 +6,13 @@ import {
   type Process,
 } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
-import { completedCount, createTokenSimulation, resolveClick } from './simulate.js';
+import {
+  completedCount,
+  createTokenSimulation,
+  describeSimulation,
+  describeSimulationError,
+  resolveClick,
+} from './simulate.js';
 
 function twoStartJoin(type: 'exclusiveGateway' | 'parallelGateway'): Process {
   return {
@@ -104,5 +110,66 @@ describe('token simulation', () => {
     sim.signal('StartEvent_1');
     expect(resolveClick(p, sim.snapshot(), split)).toBeNull();
     expect(resolveClick(p, sim.snapshot(), flow.id)).toEqual({ nodeId: split, flowId: flow.id });
+  });
+
+  it('caps drain on a two-gateway cycle', () => {
+    const p: Process = {
+      ...twoStartJoin('exclusiveGateway'),
+      nodes: [
+        { id: 'StartA', type: 'start', name: 'A' },
+        { id: 'G1', type: 'exclusiveGateway', name: 'G1' },
+        { id: 'G2', type: 'exclusiveGateway', name: 'G2' },
+      ],
+      flows: [
+        { id: 'f1', source: 'StartA', target: 'G1' },
+        { id: 'f2', source: 'G1', target: 'G2' },
+        { id: 'f3', source: 'G2', target: 'G1' },
+      ],
+      scopes: [
+        {
+          id: 'Scope_1',
+          parentId: null,
+          ownerId: null,
+          nodeIds: ['StartA', 'G1', 'G2'],
+          flowIds: ['f1', 'f2', 'f3'],
+        },
+      ],
+    };
+    const sim = createTokenSimulation(p);
+    expect(() => sim.signal('StartA')).toThrow(/step limit/);
+  });
+});
+
+describe('describeSimulation', () => {
+  it('names the XOR and tells the user to click a sequence flow', () => {
+    let p = createProcess();
+    p = splitExclusive(p, { after: 'StartEvent_1' }).process;
+    p = addTask(p, { name: 'Yes', branchId: p.regions[0].branches[0].id }).process;
+    p = addTask(p, { name: 'No', branchId: p.regions[0].branches[1].id }).process;
+    const split = p.regions[0].split;
+    p = { ...p, nodes: p.nodes.map((n) => (n.id === split ? { ...n, name: 'Review' } : n)) };
+    const sim = createTokenSimulation(p);
+    sim.signal('StartEvent_1');
+    expect(describeSimulation(p, sim.snapshot())).toBe(
+      'Token on Review — click a sequence flow to choose XOR branch',
+    );
+  });
+
+  it('describes AND join wait with arrived incoming count', () => {
+    const p = twoStartJoin('parallelGateway');
+    const sim = createTokenSimulation(p);
+    sim.signal('StartA');
+    expect(describeSimulation(p, sim.snapshot())).toBe('Waiting at AND join · Join (1/2 incoming)');
+  });
+
+  it('asks to click a start event before any token', () => {
+    const p = createProcess();
+    expect(describeSimulation(p, createTokenSimulation(p).snapshot())).toBe(
+      'Click a start event to place a token',
+    );
+  });
+
+  it('maps cycle cap to a reset hint', () => {
+    expect(describeSimulationError(new Error('simulation exceeded step limit'))).toMatch(/Reset tokens/);
   });
 });

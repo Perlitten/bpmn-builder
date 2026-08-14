@@ -282,7 +282,8 @@ describe('semantic-core', () => {
     expect(p.participants).toHaveLength(2);
     expect(p.participants[0]).toMatchObject({ name: 'Review', processId: p.id });
     expect(p.participants[1]).toMatchObject({ id: added.id, name: 'Partner' });
-    expect(p.participants[1]!.processId).toBeUndefined();
+    expect(p.participants[1]!.processId).toBeDefined();
+    expect(p.processes.some((g) => g.id === p.participants[1]!.processId && g.nodes.length === 0)).toBe(true);
     expect(p.collaborationId).toMatch(/^Collaboration_/);
     expect(p.flows.every((f) => p.nodes.some((n) => n.id === f.source) && p.nodes.some((n) => n.id === f.target))).toBe(
       true,
@@ -331,9 +332,29 @@ describe('semantic-core', () => {
     expect(p.participants.map((part) => part.name)).toEqual(['Process', 'Bank']);
     p = createFromComponent(p, 'participant.lane', { after: p.participants[0]!.id, name: 'Ops' }).process;
     expect(p.lanes[0]!.name).toBe('Ops');
+    const bank = p.participants[1]!.id;
+    p = createFromComponent(p, 'participant.lane', { after: bank, name: 'Treasury' }).process;
+    expect(p.participants).toHaveLength(2);
+    expect(p.lanes.find((l) => l.name === 'Treasury')?.participantId).toBe(bank);
     p = createFromComponent(p, 'flow.message').process;
     expect(p.messageFlows).toHaveLength(1);
     expect(p.messageFlows[0]!.source).not.toBe(p.messageFlows[0]!.target);
+  });
+
+  it('Lane create wraps a host pool instead of stacking extra pools', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Task' }).process;
+    p = createFromComponent(p, 'participant.lane', { name: 'Clerk' }).process;
+    expect(p.participants).toHaveLength(1);
+    expect(p.participants[0]!.processId).toBe(p.id);
+    expect(p.lanes).toHaveLength(1);
+    expect(p.lanes[0]!.name).toBe('Clerk');
+    expect(p.lanes[0]!.nodeIds).toEqual(expect.arrayContaining(['StartEvent_1', named(p, 'Task'), 'EndEvent_1']));
+
+    p = createFromComponent(p, 'participant.lane', { name: 'Manager' }).process;
+    expect(p.participants).toHaveLength(1);
+    expect(p.lanes.map((l) => l.name)).toEqual(['Clerk', 'Manager']);
+    expect(p.lanes[1]!.nodeIds).toEqual([]);
   });
 
   it('setBranchLocked survives structure rebuild', () => {

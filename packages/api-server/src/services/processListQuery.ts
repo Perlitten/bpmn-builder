@@ -6,6 +6,7 @@ export type ProcessListSort = (typeof PROCESS_LIST_SORTS)[number];
 
 export const PROCESS_LIST_DEFAULT_LIMIT = 20;
 export const PROCESS_LIST_MAX_LIMIT = 100;
+export const PROCESS_LIST_MAX_PAGE = 10_000;
 
 export type ProcessListQuery = {
   q: string;
@@ -47,7 +48,7 @@ export function parseProcessListQuery(
     return { ok: false, error: 'sort must be updated_desc, updated_asc, name_asc, or name_desc' };
   }
 
-  const page = parseBoundedInt(firstString(query?.page), 1, Number.MAX_SAFE_INTEGER);
+  const page = parseBoundedInt(firstString(query?.page), 1, PROCESS_LIST_MAX_PAGE);
   if (page == null) return { ok: false, error: 'page must be a positive integer' };
 
   const limit = parseBoundedInt(

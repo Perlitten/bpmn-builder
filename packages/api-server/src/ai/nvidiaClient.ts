@@ -1,4 +1,13 @@
-import { assistantTimeoutError, assistantTimeoutMs, isTimeoutError, whenAborted } from './timeout.js';
+import { isUpstreamError } from './errors.js';
+import {
+  assistantTimeoutError,
+  assistantTimeoutMs,
+  assistantUpstreamError,
+  connectGateFailed,
+  createConnectGate,
+  isTimeoutError,
+  whenAborted,
+} from './timeout.js';
 import type { GenerateJsonInput } from './types.js';
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
@@ -78,16 +87,23 @@ export function createNvidiaClient(apiKey: string, model: string) {
     const deadline = signal ?? AbortSignal.timeout(assistantTimeoutMs());
     for (let attempt = 0; attempt < 2; attempt += 1) {
       if (deadline.aborted) throw deadline.reason ?? assistantTimeoutError();
+      const gate = createConnectGate(deadline);
+      const stop = whenAborted(gate.signal);
+      void stop.catch(() => undefined);
       try {
-        const response = await fetch(`${process.env.NVIDIA_BASE_URL || NVIDIA_BASE_URL}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ model, ...body, stream: true }),
-          signal: deadline,
-        });
+        const response = await Promise.race([
+          fetch(`${process.env.NVIDIA_BASE_URL || NVIDIA_BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model, ...body, stream: true }),
+            signal: gate.signal,
+          }),
+          stop,
+        ]);
+        gate.headersArrived();
         if (response.ok) return await readStream(response, deadline);
         const payload = (await response.json()) as NvidiaResponse;
         const retryable = response.status >= 500 && attempt === 0 && !deadline.aborted;
@@ -95,7 +111,11 @@ export function createNvidiaClient(apiKey: string, model: string) {
           throw new Error(`NVIDIA API ${response.status}: ${payload.error?.message || 'Request failed'}`);
         }
       } catch (error) {
-        if (isTimeoutError(error) || deadline.aborted || attempt === 1) throw error;
+        if (deadline.aborted) throw deadline.reason ?? assistantTimeoutError();
+        if (isUpstreamError(error) || connectGateFailed(gate, deadline)) throw assistantUpstreamError();
+        if (isTimeoutError(error) || attempt === 1) throw error;
+      } finally {
+        gate.dispose();
       }
     }
     throw new Error('NVIDIA API request failed after retry.');

@@ -621,6 +621,10 @@
 }
 
 .architect-panel {
+  --architect-edge: color-mix(in srgb, var(--color-ink) 50%, var(--color-canvas));
+  --architect-quiet: color-mix(in srgb, var(--color-ink) 82%, var(--color-canvas));
+  --architect-placeholder: color-mix(in srgb, var(--color-ink) 62%, var(--color-canvas));
+  --architect-disabled-fill: color-mix(in srgb, var(--color-ink) 10%, var(--color-canvas));
   position: relative;
   z-index: auto;
   display: flex;
@@ -631,7 +635,7 @@
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0 10px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--architect-edge);
   background: var(--color-canvas);
 }
 
@@ -647,7 +651,7 @@
   align-items: center;
   margin: 0 -10px 2px;
   padding: 8px 10px 6px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--architect-edge);
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -668,7 +672,7 @@
   min-height: 64px;
   margin: 0;
   padding: 4px 6px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--architect-edge);
   border-radius: 0;
   background: var(--color-canvas);
   font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -681,6 +685,34 @@
   border-color: var(--color-ink);
 }
 
+.architect-panel textarea::placeholder {
+  color: var(--architect-placeholder);
+  -webkit-text-fill-color: var(--architect-placeholder);
+  opacity: 1;
+}
+
+.architect-panel textarea::-moz-placeholder {
+  color: var(--architect-placeholder);
+  opacity: 1;
+}
+
+.architect-panel textarea:disabled {
+  opacity: 1;
+  color: var(--color-ink);
+  -webkit-text-fill-color: var(--color-ink);
+}
+
+.architect-panel textarea:disabled::placeholder {
+  color: var(--architect-placeholder);
+  -webkit-text-fill-color: var(--architect-placeholder);
+  opacity: 1;
+}
+
+.architect-panel textarea:disabled::-moz-placeholder {
+  color: var(--architect-placeholder);
+  opacity: 1;
+}
+
 .architect-apply {
   align-self: flex-start;
   margin: 0;
@@ -689,13 +721,15 @@
   background: var(--color-ink);
   font-size: 11px;
   color: var(--color-canvas);
+  opacity: 1;
   cursor: pointer;
 }
 
 .architect-apply:disabled {
-  border-color: var(--color-border);
-  background: var(--color-canvas);
-  color: var(--color-muted);
+  border-color: var(--architect-edge);
+  background: var(--architect-disabled-fill);
+  color: var(--architect-quiet);
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -709,7 +743,7 @@
 .architect-secondary {
   margin: 0;
   padding: 4px 8px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--architect-edge);
   background: var(--color-canvas);
   font-size: 11px;
   color: var(--color-ink);
@@ -743,7 +777,25 @@
   margin: 0;
   font-size: 11px;
   line-height: 1.35;
-  color: var(--color-muted);
+  color: var(--architect-quiet);
+}
+
+.architect-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--architect-quiet);
+}
+
+.architect-meta-count {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.architect-meta .is-issue {
+  color: var(--color-danger);
 }
 
 .architect-error {
@@ -767,7 +819,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: var(--architect-quiet);
 }
 
 .architect-scope-options {
@@ -781,11 +833,15 @@
   align-items: center;
   margin: 0;
   padding: 4px 6px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--architect-edge);
   background: var(--color-canvas);
   font-size: 11px;
   color: var(--color-ink);
   cursor: pointer;
+}
+
+.architect-scope-options label:hover:not(.is-disabled):not(.is-active) {
+  border-color: var(--color-ink);
 }
 
 .architect-scope-options label.is-active {
@@ -795,9 +851,10 @@
 }
 
 .architect-scope-options label.is-disabled {
-  color: var(--color-muted);
+  color: var(--architect-quiet);
+  background: var(--architect-disabled-fill);
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .architect-protect {

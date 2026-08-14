@@ -1,5 +1,17 @@
+export function isUpstreamError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  if ('name' in error && error.name === 'UpstreamError') return true;
+  const message = error instanceof Error ? error.message : String(error);
+  if (/did not respond|fetch failed|econnrefused|enotfound|ehostunreach/i.test(message)) return true;
+  const cause = 'cause' in error ? (error as { cause?: unknown }).cause : undefined;
+  return cause != null && cause !== error && isUpstreamError(cause);
+}
+
 export function friendlyAiError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error || '');
+  if (isUpstreamError(error)) {
+    return 'AI provider did not respond. Check the API key and network, then retry.';
+  }
   if (
     error instanceof Error &&
     (error.name === 'AbortError' || error.name === 'TimeoutError' || /timed out after 30s|aborted due to timeout|this operation was aborted/i.test(raw))

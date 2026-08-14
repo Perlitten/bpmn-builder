@@ -29,6 +29,7 @@ function asNode(value: unknown): LayoutNode {
     type: String(n.type ?? n.kind ?? 'task'),
     ...(name ? { name } : {}),
     ...(n.triggeredByEvent ? { triggeredByEvent: true } : {}),
+    ...(typeof n.attachedTo === 'string' && n.attachedTo ? { attachedTo: n.attachedTo } : {}),
   };
 }
 
@@ -91,6 +92,7 @@ export function fromSemanticProcess(process: Process | unknown): LayoutInput {
         type: n.type,
         ...(n.name ? { name: n.name } : {}),
         ...(n.triggeredByEvent ? { triggeredByEvent: true } : {}),
+        ...(n.attachedTo ? { attachedTo: n.attachedTo } : {}),
       })),
       sequenceFlows: process.flows.map((f) => ({
         id: f.id,
@@ -124,6 +126,7 @@ export function fromSemanticProcess(process: Process | unknown): LayoutInput {
           type: n.type,
           ...(n.name ? { name: n.name } : {}),
           ...(n.triggeredByEvent ? { triggeredByEvent: true } : {}),
+          ...(n.attachedTo ? { attachedTo: n.attachedTo } : {}),
         })),
         sequenceFlows: g.flows.map((f) => ({
           id: f.id,

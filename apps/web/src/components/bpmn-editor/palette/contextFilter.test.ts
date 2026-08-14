@@ -85,8 +85,7 @@ describe('context filter', () => {
     const items = idle.groups.flatMap((group) => group.items);
     expect(items.find((entry) => entry.item.id === 'participant.pool')?.enabled).toBe(true);
     const lane = items.find((entry) => entry.item.id === 'participant.lane');
-    expect(lane?.enabled).toBe(false);
-    expect(lane?.reason).toMatch(/pool or lane/i);
+    expect(lane?.enabled).toBe(true);
   });
 
   it('does not treat an end event as a continue source', () => {
@@ -94,7 +93,7 @@ describe('context filter', () => {
     expect(isSequenceFlowSource(task)).toBe(true);
   });
 
-  it('disables lane without a pool and explains why', () => {
+  it('enables lane without a pool so create wraps a host pool', () => {
     const lane = def('participant.lane');
     expect(lane.implemented).toBe(true);
     const resolved = resolveCatalogItem(lane, {
@@ -102,8 +101,13 @@ describe('context filter', () => {
       hasParticipant: false,
       searching: true,
     });
-    expect(resolved.enabled).toBe(false);
-    expect(resolved.reason).toMatch(/pool or lane/i);
+    expect(resolved.enabled).toBe(true);
+    const idle = resolveCatalogItem(lane, {
+      selection: null,
+      hasParticipant: false,
+      searching: false,
+    });
+    expect(idle.enabled).toBe(true);
     const onPool = resolveCatalogItem(lane, {
       selection: { id: 'Participant_1', type: 'bpmn:Participant' },
       hasParticipant: true,

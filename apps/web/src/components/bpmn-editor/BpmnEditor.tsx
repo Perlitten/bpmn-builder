@@ -5,6 +5,7 @@ import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '@bpmn/rules';
 import {
   createTokenSimulation,
   describeSimulation,
+  describeSimulationError,
   resolveClick,
   type TokenSimulation,
 } from '@bpmn/simulate';
@@ -22,7 +23,7 @@ import { ElementInspector, InspectorLintFooter } from './inspector/ElementInspec
 import { fetchAiStatus, runAssistant, type ChatTurn } from '../../lib/api';
 import { modelBoundsFromViewbox, prepareDiagramSvg } from '../../lib/exportDiagram';
 import { attachBoundary, canDeleteElement, canReplaceWithBpmnJs, deleteSelection, replaceElement } from './inspector/inspectorOps';
-import type { FlowKind } from './inspector/inspectorModel';
+import { lanesInPool, type FlowKind } from './inspector/inspectorModel';
 import { isEditorChromeKeyTarget, selectableElement } from './inspector/selectable';
 import { pickCatalogItem } from './palette/createFromCatalog';
 import { semanticGeometryModule } from './palette/semanticGeometry';
@@ -39,9 +40,21 @@ import { createTokenView, type TokenView } from './simulate/tokenView';
 import { isCompactViewport, useCompactViewport } from './compactViewport';
 import { EditorOnboarding } from './EditorOnboarding';
 import { readEditorOnboardingSeen } from './onboardingStorage';
-import { applyFit, COMPACT_FIT_PADDING, DESKTOP_FIT_PADDING } from './fitViewport';
-import { bindKeyboardToHost, isCopyKey, isPasteKey, type EditorKeyboard } from './hostKeyboard';
+import { applyFit, COMPACT_FIT_PADDING, DESKTOP_FIT_PADDING, panCanvasToShape } from './fitViewport';
+import {
+  applySpacePanDown,
+  applySpacePanUp,
+  bindKeyboardToHost,
+  createSpacePanHold,
+  isCopyKey,
+  isPasteKey,
+  isRedoKey,
+  isUndoKey,
+  releaseSpacePan,
+  type EditorKeyboard,
+} from './hostKeyboard';
 import { createSelectMarqueeModule } from './selectMarquee';
+import { usableXml } from './usableXml';
 
 type BpmnEditorProps = {
   processId: string;
@@ -91,10 +104,6 @@ type EventBus = {
 
 type Modeling = { updateLabel: (element: unknown, name: string) => void };
 
-function usableXml(xml: string) {
-  return /bpmn:startEvent|<startEvent/i.test(xml) ? xml : DEFAULT_BPMN_XML;
-}
-
 function readViewbox(canvas: CanvasService): Viewbox | undefined {
   try {
     if (!canvas.getRootElement()) return undefined;
@@ -113,7 +122,7 @@ function tryResized(canvas: CanvasService) {
 }
 
 function fitRemaining(canvas: CanvasService, host: HTMLElement | null) {
-  applyFit(
+  return applyFit(
     canvas,
     isCompactViewport(window.innerWidth) ? COMPACT_FIT_PADDING : DESKTOP_FIT_PADDING,
     host,
@@ -146,11 +155,13 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [scale, setScale] = useState(1);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const toolRef = useRef(tool);
+  const spacePanHoldRef = useRef(createSpacePanHold());
   const [catalogView, setCatalogView] = useState<PaletteCatalogView | null>(null);
   const [query, setQuery] = useState('');
   const [selection, setSelection] = useState<DiagramElement | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [lockRev, setLockRev] = useState(0);
+  const [graphRev, setGraphRev] = useState(0);
   const [canDelete, setCanDelete] = useState(false);
   const [hasParticipant, setHasParticipant] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
@@ -212,6 +223,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   }, []);
 
   const emit = useCallback((next: string) => {
+    setGraphRev((n) => n + 1);
     onChangeRef.current?.(next);
   }, []);
 
@@ -264,20 +276,39 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         try {
           const vb = fitted ? readViewbox(canvas) : undefined;
           await modeler.importXML(next);
-          tryResized(canvas);
-          if (vb) canvas.viewbox(vb);
-          else {
-            fitRemaining(canvas, overlayRef.current);
-            requestAnimationFrame(() => fitRemaining(canvas, overlayRef.current));
-            fitted = true;
-          }
-          if (selectId) {
-            const registry = modeler.get('elementRegistry') as { get: (id: string) => DiagramElement | undefined };
-            const ids = Array.isArray(selectId) ? selectId : [selectId];
-            const shapes = ids.map((id) => registry.get(id)).filter((shape): shape is DiagramElement => !!shape);
-            if (shapes.length) (modeler.get('selection') as SelectionService).select(shapes);
-          }
-          refreshSelection();
+          const registry = modeler.get('elementRegistry') as { get: (id: string) => DiagramElement | undefined };
+          const ids = selectId ? (Array.isArray(selectId) ? selectId : [selectId]) : [];
+          const shapes = ids.map((id) => registry.get(id)).filter((shape): shape is DiagramElement => !!shape);
+
+          const applyChrome = () => {
+            tryResized(canvas);
+            if (vb) {
+              try {
+                canvas.viewbox(vb);
+              } catch {
+                /* canvas not ready */
+              }
+            } else if (fitRemaining(canvas, overlayRef.current)) {
+              fitted = true;
+            }
+            if (shapes.length) {
+              (modeler.get('selection') as SelectionService).select(shapes);
+              const shown = shapes[0]!;
+              if (typeof shown.x === 'number' && typeof shown.y === 'number') {
+                panCanvasToShape(
+                  canvas,
+                  { x: shown.x, y: shown.y, width: shown.width ?? 0, height: shown.height ?? 0 },
+                  overlayRef.current,
+                );
+              }
+            }
+            refreshSelection();
+          };
+          applyChrome();
+          requestAnimationFrame(() => {
+            applyChrome();
+            requestAnimationFrame(applyChrome);
+          });
           if (simulatingRef.current) publishSim();
           lastGoodXml = next;
         } catch (error) {
@@ -286,8 +317,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
             try {
               await modeler.importXML(lastGoodXml);
               tryResized(canvas);
-              fitRemaining(canvas, overlayRef.current);
-              fitted = true;
+              if (fitRemaining(canvas, overlayRef.current)) fitted = true;
+              requestAnimationFrame(() => {
+                if (fitRemaining(canvas, overlayRef.current)) fitted = true;
+              });
             } catch (restoreError) {
               console.error('BPMN XML restore failed', restoreError);
             }
@@ -383,12 +416,18 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         sim.signal(target.nodeId, target.flowId);
         publishSim();
       } catch (err) {
-        setHint(err instanceof Error ? err.message : describeSimulation(process, sim.snapshot()));
+        tokenViewRef.current?.sync(process, sim.snapshot());
+        const status = describeSimulationError(err);
+        onSimStatusRef.current?.(status);
+        setHint(status);
       }
     };
     eventBus.on('element.click', onSimClick);
 
-    const observer = new ResizeObserver(() => tryResized(canvas));
+    const observer = new ResizeObserver(() => {
+      tryResized(canvas);
+      if (!fitted && fitRemaining(canvas, overlayRef.current)) fitted = true;
+    });
     observer.observe(el);
 
     return () => {
@@ -408,7 +447,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       if (event.key === 'Escape') {
         if (isEditorChromeKeyTarget(event.target)) return;
         setCatalogView(null);
-        setHint(null);
+        if (!simulatingRef.current) setHint(null);
         const dragging = modelerRef.current?.get('dragging') as Dragging | undefined;
         dragging?.cancel();
         return;
@@ -417,6 +456,18 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       const modeler = modelerRef.current;
       const session = sessionRef.current;
       if (!modeler || !session) return;
+      if (isUndoKey(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        void session.undo().then(emit);
+        return;
+      }
+      if (isRedoKey(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        void session.redo().then(emit);
+        return;
+      }
       if (isCopyKey(event)) {
         const ids = (modeler.get('selection') as SelectionService).get().map((el) => el.id).filter(Boolean);
         if (!session.copy(ids)) return;
@@ -437,6 +488,8 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         return;
       }
       if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+      if (!(event.target instanceof Element) || !event.target.closest('.djs-container')) return;
+      if (event.target.closest('button, a, input, textarea, select')) return;
       const selected = (modeler.get('selection') as SelectionService).get();
       const target = selected.map(selectableElement).find((el): el is DiagramElement => !!el);
       if (!target) return;
@@ -466,6 +519,14 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       if (!simulating) setHint(null);
       return;
     }
+    const modeler = modelerRef.current;
+    const hand = modeler?.get('handTool') as HandTool | undefined;
+    const dragging = modeler?.get('dragging') as Dragging | undefined;
+    dragging?.cancel();
+    if (hand?.isActive()) hand.toggle();
+    spacePanHoldRef.current = createSpacePanHold();
+    toolRef.current = 'select';
+    setTool('select');
     simRef.current = createTokenSimulation(session.process());
     publishSim();
     return () => {
@@ -516,6 +577,30 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     dragging.cancel();
     if (hand.isActive()) hand.toggle();
   }, []);
+
+  useEffect(() => {
+    const onDown = (event: KeyboardEvent) => {
+      const ignore = isEditorChromeKeyTarget(event.target) || simulatingRef.current;
+      const next = applySpacePanDown(event, toolRef.current, spacePanHoldRef.current, ignore);
+      if (next) handleTool(next);
+    };
+    const onUp = (event: KeyboardEvent) => {
+      const next = applySpacePanUp(event, spacePanHoldRef.current);
+      if (next) handleTool(next);
+    };
+    const onBlur = () => {
+      const next = releaseSpacePan(spacePanHoldRef.current);
+      if (next) handleTool(next);
+    };
+    window.addEventListener('keydown', onDown, true);
+    window.addEventListener('keyup', onUp, true);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onDown, true);
+      window.removeEventListener('keyup', onUp, true);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [handleTool]);
 
   const handleArchitect = useCallback(
     async (message: string, history: ChatTurn[], scope: AgentScope, signal: AbortSignal) => {
@@ -575,16 +660,21 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     [selection],
   );
 
-  const lint = useMemo(
-    () => lintProcess(usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE }),
-    [xml],
-  );
+  const lint = useMemo(() => {
+    const graph = sessionRef.current?.process();
+    return lintProcess(graph ?? usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE });
+  }, [xml, graphRev]);
+
+  const poolLanes = useMemo(() => {
+    if (selection?.type !== 'bpmn:Participant') return [];
+    return lanesInPool(sessionRef.current?.process().lanes ?? [], selection.id);
+  }, [selection, xml, graphRev]);
 
   const agentCtx = useMemo(() => {
     const session = sessionRef.current;
     if (!session) return { branchLocked: false, selectionIds: selectedIds };
     return resolveAgentContext(session.process(), selectedIds);
-  }, [selectedIds, xml, lockRev]);
+  }, [selectedIds, xml, lockRev, graphRev]);
 
   return (
     <div className={`bpmn-stage bpmn-editor-stage flex${simulating ? ' is-simulating' : ''}${tool === 'pan' ? ' is-pan' : ''}`}>
@@ -631,7 +721,9 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         {onboarding && !simulating ? (
           <EditorOnboarding onDismiss={() => setOnboarding(false)} />
         ) : hint ? (
-          <div className="palette-hint">{hint}</div>
+          <div className={`palette-hint${simulating ? ' is-sim' : ''}`} role="status">
+            {hint}
+          </div>
         ) : null}
       </div>
       <aside className="element-inspector" aria-label="Process inspector">
@@ -645,6 +737,11 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
             onRename={(name) => {
               if (simulating) return;
               const next = sessionRef.current?.rename(selection.id, name);
+              if (next) emit(next);
+            }}
+            onRenameLane={(laneId, name) => {
+              if (simulating) return;
+              const next = sessionRef.current?.rename(laneId, name);
               if (next) emit(next);
             }}
             onChangeTo={(def) => {
@@ -706,6 +803,21 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
                   });
                 });
             }}
+            onCreate={(def) => {
+              if (simulating) return;
+              const session = sessionRef.current;
+              if (!session) return;
+              void session
+                .create(def.id, selection.id)
+                .then((result) => {
+                  emit(result.xml);
+                  setHint(null);
+                })
+                .catch((err) => {
+                  setHint(err instanceof Error ? err.message : String(err));
+                });
+            }}
+            poolLanes={poolLanes}
           />
         ) : (
           <InspectorLintFooter lint={lint} />

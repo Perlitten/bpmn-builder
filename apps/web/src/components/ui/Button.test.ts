@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Button } from './Button';
-import { nextMenuIndex } from './ChromeMenu';
+import { ChromeMenuItem, nextMenuIndex } from './ChromeMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 
 describe('shared chrome focus and dialogs', () => {
@@ -29,6 +29,20 @@ describe('shared chrome focus and dialogs', () => {
     expect(html).toContain('Could not import BPMN');
     expect(html).toContain('Cancel');
     expect(html).toContain('Retry');
+  });
+
+  it('aligns an optional icon with the menu item label', () => {
+    const html = renderToStaticMarkup(
+      createElement(ChromeMenuItem, {
+        onSelect: () => undefined,
+        icon: createElement('svg', { viewBox: '0 0 24 24' }),
+        children: 'Download BPMN',
+      }),
+    );
+    expect(html).toContain('Download BPMN');
+    expect(html).toContain('<svg');
+    expect(html).toMatch(/items-start gap-2/);
+    expect(html).toMatch(/aria-hidden/);
   });
 
   it('wraps menu focus with arrow keys and supports Home / End', () => {

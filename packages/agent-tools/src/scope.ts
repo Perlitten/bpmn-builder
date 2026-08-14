@@ -182,17 +182,137 @@ function refuse(name: ToolName, reason: string): never {
   throw new ToolPlanError(`${name} ${reason}`);
 }
 
+const PLACE_TOOLS = new Set<ToolName>([
+  'addTask',
+  'addAfter',
+  'addBefore',
+  'splitExclusive',
+  'splitParallel',
+  'splitInclusive',
+  'splitEventBased',
+  'moveToBranch',
+]);
+
+function processWide(scope: AgentScope | undefined): boolean {
+  return !scope || scope.kind === 'process';
+}
+
+function regionById(process: Process, id: string): StructuredRegion | undefined {
+  return allRegions(process).find((region) => region.id === id);
+}
+
+function branchById(process: Process, id: string): Branch | undefined {
+  for (const region of allRegions(process)) {
+    const hit = region.branches.find((branch) => branch.id === id);
+    if (hit) return hit;
+  }
+}
+
+function happyBranchOf(process: Process, region: StructuredRegion): Branch | undefined {
+  const def = process.flows.find((flow) => flow.source === region.split && flow.isDefault);
+  if (def) {
+    const hit = region.branches.find((branch) => branch.entryFlowId === def.id && !branch.locked);
+    if (hit) return hit;
+  }
+  return region.branches.find((branch) => !branch.locked) ?? region.branches[0];
+}
+
+function lookupPlaceRef(
+  process: Process,
+  ref: string,
+  lastId?: string,
+): { kind: 'branch' | 'region' | 'node'; id: string } | undefined {
+  if (ref === '$last' || ref === '$id') {
+    if (!lastId) return undefined;
+    return lookupPlaceRef(process, lastId);
+  }
+  if (branchById(process, ref)) return { kind: 'branch', id: ref };
+  if (regionById(process, ref)) return { kind: 'region', id: ref };
+  if (process.nodes.some((node) => node.id === ref) || process.flows.some((flow) => flow.id === ref)) {
+    return { kind: 'node', id: ref };
+  }
+  const namedBranches = allRegions(process).flatMap((region) => region.branches.filter((branch) => branch.name === ref));
+  if (namedBranches.length === 1) return { kind: 'branch', id: namedBranches[0]!.id };
+  const namedNodes = process.nodes.filter((node) => node.name === ref);
+  if (namedNodes.length === 1) return { kind: 'node', id: namedNodes[0]!.id };
+}
+
+/** Map region ids / $last / hallucinated branch pins to a legal insert. */
+function rewritePlaceArgs(
+  name: ToolName,
+  args: Record<string, unknown>,
+  process: Process,
+  lastId: string | undefined,
+  scope: AgentScope | undefined,
+): Record<string, unknown> {
+  if (!PLACE_TOOLS.has(name)) return args;
+  const next = { ...args };
+  const read = (key: string): string | undefined => {
+    const value = next[key];
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  };
+
+  const afterRaw = read('after');
+  if (afterRaw) {
+    const hit = lookupPlaceRef(process, afterRaw, lastId);
+    if (hit?.kind === 'region') {
+      const region = regionById(process, hit.id)!;
+      if (processWide(scope)) {
+        next.after = region.join;
+        delete next.branchId;
+      } else {
+        const happy = happyBranchOf(process, region);
+        next.after = region.split;
+        if (happy) next.branchId = happy.id;
+      }
+    }
+  }
+
+  const beforeRaw = read('before');
+  if (beforeRaw) {
+    const hit = lookupPlaceRef(process, beforeRaw, lastId);
+    if (hit?.kind === 'region') next.before = regionById(process, hit.id)!.split;
+  }
+
+  const branchRaw = read('branchId');
+  if (branchRaw) {
+    const hit = lookupPlaceRef(process, branchRaw, lastId);
+    if (hit?.kind === 'branch') {
+      next.branchId = hit.id;
+    } else if (hit?.kind === 'region') {
+      if (processWide(scope)) {
+        delete next.branchId;
+      } else {
+        const happy = happyBranchOf(process, regionById(process, hit.id)!);
+        if (happy) next.branchId = happy.id;
+        else delete next.branchId;
+      }
+    } else if (processWide(scope)) {
+      delete next.branchId;
+    }
+  }
+
+  return next;
+}
+
 export function applyScopeDefaults(
   name: ToolName,
   args: Record<string, unknown>,
   scope: AgentScope | undefined,
+  ctx?: { process: Process; lastId?: string },
 ): Record<string, unknown> {
-  if (!scope) return args;
-  if (name !== 'addTask') return args;
-  if (args.after != null || args.before != null || args.branchId != null) return args;
-  if (scope.kind === 'branch' && scope.id) return { ...args, branchId: scope.id };
-  if (scope.kind === 'selection' && scope.ids?.length === 1) return { ...args, after: scope.ids[0] };
-  return args;
+  const placed = ctx?.process ? rewritePlaceArgs(name, args, ctx.process, ctx.lastId, scope) : args;
+  if (!scope) return placed;
+  if (name !== 'addTask') return placed;
+  if (placed.after != null || placed.before != null || placed.branchId != null) return placed;
+  if (scope.kind === 'branch' && scope.id) return { ...placed, branchId: scope.id };
+  if (scope.kind === 'selection' && scope.ids?.length === 1) return { ...placed, after: scope.ids[0] };
+  if (scope.kind === 'region' && scope.id && ctx?.process) {
+    const region = regionById(ctx.process, scope.id);
+    const happy = region ? happyBranchOf(ctx.process, region) : undefined;
+    if (happy) return { ...placed, branchId: happy.id };
+  }
+  return placed;
 }
 
 export function assertMutationAllowed(

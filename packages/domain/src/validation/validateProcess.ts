@@ -4,8 +4,12 @@ import { isNonEmptyString } from './isNonEmptyString.js';
 import { isProcessStatus } from './isProcessStatus.js';
 import { validateWorkflowDocument } from './validateWorkflow.js';
 
+export const PROCESS_NAME_MAX = 200;
+export const PROCESS_DESCRIPTION_MAX = 20_000;
+export const PROCESS_BPMN_XML_MAX = 2 * 1024 * 1024;
+
 export type ProcessPatch = Partial<
-  Pick<Process, 'name' | 'description' | 'status' | 'bpmnXml' | 'workflowJson'>
+  Pick<Process, 'name' | 'description' | 'status' | 'bpmnXml' | 'workflowJson' | 'version'>
 >;
 
 export type ProcessValidationResult =
@@ -16,14 +20,32 @@ function fail(error: string, issues?: ValidationIssue[]): ProcessValidationResul
   return { ok: false, error, issues: issues ?? [{ code: 'invalid_process', message: error }] };
 }
 
+function tooLong(label: string, value: string, max: number): ProcessValidationResult | null {
+  if (value.length > max) return fail(`${label} must be at most ${max} characters`);
+  return null;
+}
+
 export function validateProcessPatch(
   patch: ProcessPatch,
 ): { ok: true } | { ok: false; error: string; issues: ValidationIssue[] } {
-  if (patch.name !== undefined && !isNonEmptyString(patch.name)) return fail('name is required');
+  if (patch.name !== undefined) {
+    if (!isNonEmptyString(patch.name)) return fail('name is required');
+    const length = tooLong('name', patch.name.trim(), PROCESS_NAME_MAX);
+    if (length) return length;
+  }
   if (patch.status !== undefined && !isProcessStatus(patch.status)) return fail('invalid status');
-  if (patch.bpmnXml !== undefined && !isNonEmptyString(patch.bpmnXml)) return fail('bpmnXml is required');
-  if (patch.description !== undefined && patch.description !== null && typeof patch.description !== 'string') {
-    return fail('description must be a string or null');
+  if (patch.bpmnXml !== undefined) {
+    if (!isNonEmptyString(patch.bpmnXml)) return fail('bpmnXml is required');
+    const length = tooLong('bpmnXml', patch.bpmnXml, PROCESS_BPMN_XML_MAX);
+    if (length) return length;
+  }
+  if (patch.description !== undefined && patch.description !== null) {
+    if (typeof patch.description !== 'string') return fail('description must be a string or null');
+    const length = tooLong('description', patch.description, PROCESS_DESCRIPTION_MAX);
+    if (length) return length;
+  }
+  if (patch.version !== undefined && (!Number.isInteger(patch.version) || patch.version < 1)) {
+    return fail('version must be a positive integer');
   }
   if (patch.workflowJson !== undefined && patch.workflowJson !== null) {
     const workflow = validateWorkflowDocument(patch.workflowJson);
@@ -38,10 +60,16 @@ export function validateProcess(
 ): ProcessValidationResult {
   if (!isNonEmptyString(input.id)) return fail('id is required');
   if (!isNonEmptyString(input.name)) return fail('name is required');
+  const nameLen = tooLong('name', input.name.trim(), PROCESS_NAME_MAX);
+  if (nameLen) return nameLen;
   if (!isProcessStatus(input.status)) return fail('invalid status');
   if (!isNonEmptyString(input.bpmnXml)) return fail('bpmnXml is required');
-  if (input.description != null && typeof input.description !== 'string') {
-    return fail('description must be a string or null');
+  const xmlLen = tooLong('bpmnXml', input.bpmnXml, PROCESS_BPMN_XML_MAX);
+  if (xmlLen) return xmlLen;
+  if (input.description != null) {
+    if (typeof input.description !== 'string') return fail('description must be a string or null');
+    const descLen = tooLong('description', input.description, PROCESS_DESCRIPTION_MAX);
+    if (descLen) return descLen;
   }
   if (input.version !== undefined && (typeof input.version !== 'number' || !Number.isFinite(input.version))) {
     return fail('version must be a number');

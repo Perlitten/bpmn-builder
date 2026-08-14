@@ -73,7 +73,13 @@ export function createTokenSimulation(process: Process): TokenSimulation {
   function drain(): void {
     if (draining) return;
     draining = true;
+    let steps = 0;
     while (queue.length) {
+      if (++steps > 10_000) {
+        draining = false;
+        queue.length = 0;
+        throw new Error('simulation exceeded step limit');
+      }
       const next = queue.shift();
       if (next) arrive(next.nodeId, next.via);
     }
@@ -185,16 +191,65 @@ export function resolveClick(
   return null;
 }
 
+function simNodeLabel(process: Process, id: string): string {
+  const node = process.nodes.find((n) => n.id === id);
+  if (!node) return 'element';
+  const name = node.name.trim();
+  if (name) return name;
+  if (node.type === 'exclusiveGateway') return 'XOR';
+  if (node.type === 'parallelGateway') return 'AND';
+  if (node.type === 'inclusiveGateway') return 'OR';
+  if (node.type === 'eventBasedGateway') return 'event-based gateway';
+  if (node.type === 'start') return 'Start';
+  if (node.type === 'end') return 'End';
+  if (node.type === 'task') return 'Task';
+  if (node.type === 'subProcess') return 'Subprocess';
+  return 'element';
+}
+
+function choiceKind(type: string): string {
+  if (type === 'inclusiveGateway') return 'OR';
+  if (type === 'eventBasedGateway') return 'event-based';
+  return 'XOR';
+}
+
 export function describeSimulation(process: Process, snap: SimSnapshot): string {
   const parked = Object.keys(snap.tokens);
-  const needsChoice = parked.some((id) => {
+  const choiceId = parked.find((id) => {
     const node = process.nodes.find((n) => n.id === id);
     return node && isChoiceGateway(node.type) && outgoingFlows(process, id).length > 1;
   });
-  if (needsChoice) return 'Choose one outgoing sequence flow';
-  if (Object.keys(snap.joinWait).length) return 'Parallel join waiting for all incoming';
-  if (parked.length) return 'Click an element with a token';
+  if (choiceId) {
+    const node = process.nodes.find((n) => n.id === choiceId);
+    const kind = choiceKind(node?.type ?? 'exclusiveGateway');
+    return `Token on ${simNodeLabel(process, choiceId)} — click a sequence flow to choose ${kind} branch`;
+  }
+  const joinIds = Object.keys(snap.joinWait);
+  if (joinIds.length) {
+    const id = joinIds[0]!;
+    const buf = snap.joinWait[id] ?? {};
+    const ins = incomingFlows(process, id);
+    const got = ins.filter((flow) => (buf[flow.id] ?? 0) > 0).length;
+    const name = simNodeLabel(process, id);
+    const where = name === 'AND' ? 'AND join' : `AND join · ${name}`;
+    return `Waiting at ${where} (${got}/${ins.length} incoming)`;
+  }
+  if (parked.length === 1) {
+    return `Token on ${simNodeLabel(process, parked[0]!)} — click the element to advance`;
+  }
+  if (parked.length > 1) {
+    const names = parked.slice(0, 3).map((id) => simNodeLabel(process, id)).join(', ');
+    return `Tokens on ${names} — click an element with a token`;
+  }
   const done = completedCount(snap);
-  if (done) return `Completed · ${done} at end`;
-  return 'Click a start event';
+  if (done) return `Token reached end · ${done} completed — click a start event for another`;
+  return 'Click a start event to place a token';
+}
+
+export function describeSimulationError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : '';
+  if (/step limit/.test(raw)) return 'Stopped: process looped past the step limit — Reset tokens';
+  if (/no token at/.test(raw)) return 'No token on that element — click a start event or a node with a token';
+  if (/outgoing sequence flow/.test(raw)) return 'Click a sequence flow to choose the XOR branch';
+  return raw || 'Simulation could not advance';
 }

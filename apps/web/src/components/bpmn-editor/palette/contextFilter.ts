@@ -32,7 +32,7 @@ export function isActivity(element: DiagramElement | null): boolean {
   return !!element && isBpmnType(element, 'bpmn:Activity') && !isBpmnType(element, 'bpmn:BoundaryEvent');
 }
 
-export function isPoolOrLane(element: DiagramElement | null): boolean {
+export function isPoolOrLane(element: DiagramElement | null): element is DiagramElement {
   return !!element && (isBpmnType(element, 'bpmn:Participant') || isBpmnType(element, 'bpmn:Lane'));
 }
 
@@ -42,9 +42,6 @@ function contextReason(def: BpmnComponentDefinition, ctx: FilterContext): string
   const kind = createKind(def);
   if (kind === 'attach' && !isActivity(ctx.selection)) {
     return 'Select an activity to attach a boundary event';
-  }
-  if (kind === 'lane' && !isPoolOrLane(ctx.selection)) {
-    return 'Select a pool or lane first';
   }
   if (kind === 'connect-message' && !ctx.hasParticipant) {
     return 'Add a pool first — message flow is between participants';

@@ -23,7 +23,7 @@ import {
   type PlaceSpec,
   type Process,
 } from '../../semantic-core/src/index.js';
-import { ToolPlanError } from './errors.js';
+import { ToolPlanError, userFacingPlanError } from './errors.js';
 import { assertNoGeometry } from './geometry.js';
 import { inspectBranchView, inspectRegionView, processView } from './inspect.js';
 import {
@@ -32,7 +32,6 @@ import {
   assertMutationAllowed,
   assertOutsideScopeIntact,
   isReadOnlyTool,
-  scopePromptLines,
 } from './scope.js';
 import type { PlanOptions, PlanResult, ToolCall, ToolName, ToolResult } from './types.js';
 import { TOOL_NAMES } from './types.js';
@@ -62,6 +61,7 @@ const ARG_ALIASES: Record<string, string> = {
   afterId: 'after',
   beforeId: 'before',
   elementId: 'id',
+  branch: 'branchId',
 };
 
 function unchanged(process: Process, name: ToolName, view: unknown): ToolResult {
@@ -282,7 +282,10 @@ export function parseToolPlan(value: unknown): ToolCall[] {
 
 export function executeTool(process: Process, call: ToolCall, lastId?: string, options?: PlanOptions): ToolResult {
   assertNoGeometry(call.args, call.name);
-  const args = applyScopeDefaults(call.name, normalizeArgs(call.args), options?.scope);
+  const args = applyScopeDefaults(call.name, normalizeArgs(call.args), options?.scope, {
+    process,
+    lastId,
+  });
   try {
     if (!isReadOnlyTool(call.name)) {
       assertMutationAllowed(
@@ -301,9 +304,10 @@ export function executeTool(process: Process, call: ToolCall, lastId?: string, o
     }
     return result;
   } catch (error) {
-    if (error instanceof ToolPlanError) throw error;
     const message = error instanceof Error ? error.message : String(error);
-    throw new ToolPlanError(`${call.name}: ${message}`);
+    const facing = userFacingPlanError(error instanceof ToolPlanError ? message : `${call.name}: ${message}`);
+    if (error instanceof ToolPlanError && facing === message) throw error;
+    throw new ToolPlanError(facing);
   }
 }
 
@@ -372,6 +376,7 @@ Registry componentId values: ${components}
 Rules:
 - tools[].name must be one of the names above. Never emit bpmnXml, workflowJson, waypoints, x, y, width, height, or bounds.
 - Prefer ids from the process view. $last is the id returned by the previous tool (node, region, or branch).
+- branchId is a gateway arm (Branch_*), never a region id (Region_*). Whole-process scope: omit branchId.
 - Node names resolve when unique. XOR branches are named Yes/No by default.
 - Decisions: splitExclusive, splitParallel, splitInclusive, or splitEventBased — never a lone gateway node.
 - Timeout while a task is active: attachBoundaryTimer, not an event-based gateway.

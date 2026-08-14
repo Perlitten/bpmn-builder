@@ -9,6 +9,7 @@ import {
   fitViewbox,
   paddingFromRemaining,
   paletteObstacle,
+  panViewbox,
   rect,
   remainingCanvas,
 } from './fitViewport';
@@ -108,5 +109,29 @@ describe('fitViewbox', () => {
     const vb = fitViewbox(starter, outer, pad)!;
     expect(diagramToScreenX(starter.x, vb, outer.width)).toBeGreaterThanOrEqual(pad.left - 0.5);
     expect(diagramToScreenX(starter.x + starter.width, vb, outer.width)).toBeLessThanOrEqual(outer.width - pad.right + 0.5);
+  });
+
+  it('centers a small diagram in the remaining canvas', () => {
+    const remaining = remainingCanvas(canvas, [rect(0, 0, 72, 600)]);
+    const pad = paddingFromRemaining(canvas, remaining);
+    const vb = fitViewbox(starter, { width: 1000, height: 600 }, pad)!;
+    const midX = diagramToScreenX(starter.x + starter.width / 2, vb, 1000);
+    const midY = diagramToScreenY(starter.y + starter.height / 2, vb, 600);
+    expect(midX).toBeCloseTo(pad.left + (1000 - pad.left - pad.right) / 2, 5);
+    expect(midY).toBeCloseTo(pad.top + (600 - pad.top - pad.bottom) / 2, 5);
+  });
+});
+
+describe('panViewbox', () => {
+  it('pans right so a shape past the inspector is visible', () => {
+    const vb = { x: 0, y: 0, width: 1000, height: 600 };
+    const next = panViewbox(vb, { width: 1000, height: 600 }, { x: 900, y: 80, width: 120, height: 72 }, {
+      top: 24,
+      right: 280,
+      bottom: 24,
+      left: 96,
+    });
+    expect(next.x).toBeGreaterThan(vb.x);
+    expect(next.y).toBe(vb.y);
   });
 });

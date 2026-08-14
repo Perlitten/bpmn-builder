@@ -52,7 +52,7 @@ export async function repairEmptyDiagrams(): Promise<void> {
   const workflowJson = JSON.stringify(await bpmnToWorkflow(DEFAULT_BPMN_XML));
   const now = new Date().toISOString();
   for (const row of rows) {
-    if (/startEvent/i.test(row.bpmnXml)) continue;
+    if (row.bpmnXml.trim()) continue;
     await db
       .update(table)
       .set({ bpmnXml: DEFAULT_BPMN_XML, workflowJson, updatedAt: now })

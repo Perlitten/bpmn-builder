@@ -86,6 +86,22 @@ describe('Architect chrome markup', () => {
     expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*\.architect-mascot-frame/);
   });
 
+  it('submits Architect compose on Enter, not only ⌘/Ctrl+Enter', () => {
+    const panel = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
+    const list = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
+    expect(panel).toMatch(/isArchitectComposeSubmitKey/);
+    expect(list).toMatch(/isArchitectComposeSubmitKey/);
+    expect(panel).not.toMatch(/event\.key === 'Enter' && \(event\.metaKey \|\| event\.ctrlKey\)/);
+    expect(list).not.toMatch(/event\.key === 'Enter' && \(event\.metaKey \|\| event\.ctrlKey\)/);
+  });
+
+  it('answers a greeting locally instead of the 30s Architect timeout path', () => {
+    const src = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
+    expect(src).toMatch(/isGreetingMessage/);
+    expect(src).toMatch(/greetingReply/);
+    expect(src).toMatch(/if \(isGreetingMessage\(value\)\)/);
+  });
+
   it('lets list Architect create be cancelled', () => {
     const src = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
     expect(src).toMatch(/AbortController/);
@@ -93,6 +109,20 @@ describe('Architect chrome markup', () => {
     expect(src).toMatch(/\bCancel\b/);
     expect(src).toMatch(/aria-modal="true"/);
     expect(src).not.toMatch(/board|process vibes|flow buddy/i);
+  });
+
+  it('keeps Architect panel chrome readable on white', () => {
+    const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.architect-panel \{[\s\S]*--architect-edge:/);
+    expect(css).toMatch(/\.architect-panel textarea::placeholder[\s\S]*opacity:\s*1/);
+    expect(css).toMatch(/\.architect-apply \{[\s\S]*background:\s*var\(--color-ink\)/);
+    expect(css).toMatch(/\.architect-apply:disabled \{[\s\S]*opacity:\s*1/);
+    expect(css).toMatch(/\.architect-scope-options label \{[\s\S]*color:\s*var\(--color-ink\)/);
+    expect(css).toMatch(/\.architect-scope-options label\.is-disabled \{[\s\S]*opacity:\s*1/);
+    expect(css).not.toMatch(/label\.is-disabled \{[\s\S]*opacity:\s*0\./);
+    const list = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
+    expect(list).toMatch(/className="architect-meta"/);
+    expect(list).not.toMatch(/text-muted/);
   });
 
   it('portals the list Architect input below the header bar', () => {

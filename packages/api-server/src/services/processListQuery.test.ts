@@ -41,6 +41,7 @@ describe('parseProcessListQuery', () => {
     expect(parseProcessListQuery({ kind: 'archived' }).ok).toBe(false);
     expect(parseProcessListQuery({ sort: 'created' }).ok).toBe(false);
     expect(parseProcessListQuery({ page: '0' }).ok).toBe(false);
+    expect(parseProcessListQuery({ page: '9007199254740991' }).ok).toBe(false);
     expect(parseProcessListQuery({ limit: '101' }).ok).toBe(false);
     expect(parseProcessListQuery({ limit: '0' }).ok).toBe(false);
   });

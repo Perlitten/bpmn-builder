@@ -47,6 +47,8 @@ function createDb(): AppDb {
   }
   const file = resolveSqlitePath();
   sqlite = new Database(file);
+  sqlite.pragma('busy_timeout = 5000');
+  sqlite.pragma('foreign_keys = ON');
   if (file !== ':memory:') sqlite.pragma('journal_mode = WAL');
   return drizzleSqlite(sqlite, { schema: sqliteSchema });
 }
