@@ -1,0 +1,22 @@
+{
+  "name": "@bpmn/bpmn-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bpmn/domain": "workspace:*",
+    "@bpmn/layout-engine": "workspace:*",
+    "@bpmn/semantic-core": "workspace:*",
+    "bpmn-moddle": "^10.1.0",
+    "moddle-xml": "^12.1.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2"
+  }
+}

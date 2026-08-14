@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`layout > addTask via op produces a stable layout snapshot 1`] = `
+{
+  "edges": {
+    "SequenceFlow_1": [
+      {
+        "x": 120,
+        "y": 184,
+      },
+      {
+        "x": 216,
+        "y": 184,
+      },
+    ],
+    "SequenceFlow_2": [
+      {
+        "x": 336,
+        "y": 184,
+      },
+      {
+        "x": 432,
+        "y": 184,
+      },
+    ],
+  },
+  "labels": {
+    "EndEvent_1": {
+      "height": 24,
+      "width": 90,
+      "x": 407,
+      "y": 216,
+    },
+    "StartEvent_1": {
+      "height": 24,
+      "width": 90,
+      "x": 55,
+      "y": 216,
+    },
+  },
+  "shapes": {
+    "EndEvent_1": {
+      "height": 40,
+      "width": 40,
+      "x": 432,
+      "y": 164,
+    },
+    "StartEvent_1": {
+      "height": 40,
+      "width": 40,
+      "x": 80,
+      "y": 164,
+    },
+    "Task_1": {
+      "height": 72,
+      "width": 120,
+      "x": 216,
+      "y": 148,
+    },
+  },
+}
+`;
+
+exports[`layout > linear start→task→end is identical on every run 1`] = `
+{
+  "edges": {
+    "f1": [
+      {
+        "x": 120,
+        "y": 184,
+      },
+      {
+        "x": 216,
+        "y": 184,
+      },
+    ],
+    "f2": [
+      {
+        "x": 336,
+        "y": 184,
+      },
+      {
+        "x": 432,
+        "y": 184,
+      },
+    ],
+  },
+  "labels": {
+    "end": {
+      "height": 24,
+      "width": 90,
+      "x": 407,
+      "y": 216,
+    },
+    "start": {
+      "height": 24,
+      "width": 90,
+      "x": 55,
+      "y": 216,
+    },
+  },
+  "shapes": {
+    "end": {
+      "height": 40,
+      "width": 40,
+      "x": 432,
+      "y": 164,
+    },
+    "start": {
+      "height": 40,
+      "width": 40,
+      "x": 80,
+      "y": 164,
+    },
+    "task": {
+      "height": 72,
+      "width": 120,
+      "x": 216,
+      "y": 148,
+    },
+  },
+}
+`;
