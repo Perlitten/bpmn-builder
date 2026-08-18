@@ -87,7 +87,8 @@ function asFlow(value: unknown): SequenceFlow {
 function asBranch(value: unknown, index: number): Branch {
   const b = obj(value);
   const nodes = arr(b.nodes ?? b.nodeIds ?? b.flowNodeIds ?? b.elements).map(idOf).filter(Boolean);
-  return { id: b.id != null ? String(b.id) : `branch_${index}`, nodes };
+  const entryFlowId = typeof b.entryFlowId === 'string' && b.entryFlowId ? b.entryFlowId : undefined;
+  return { id: b.id != null ? String(b.id) : `branch_${index}`, nodes, ...(entryFlowId ? { entryFlowId } : {}) };
 }
 
 function asRegion(value: unknown, index: number): StructuredRegion {
@@ -111,7 +112,11 @@ function fromCoreRegion(region: CoreRegion): StructuredRegion {
     type: region.type,
     split: region.split,
     join: region.join,
-    branches: region.branches.map((b) => ({ id: b.id, nodes: b.nodeIds })),
+    branches: region.branches.map((b) => ({
+      id: b.id,
+      nodes: b.nodeIds,
+      ...(b.entryFlowId ? { entryFlowId: b.entryFlowId } : {}),
+    })),
     nested: region.nested.map(fromCoreRegion),
   };
 }

@@ -23,3 +23,13 @@ export function editorNoticeText(error: unknown): string {
 export function noticeDismissMs(hint: string | null, simulating: boolean): number | null {
   return hint && !simulating ? NOTICE_DISMISS_MS : null;
 }
+
+/** Operational notices beat first-run onboarding — otherwise a split insert looks like a no-op. */
+export function visibleEditorChrome(
+  onboarding: boolean,
+  hint: string | null,
+): 'hint' | 'onboarding' | null {
+  if (hint) return 'hint';
+  if (onboarding) return 'onboarding';
+  return null;
+}

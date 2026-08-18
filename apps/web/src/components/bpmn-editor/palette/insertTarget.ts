@@ -30,3 +30,18 @@ export function continueTarget(
     })),
   };
 }
+
+/**
+ * Catalog create has no branch picker. If the selection splits, refuse until
+ * Continue with (or a selected flow) names the continuation.
+ */
+export function resolveInsert(
+  element: DiagramElement | null,
+  process: Process | undefined,
+  picked?: InsertTarget,
+): { target?: InsertTarget; choices: BranchChoice[]; blocked: boolean } {
+  const at = continueTarget(element, process);
+  const target = picked ?? at.target;
+  if (!target && at.choices.length > 1) return { choices: at.choices, blocked: true };
+  return { ...(target ? { target } : {}), choices: at.choices, blocked: false };
+}

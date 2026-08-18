@@ -13,6 +13,12 @@ import {
   updateProcess,
 } from '../services/processService.js';
 
+function ownerId(req: Request): string {
+  const id = req.user?.id;
+  if (!id) throw new Error('Sign in required');
+  return id;
+}
+
 export function registerProcessRoutes(app: Application): void {
   app.get('/api/processes', async (req: Request, res: Response) => {
     try {
@@ -21,15 +27,15 @@ export function registerProcessRoutes(app: Application): void {
         res.status(400).json({ error: parsed.error });
         return;
       }
-      res.json(await listProcesses(parsed.value));
+      res.json(await listProcesses(parsed.value, ownerId(req)));
     } catch (error) {
       sendProcessError(res, error, 'Failed to list processes');
     }
   });
 
-  app.get('/api/templates', async (_req: Request, res: Response) => {
+  app.get('/api/templates', async (req: Request, res: Response) => {
     try {
-      res.json({ templates: await listTemplates() });
+      res.json({ templates: await listTemplates(ownerId(req)) });
     } catch (error) {
       sendProcessError(res, error, 'Failed to list templates');
     }
@@ -47,7 +53,9 @@ export function registerProcessRoutes(app: Application): void {
       const templateId =
         typeof req.body?.templateId === 'string' ? req.body.templateId : undefined;
       const bpmnXml = typeof req.body?.bpmnXml === 'string' ? req.body.bpmnXml : undefined;
-      res.status(201).json({ process: await createProcess({ name, description, templateId, bpmnXml }) });
+      res.status(201).json({
+        process: await createProcess({ name, description, templateId, bpmnXml, userId: ownerId(req) }),
+      });
     } catch (error) {
       sendProcessError(res, error, 'Failed to create process');
     }
@@ -55,7 +63,7 @@ export function registerProcessRoutes(app: Application): void {
 
   app.get('/api/processes/:id', async (req: Request, res: Response) => {
     try {
-      const process = await getProcessById(req.params.id);
+      const process = await getProcessById(req.params.id, ownerId(req));
       if (!process) {
         res.status(404).json({ error: 'not found' });
         return;
@@ -95,7 +103,7 @@ export function registerProcessRoutes(app: Application): void {
         return;
       }
 
-      const process = await updateProcess(req.params.id, patch);
+      const process = await updateProcess(req.params.id, patch, ownerId(req));
       if (!process) {
         res.status(404).json({ error: 'not found' });
         return;
@@ -117,7 +125,7 @@ export function registerProcessRoutes(app: Application): void {
         }
         name = rawName.trim();
       }
-      const process = await duplicateProcess(req.params.id, name);
+      const process = await duplicateProcess(req.params.id, ownerId(req), name);
       if (!process) {
         res.status(404).json({ error: 'not found' });
         return;
@@ -132,18 +140,22 @@ export function registerProcessRoutes(app: Application): void {
     try {
       const body = (req.body ?? {}) as Record<string, unknown>;
       if (typeof body.bpmnXml === 'string') {
-        const current = await getProcessById(req.params.id);
+        const current = await getProcessById(req.params.id, ownerId(req));
         if (!current) {
           res.status(404).json({ error: 'not found' });
           return;
         }
-        const updated = await updateProcess(req.params.id, { bpmnXml: body.bpmnXml, version: current.version });
+        const updated = await updateProcess(
+          req.params.id,
+          { bpmnXml: body.bpmnXml, version: current.version },
+          ownerId(req),
+        );
         if (!updated) {
           res.status(404).json({ error: 'not found' });
           return;
         }
       }
-      const template = await createTemplateFromProcess(req.params.id);
+      const template = await createTemplateFromProcess(req.params.id, ownerId(req));
       if (!template) {
         res.status(404).json({ error: 'not found' });
         return;
@@ -156,7 +168,7 @@ export function registerProcessRoutes(app: Application): void {
 
   app.delete('/api/processes/:id', async (req: Request, res: Response) => {
     try {
-      const deleted = await deleteProcess(req.params.id);
+      const deleted = await deleteProcess(req.params.id, ownerId(req));
       if (!deleted) {
         res.status(404).json({ error: 'not found' });
         return;

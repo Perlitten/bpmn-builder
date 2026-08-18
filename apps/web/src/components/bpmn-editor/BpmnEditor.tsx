@@ -28,8 +28,11 @@ import { lanesInPool, flowNodeLaneAssignment, type FlowKind } from './inspector/
 import { isEditorChromeKeyTarget, selectableElement, selectionIdsEqual } from './inspector/selectable';
 import { pickCatalogItem } from './palette/createFromCatalog';
 import { semanticGeometryModule } from './palette/semanticGeometry';
+import { typedTaskPaintModule } from './typedTaskPaint';
 import { ContinueWith } from './palette/ContinueWith';
 import { gfxAnchor } from './palette/modelerServices';
+import { continueTarget, isSequenceFlowElement, resolveInsert, type InsertTarget } from './palette/insertTarget';
+import { editorNoticeText, visibleEditorChrome } from './editorNotice';
 import { PaletteRail } from './palette/PaletteRail';
 import { isSequenceFlowSource } from './palette/contextFilter';
 import type { PaletteCatalogView } from './palette/catalogPresentation';
@@ -262,7 +265,12 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     const modeler = new BpmnModeler({
       container: el,
       keyboard: { bind: false },
-      additionalModules: [semanticGeometryModule, simulationLockModule, createSelectMarqueeModule(() => toolRef.current)],
+      additionalModules: [
+        semanticGeometryModule,
+        typedTaskPaintModule,
+        simulationLockModule,
+        createSelectMarqueeModule(() => toolRef.current),
+      ],
       /* Default bpmn-js measures external labels at 11px while CSS paints 12px (“Start” → “Star”). */
       textRenderer: {
         defaultStyle: { fontFamily: 'Arial, sans-serif', fontSize: 12 },
@@ -640,24 +648,34 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   );
 
   const handlePick = useCallback(
-    async (item: BpmnComponentDefinition) => {
+    async (item: BpmnComponentDefinition, target?: InsertTarget) => {
       const session = sessionRef.current;
       if (!session || simulatingRef.current) return;
-      const result = await pickCatalogItem(item, selection, {
-        create: async (catalogId, afterId) => {
-          const { xml: next } = await session.create(catalogId, afterId);
-          emit(next);
-          return true;
+      const insert = resolveInsert(selection, session.process(), target);
+      if (insert.blocked) {
+        setCatalogView(null);
+        setQuery('');
+        setHint(editorNoticeText(new Error('ambiguous after split: pass branchId')));
+        return;
+      }
+      const result = await pickCatalogItem(
+        item,
+        selection,
+        {
+          create: async (catalogId, afterId, place) => {
+            const { xml: next } = await session.create(catalogId, afterId, place);
+            emit(next);
+            return true;
+          },
         },
-      });
+        insert.target,
+      );
       setCatalogView(null);
       setQuery('');
       setHint(result?.hint ?? null);
     },
     [selection, emit],
   );
-
-  const continueSource = selection && isSequenceFlowSource(selection) ? selection : null;
 
   const replaceWorks = useCallback(
     (def: BpmnComponentDefinition) => {
@@ -691,6 +709,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   );
 
   const graph = sessionRef.current?.process();
+  const insertAt = continueTarget(selection, graph);
+  const continueSource =
+    selection && (isSequenceFlowSource(selection) || isSequenceFlowElement(selection)) ? selection : null;
+  const chrome = visibleEditorChrome(Boolean(onboarding && !simulating), simulating ? null : hint);
 
   const agentCtx = useMemo(() => {
     const session = sessionRef.current;
@@ -737,15 +759,17 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
             source={continueSource}
             hasParticipant={hasParticipant}
             anchor={anchor}
-            onPick={(item) => void handlePick(item)}
+            target={insertAt.target}
+            choices={insertAt.choices}
+            onPick={(item, _event, target) => void handlePick(item, target)}
           />
         ) : null}
-        {onboarding && !simulating ? (
-          <EditorOnboarding onDismiss={() => setOnboarding(false)} />
-        ) : hint ? (
+        {chrome === 'hint' ? (
           <div className={`palette-hint${simulating ? ' is-sim' : ''}`} role="status">
             {hint}
           </div>
+        ) : chrome === 'onboarding' ? (
+          <EditorOnboarding onDismiss={() => setOnboarding(false)} />
         ) : null}
       </div>
       <aside className="element-inspector" aria-label="Process inspector">

@@ -1,13 +1,11 @@
 import express, { type Express } from 'express';
 import { migrate } from '../packages/db/src/index.js';
 import { createApp } from '../packages/api-server/src/app.js';
-import { createPasswordGate } from '../packages/api-server/src/passwordGate.js';
 import { repairEmptyDiagrams, seedIfEmpty } from '../packages/api-server/src/seed.js';
 
 const app: Express = express();
 
 app.disable('x-powered-by');
-app.use(createPasswordGate());
 
 let databaseReady: Promise<void> | null = null;
 function initializeDatabase(): Promise<void> {

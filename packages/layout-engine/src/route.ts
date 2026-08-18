@@ -14,9 +14,11 @@ export function isOrthogonal(waypoints: Point[]): boolean {
   return true;
 }
 
-export function routeOrthogonal(from: Bounds, to: Bounds): Point[] {
+export function routeOrthogonal(from: Bounds, to: Bounds, offset = 0): Point[] {
   const start = { x: from.x + from.width, y: centerY(from) };
   const end = { x: to.x, y: centerY(to) };
+  if (offset && start.y === end.y) return routeAlongRail(start, end, 'y', offset);
+  if (offset && start.x === end.x) return routeAlongRail(start, end, 'x', offset);
   if (start.x === end.x || start.y === end.y) return collapse([start, end]);
 
   const left = start.x + TOKENS.edgeClearance;
@@ -27,6 +29,45 @@ export function routeOrthogonal(from: Bounds, to: Bounds): Point[] {
       : snapToGrid(start.x + TOKENS.edgeClearance);
 
   return collapse([start, { x: bendX, y: start.y }, { x: bendX, y: end.y }, end]);
+}
+
+/** U-detour so parallel edges between the same pair do not share one stroke. */
+function routeAlongRail(start: Point, end: Point, axis: 'x' | 'y', offset: number): Point[] {
+  const rail = snapToGrid((axis === 'y' ? start.y : start.x) + offset);
+  if (axis === 'y') {
+    if (rail === start.y) return collapse([start, end]);
+    const stub = TOKENS.edgeClearance;
+    const goingRight = end.x >= start.x;
+    const x1 = start.x + (goingRight ? stub : -stub);
+    const x2 = end.x - (goingRight ? stub : -stub);
+    if ((goingRight && x2 >= x1) || (!goingRight && x1 >= x2)) {
+      return collapse([
+        start,
+        { x: x1, y: start.y },
+        { x: x1, y: rail },
+        { x: x2, y: rail },
+        { x: x2, y: end.y },
+        end,
+      ]);
+    }
+    return collapse([start, { x: start.x, y: rail }, { x: end.x, y: rail }, end]);
+  }
+  if (rail === start.x) return collapse([start, end]);
+  const stub = TOKENS.edgeClearance;
+  const goingDown = end.y >= start.y;
+  const y1 = start.y + (goingDown ? stub : -stub);
+  const y2 = end.y - (goingDown ? stub : -stub);
+  if ((goingDown && y2 >= y1) || (!goingDown && y1 >= y2)) {
+    return collapse([
+      start,
+      { x: start.x, y: y1 },
+      { x: rail, y: y1 },
+      { x: rail, y: y2 },
+      { x: end.x, y: y2 },
+      end,
+    ]);
+  }
+  return collapse([start, { x: rail, y: start.y }, { x: rail, y: end.y }, end]);
 }
 
 /** Orthogonal route between stacked pools (bottom → top of the lower box). */

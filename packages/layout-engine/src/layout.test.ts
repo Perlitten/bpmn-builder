@@ -77,6 +77,23 @@ function expectDistinctBands(boxes: Bounds[]) {
   }
 }
 
+/** Longest horizontal segment Y — the visible rail of an orthogonal sequence flow. */
+function railY(points: Array<{ x: number; y: number }>): number {
+  let bestY = points[0]!.y;
+  let bestLen = -1;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    if (a.y !== b.y) continue;
+    const len = Math.abs(b.x - a.x);
+    if (len > bestLen) {
+      bestLen = len;
+      bestY = a.y;
+    }
+  }
+  return bestY;
+}
+
 /** AND split → three tasks → AND join. */
 function threeParallelAnd(regions: boolean): LayoutInput {
   return {
@@ -639,6 +656,56 @@ describe('layout', () => {
     expect(yes).toBeDefined();
     expect(no).toBeDefined();
     expect(overlaps(yes!, no!)).toBe(false);
+  });
+
+  it('routes empty Yes/No XOR branches on distinct rails, not one split→join stroke', () => {
+    let p = createProcess();
+    for (const name of ['Submit request', 'Review request', 'Check budget']) {
+      const after = p.nodes.filter((n) => n.type === 'task').at(-1)?.id;
+      p = addTask(p, { name, ...(after ? { after } : {}) }).process;
+    }
+    p = splitExclusive(p, {
+      after: p.nodes.find((n) => n.name === 'Check budget')!.id,
+      name: 'Approved?',
+    }).process;
+    const yes = p.flows.find((f) => f.name === 'Yes')!;
+    const no = p.flows.find((f) => f.name === 'No')!;
+    expect(yes.source).toBe(no.source);
+    expect(yes.target).toBe(no.target);
+    expect(p.regions[0]!.branches.map((b) => b.nodeIds)).toEqual([[], []]);
+
+    const di = layoutProcess(p);
+    const yesPts = di.edges[yes.id]!;
+    const noPts = di.edges[no.id]!;
+    expect(yesPts.length).toBeGreaterThan(2);
+    expect(noPts.length).toBeGreaterThan(2);
+    expect(JSON.stringify(yesPts)).not.toBe(JSON.stringify(noPts));
+    expect(railY(yesPts)).toBeLessThan(railY(noPts));
+    expect(overlaps(di.labels[yes.id]!, di.labels[no.id]!)).toBe(false);
+    expect(di.labels[yes.id]!.y).toBeLessThan(di.labels[no.id]!.y);
+    allOrthogonal(di);
+
+    let pooled = createProcess();
+    pooled = addPool(pooled, { name: 'Purchase-to-Pay' }).process;
+    pooled = addLane(pooled, { name: 'Requester' }).process;
+    pooled = addLane(pooled, { name: 'Manager' }).process;
+    for (const name of ['Submit request', 'Review request', 'Check budget']) {
+      const after = pooled.nodes.filter((n) => n.type === 'task').at(-1)?.id;
+      pooled = addTask(pooled, { name, ...(after ? { after } : {}) }).process;
+    }
+    pooled = splitExclusive(pooled, {
+      after: pooled.nodes.find((n) => n.name === 'Check budget')!.id,
+      name: 'Approved?',
+    }).process;
+    const poolYes = pooled.flows.find((f) => f.name === 'Yes')!;
+    const poolNo = pooled.flows.find((f) => f.name === 'No')!;
+    const poolDi = layoutProcess(pooled);
+    const poolYesPts = poolDi.edges[poolYes.id]!;
+    const poolNoPts = poolDi.edges[poolNo.id]!;
+    expect(JSON.stringify(poolYesPts)).not.toBe(JSON.stringify(poolNoPts));
+    expect(railY(poolYesPts)).toBeLessThan(railY(poolNoPts));
+    expect(overlaps(poolDi.labels[poolYes.id]!, poolDi.labels[poolNo.id]!)).toBe(false);
+    allOrthogonal(poolDi);
   });
 
   it('places data objects and annotations with canonical DI, not imported XY', () => {

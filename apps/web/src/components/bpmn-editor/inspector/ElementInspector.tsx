@@ -13,11 +13,10 @@ import {
   elementName,
   flowKind,
   type FlowKind,
-  isDefaultOutgoing,
   isLaneElement,
   isParticipant,
   isXorOr,
-  outgoingSequenceFlows,
+  outgoingFlowRows,
   poolLaneCreate,
   type PoolLaneRow,
 } from './inspectorModel';
@@ -128,7 +127,7 @@ export function ElementInspector({
   const showReplace = !isParticipant(element) && !isLaneElement(element);
   const isFlow = element.type === 'bpmn:SequenceFlow';
   const kind = isFlow ? flowKind(element) : null;
-  const outgoing = isXorOr(element.type) ? outgoingSequenceFlows(element) : [];
+  const outgoing = isXorOr(element.type) ? outgoingFlowRows(element) : [];
   const suggestion = useMemo(() => {
     const focused = lint.style.filter((finding) => finding.elementId === element.id);
     return suggestName(nameContextFromElement(element), focused);

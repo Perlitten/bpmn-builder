@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { migrate, resetDbForTests } from '@bpmn/db';
 import { PROCESS_NAME_MAX } from '../../../domain/src/index.js';
 import { createApp } from '../app.js';
+import { issueTestSession } from '../auth/testSession.js';
 import { copyProcessName } from '../services/processService.js';
 
 const listen = (app: ReturnType<typeof createApp>) =>
@@ -14,6 +15,14 @@ const listen = (app: ReturnType<typeof createApp>) =>
       resolve({ server, url: `http://127.0.0.1:${addr.port}` });
     });
   });
+
+let cookie = '';
+
+function authed(url: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (!headers.has('Cookie')) headers.set('Cookie', cookie);
+  return fetch(url, { ...init, headers });
+}
 
 describe('copyProcessName', () => {
   it('appends (copy) and stays within the name limit', () => {
@@ -35,6 +44,7 @@ describe('process template routes', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
+    cookie = (await issueTestSession()).cookie;
   });
 
   afterEach(async () => {
@@ -52,7 +62,7 @@ describe('process template routes', () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
 
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Onboarding' }),
@@ -60,14 +70,14 @@ describe('process template routes', () => {
     expect(created.status).toBe(201);
     const { process } = (await created.json()) as { process: { id: string; bpmnXml: string } };
 
-    const drafted = await fetch(`${url}/api/processes/${process.id}`, {
+    const drafted = await authed(`${url}/api/processes/${process.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'draft', version: 1 }),
     });
     expect(drafted.status, await drafted.text()).toBe(200);
 
-    const templated = await fetch(`${url}/api/processes/${process.id}/template`, {
+    const templated = await authed(`${url}/api/processes/${process.id}/template`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bpmnXml: process.bpmnXml }),
@@ -81,12 +91,12 @@ describe('process template routes', () => {
     expect(template.name).toBe('Onboarding template');
     expect(template.bpmnXml).toBe(process.bpmnXml);
 
-    const listed = await fetch(`${url}/api/templates`);
+    const listed = await authed(`${url}/api/templates`);
     expect(listed.status).toBe(200);
     const { templates } = (await listed.json()) as { templates: { id: string }[] };
     expect(templates.some((item) => item.id === template.id)).toBe(true);
 
-    const fromTemplate = await fetch(`${url}/api/processes`, {
+    const fromTemplate = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'From template', templateId: template.id }),
@@ -103,7 +113,7 @@ describe('process template routes', () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
 
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Invoice review', description: 'AP flow' }),
@@ -113,7 +123,7 @@ describe('process template routes', () => {
       process: { id: string; name: string; description: string | null; bpmnXml: string; status: string };
     };
 
-    const duplicated = await fetch(`${url}/api/processes/${process.id}/duplicate`, { method: 'POST' });
+    const duplicated = await authed(`${url}/api/processes/${process.id}/duplicate`, { method: 'POST' });
     expect(duplicated.status).toBe(201);
     const { process: copy } = (await duplicated.json()) as {
       process: { id: string; name: string; description: string | null; bpmnXml: string; status: string };
@@ -124,11 +134,11 @@ describe('process template routes', () => {
     expect(copy.bpmnXml).toBe(process.bpmnXml);
     expect(copy.status).toBe('draft');
 
-    const listed = await fetch(`${url}/api/processes?kind=process&limit=100`);
+    const listed = await authed(`${url}/api/processes?kind=process&limit=100`);
     const page = (await listed.json()) as { processes: { id: string; name: string }[] };
     expect(page.processes.some((item) => item.id === copy.id && item.name === 'Invoice review (copy)')).toBe(true);
 
-    const missing = await fetch(`${url}/api/processes/not-a-process/duplicate`, { method: 'POST' });
+    const missing = await authed(`${url}/api/processes/not-a-process/duplicate`, { method: 'POST' });
     expect(missing.status).toBe(404);
   });
 
@@ -136,7 +146,7 @@ describe('process template routes', () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
 
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Invoice review' }),
@@ -144,7 +154,7 @@ describe('process template routes', () => {
     expect(created.status).toBe(201);
     const { process } = (await created.json()) as { process: { id: string } };
 
-    const duplicated = await fetch(`${url}/api/processes/${process.id}/duplicate`, {
+    const duplicated = await authed(`${url}/api/processes/${process.id}/duplicate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'AP clone' }),
@@ -166,6 +176,7 @@ describe('process list query', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
+    cookie = (await issueTestSession()).cookie;
   });
 
   afterEach(async () => {
@@ -180,7 +191,7 @@ describe('process list query', () => {
   });
 
   async function postProcess(url: string, name: string, description?: string) {
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description }),
@@ -201,14 +212,14 @@ describe('process list query', () => {
       await postProcess(url, `Batch ${String(i).padStart(2, '0')}`);
     }
 
-    const templated = await fetch(`${url}/api/processes/${alpha.process.id}/template`, {
+    const templated = await authed(`${url}/api/processes/${alpha.process.id}/template`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
     expect(templated.status).toBe(201);
 
-    const listed = await fetch(`${url}/api/processes`);
+    const listed = await authed(`${url}/api/processes`);
     expect(listed.status).toBe(200);
     const page1 = (await listed.json()) as {
       processes: { id: string; name: string; bpmnXml: string; status: string }[];
@@ -225,39 +236,39 @@ describe('process list query', () => {
     expect(page1.processes[0]?.bpmnXml).toContain('endEvent');
 
     const page2 = (await (
-      await fetch(`${url}/api/processes?page=2`)
+      await authed(`${url}/api/processes?page=2`)
     ).json()) as { processes: unknown[]; total: number; page: number };
     expect(page2.page).toBe(2);
     expect(page2.total).toBe(25);
     expect(page2.processes).toHaveLength(5);
 
     const templates = (await (
-      await fetch(`${url}/api/processes?kind=template`)
+      await authed(`${url}/api/processes?kind=template`)
     ).json()) as { processes: { status: string; name: string }[]; total: number };
     expect(templates.total).toBe(1);
     expect(templates.processes[0]?.status).toBe('template');
     expect(templates.processes[0]?.name).toBe('alpha onboarding template');
 
     const processesOnly = (await (
-      await fetch(`${url}/api/processes?kind=process&limit=100`)
+      await authed(`${url}/api/processes?kind=process&limit=100`)
     ).json()) as { processes: { status: string }[]; total: number };
     expect(processesOnly.total).toBe(24);
     expect(processesOnly.processes.every((item) => item.status !== 'template')).toBe(true);
 
     const search = (await (
-      await fetch(`${url}/api/processes?q=finance`)
+      await authed(`${url}/api/processes?q=finance`)
     ).json()) as { processes: { id: string }[]; total: number };
     expect(search.total).toBe(1);
     expect(search.processes[0]?.id).toBe(zebra.process.id);
 
     const byName = (await (
-      await fetch(`${url}/api/processes?sort=name&q=approval`)
+      await authed(`${url}/api/processes?sort=name&q=approval`)
     ).json()) as { processes: { name: string }[]; total: number };
     expect(byName.total).toBe(1);
     expect(byName.processes[0]?.name).toBe('Zebra approval');
 
     const named = (await (
-      await fetch(`${url}/api/processes?sort=name&limit=100`)
+      await authed(`${url}/api/processes?sort=name&limit=100`)
     ).json()) as { processes: { name: string }[] };
     const names = named.processes.map((item) => item.name);
     expect(names[0]).toBe('alpha onboarding');
@@ -265,19 +276,19 @@ describe('process list query', () => {
     expect(names[names.length - 1]).toBe('Zebra approval');
 
     const namedDesc = (await (
-      await fetch(`${url}/api/processes?sort=name_desc&limit=100`)
+      await authed(`${url}/api/processes?sort=name_desc&limit=100`)
     ).json()) as { processes: { name: string }[] };
     expect(namedDesc.processes[0]?.name).toBe('Zebra approval');
     expect(namedDesc.processes.at(-1)?.name).toBe('alpha onboarding');
 
     const oldest = (await (
-      await fetch(`${url}/api/processes?sort=updated_asc&limit=100`)
+      await authed(`${url}/api/processes?sort=updated_asc&limit=100`)
     ).json()) as { processes: { id: string }[] };
     expect(oldest.processes[0]?.id).toBe(zebra.process.id);
 
-    const badKind = await fetch(`${url}/api/processes?kind=draft`);
+    const badKind = await authed(`${url}/api/processes?kind=draft`);
     expect(badKind.status).toBe(400);
-    const badLimit = await fetch(`${url}/api/processes?limit=101`);
+    const badLimit = await authed(`${url}/api/processes?limit=101`);
     expect(badLimit.status).toBe(400);
   });
 });
@@ -292,6 +303,7 @@ describe('process BPMN import', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
+    cookie = (await issueTestSession()).cookie;
   });
 
   afterEach(async () => {
@@ -315,7 +327,7 @@ describe('process BPMN import', () => {
 </bpmn:definitions>`;
 
   async function postXml(url: string, bpmnXml: string) {
-    return fetch(`${url}/api/processes`, {
+    return authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Imported', bpmnXml }),
@@ -358,6 +370,7 @@ describe('process write guards', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
+    cookie = (await issueTestSession()).cookie;
   });
 
   afterEach(async () => {
@@ -374,7 +387,7 @@ describe('process write guards', () => {
   it('rejects a 200-character-plus name', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'n'.repeat(201) }),
@@ -385,19 +398,19 @@ describe('process write guards', () => {
   it('returns 409 when PATCH uses a stale version', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Lock' }),
     });
     const { process } = (await created.json()) as { process: { id: string; version: number } };
-    const first = await fetch(`${url}/api/processes/${process.id}`, {
+    const first = await authed(`${url}/api/processes/${process.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'One', version: process.version }),
     });
     expect(first.status).toBe(200);
-    const second = await fetch(`${url}/api/processes/${process.id}`, {
+    const second = await authed(`${url}/api/processes/${process.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Two', version: process.version }),
@@ -410,25 +423,25 @@ describe('process write guards', () => {
   it('deletes a process and 404s the second delete', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
-    const created = await fetch(`${url}/api/processes`, {
+    const created = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Gone' }),
     });
     const { process } = (await created.json()) as { process: { id: string } };
-    const deleted = await fetch(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
+    const deleted = await authed(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
     expect(deleted.status).toBe(200);
     expect(await deleted.json()).toEqual({ deleted: true, id: process.id });
-    const again = await fetch(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
+    const again = await authed(`${url}/api/processes/${process.id}`, { method: 'DELETE' });
     expect(again.status).toBe(404);
-    const missing = await fetch(`${url}/api/processes/not-a-process`, { method: 'DELETE' });
+    const missing = await authed(`${url}/api/processes/not-a-process`, { method: 'DELETE' });
     expect(missing.status).toBe(404);
   });
 
   it('returns JSON 400 for malformed JSON and JSON 404 for unknown /api', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);
-    const bad = await fetch(`${url}/api/processes`, {
+    const bad = await authed(`${url}/api/processes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{',
@@ -438,7 +451,7 @@ describe('process write guards', () => {
     const body = (await bad.json()) as { error: string };
     expect(body.error).toBe('invalid JSON');
     expect(JSON.stringify(body)).not.toMatch(/JSON\.parse|damashkevich/);
-    const unknown = await fetch(`${url}/api/nope`);
+    const unknown = await authed(`${url}/api/nope`);
     expect(unknown.status).toBe(404);
     expect(unknown.headers.get('content-type')).toMatch(/json/);
   });

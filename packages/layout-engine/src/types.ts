@@ -18,6 +18,8 @@ export type Branch = {
   id: string;
   /** Flow node ids in visual order, excluding this region's split/join. */
   nodes: string[];
+  /** Sequence flow that leaves the split into this band (Yes / No). */
+  entryFlowId?: string;
 };
 
 export type StructuredRegion = {

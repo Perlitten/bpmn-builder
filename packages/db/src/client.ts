@@ -56,3 +56,11 @@ function createDb(): AppDb {
 export function getProcessesTable() {
   return getDbProvider() === 'postgres' ? pgSchema.processes : sqliteSchema.processes;
 }
+
+export function getUsersTable() {
+  return getDbProvider() === 'postgres' ? pgSchema.users : sqliteSchema.users;
+}
+
+export function getSessionsTable() {
+  return getDbProvider() === 'postgres' ? pgSchema.sessions : sqliteSchema.sessions;
+}

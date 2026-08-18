@@ -20,6 +20,14 @@ export type ProcessListResponse = {
   limit: number;
 };
 
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 type ApiClient = {
   listProcesses: (params?: ProcessListParams, signal?: AbortSignal) => Promise<ProcessListResponse>;
   listTemplates: (signal?: AbortSignal) => Promise<ProcessSummary[]>;
@@ -35,13 +43,18 @@ type ApiClient = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { headers, ...rest } = init ?? {};
   const response = await fetch(path, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init,
+    credentials: 'same-origin',
+    ...rest,
+    headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
   });
+  if (response.status === 401 && !path.startsWith('/api/auth')) {
+    window.dispatchEvent(new Event('bpmn:unauthorized'));
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed: ${response.status}`);
+    throw new ApiError(body.error || `Request failed: ${response.status}`, response.status);
   }
   return response.json() as Promise<T>;
 }

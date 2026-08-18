@@ -17,6 +17,7 @@ import type { ProcessListQuery } from './processListQuery.js';
 
 type ProcessRow = {
   id: string;
+  userId?: string | null;
   name: string;
   description: string | null;
   status: string;
@@ -99,37 +100,27 @@ function likePattern(q: string): string {
   return `%${q.toLowerCase().replace(/[%_]/g, '')}%`;
 }
 
-function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessListQuery) {
-  const parts = [];
+function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessListQuery, userId: string) {
+  const parts = [eq(table.userId, userId)];
   if (query.kind === 'template') parts.push(eq(table.status, 'template'));
   if (query.kind === 'process') parts.push(ne(table.status, 'template'));
   if (query.q) {
     const pattern = likePattern(query.q);
-    parts.push(
-      or(
-        sql`lower(${table.name}) like ${pattern}`,
-        sql`lower(coalesce(${table.description}, '')) like ${pattern}`,
-      ),
+    const search = or(
+      sql`lower(${table.name}) like ${pattern}`,
+      sql`lower(coalesce(${table.description}, '')) like ${pattern}`,
     );
+    if (search) parts.push(search);
   }
   if (parts.length === 0) return undefined;
   if (parts.length === 1) return parts[0];
   return and(...parts);
 }
 
-export async function countProcesses(): Promise<number> {
+export async function listProcesses(query: ProcessListQuery, userId: string): Promise<ProcessListResult> {
   const db = getQueryDb();
   const table = getProcessesTable();
-  const rows = (await db
-    .select({ total: sql<number>`cast(count(*) as int)` })
-    .from(table)) as { total: number }[];
-  return Number(rows[0]?.total ?? 0);
-}
-
-export async function listProcesses(query: ProcessListQuery): Promise<ProcessListResult> {
-  const db = getQueryDb();
-  const table = getProcessesTable();
-  const where = listWhere(table, query);
+  const where = listWhere(table, query, userId);
   const offset = (query.page - 1) * query.limit;
   const normalizedName = sql`lower(${table.name})`;
   const order = (() => {
@@ -168,21 +159,25 @@ export async function listProcesses(query: ProcessListQuery): Promise<ProcessLis
   };
 }
 
-export async function getProcessById(id: string): Promise<Process | null> {
-  const db = getQueryDb();
-  const table = getProcessesTable();
-  const rows = (await db.select().from(table).where(eq(table.id, id)).limit(1)) as ProcessRow[];
-  const row = rows[0];
-  return row ? toProcess(row) : null;
-}
-
-export async function listTemplates(): Promise<ProcessSummary[]> {
+export async function getProcessById(id: string, userId: string): Promise<Process | null> {
   const db = getQueryDb();
   const table = getProcessesTable();
   const rows = (await db
     .select()
     .from(table)
-    .where(eq(table.status, 'template'))
+    .where(and(eq(table.id, id), eq(table.userId, userId)))
+    .limit(1)) as ProcessRow[];
+  const row = rows[0];
+  return row ? toProcess(row) : null;
+}
+
+export async function listTemplates(userId: string): Promise<ProcessSummary[]> {
+  const db = getQueryDb();
+  const table = getProcessesTable();
+  const rows = (await db
+    .select()
+    .from(table)
+    .where(and(eq(table.status, 'template'), eq(table.userId, userId)))
     .orderBy(desc(table.updatedAt))) as ProcessRow[];
   return rows.map(toSummary);
 }
@@ -194,6 +189,7 @@ export async function createProcess(input: {
   description?: string | null;
   templateId?: string;
   bpmnXml?: string;
+  userId: string;
 }): Promise<Process> {
   const name = input.name.trim();
   if (!name) throw new ProcessValidationError('name is required');
@@ -208,7 +204,7 @@ export async function createProcess(input: {
   if (input.bpmnXml?.trim()) {
     bpmnXml = input.bpmnXml;
   } else if (input.templateId) {
-    const template = await getProcessById(input.templateId);
+    const template = await getProcessById(input.templateId, input.userId);
     if (!template) throw new ProcessValidationError('template not found');
     bpmnXml = template.bpmnXml;
   }
@@ -219,6 +215,7 @@ export async function createProcess(input: {
   const workflowJson = await workflowFromXml(bpmnXml);
   const row = {
     id: randomUUID(),
+    userId: input.userId,
     name,
     description: input.description?.trim() || null,
     status: 'draft',
@@ -232,18 +229,19 @@ export async function createProcess(input: {
   return toProcess(row);
 }
 
-export async function duplicateProcess(id: string, name?: string): Promise<Process | null> {
-  const existing = await getProcessById(id);
+export async function duplicateProcess(id: string, userId: string, name?: string): Promise<Process | null> {
+  const existing = await getProcessById(id, userId);
   if (!existing) return null;
   return createProcess({
     name: name !== undefined ? name : copyProcessName(existing.name),
     description: existing.description ?? undefined,
     bpmnXml: existing.bpmnXml,
+    userId,
   });
 }
 
-export async function createTemplateFromProcess(id: string): Promise<Process | null> {
-  const existing = await getProcessById(id);
+export async function createTemplateFromProcess(id: string, userId: string): Promise<Process | null> {
+  const existing = await getProcessById(id, userId);
   if (!existing) return null;
 
   const db = getQueryDb();
@@ -252,6 +250,7 @@ export async function createTemplateFromProcess(id: string): Promise<Process | n
   const name = existing.name.endsWith(' template') ? existing.name : `${existing.name} template`;
   const row = {
     id: randomUUID(),
+    userId,
     name,
     description: existing.description,
     status: 'template' as const,
@@ -265,8 +264,8 @@ export async function createTemplateFromProcess(id: string): Promise<Process | n
   return toProcess(row);
 }
 
-export async function updateProcess(id: string, patch: ProcessPatch): Promise<Process | null> {
-  const existing = await getProcessById(id);
+export async function updateProcess(id: string, patch: ProcessPatch, userId: string): Promise<Process | null> {
+  const existing = await getProcessById(id, userId);
   if (!existing) return null;
   assertPatch(patch);
   if (patch.version === undefined) throw new ProcessValidationError('version is required');
@@ -311,19 +310,19 @@ export async function updateProcess(id: string, patch: ProcessPatch): Promise<Pr
     workflowJson: next.workflowJson ? JSON.stringify(next.workflowJson) : null,
     version: next.version,
     updatedAt: next.updatedAt,
-  }).where(and(eq(table.id, id), eq(table.version, existing.version)));
-  const stored = await getProcessById(id);
+  }).where(and(eq(table.id, id), eq(table.userId, userId), eq(table.version, existing.version)));
+  const stored = await getProcessById(id, userId);
   if (!stored || stored.version !== next.version) {
     throw new ProcessConflictError(stored?.version ?? existing.version);
   }
   return stored;
 }
 
-export async function deleteProcess(id: string): Promise<boolean> {
-  const existing = await getProcessById(id);
+export async function deleteProcess(id: string, userId: string): Promise<boolean> {
+  const existing = await getProcessById(id, userId);
   if (!existing) return false;
   const db = getQueryDb();
   const table = getProcessesTable();
-  await db.delete(table).where(eq(table.id, id));
+  await db.delete(table).where(and(eq(table.id, id), eq(table.userId, userId)));
   return true;
 }

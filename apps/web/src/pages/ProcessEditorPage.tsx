@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Process } from '@bpmn/domain';
 import { BpmnEditor, type BpmnEditorHandle } from '../components/bpmn-editor/BpmnEditor';
 import { EditorChrome } from '../components/shell/EditorChrome';
+import { UserMenu } from '../components/shell/UserMenu';
 import { fetchProcess, saveAsTemplate, saveProcess } from '../lib/api';
 import { bpmnDownloadFilename, downloadBpmnXml, downloadBlob, downloadFilename, downloadText } from '../lib/downloadBpmn';
 import { svgToPdfBlob } from '../lib/exportDiagram';
@@ -192,6 +193,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
           setNotice(null);
         }}
         onResetSimulation={() => editorRef.current?.resetSimulation()}
+        account={<UserMenu />}
       />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <BpmnEditor

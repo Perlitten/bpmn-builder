@@ -1,0 +1,62 @@
+import { randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
+import { getQueryDb, getUsersTable } from '../../../db/src/index.js';
+import type { AuthUser } from './types.js';
+
+export type GoogleProfile = {
+  sub: string;
+  email: string;
+  name?: string | null;
+  picture?: string | null;
+};
+
+type UserRow = {
+  id: string;
+  googleSub: string;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function toAuthUser(row: UserRow): AuthUser {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatarUrl,
+  };
+}
+
+export async function upsertGoogleUser(profile: GoogleProfile): Promise<AuthUser> {
+  const db = getQueryDb();
+  const table = getUsersTable();
+  const now = new Date().toISOString();
+  const name = profile.name?.trim() || null;
+  const avatarUrl = profile.picture?.trim() || null;
+  const existing = (await db
+    .select()
+    .from(table)
+    .where(eq(table.googleSub, profile.sub))
+    .limit(1)) as UserRow[];
+  const row = existing[0];
+  if (row) {
+    await db
+      .update(table)
+      .set({ email: profile.email, name, avatarUrl, updatedAt: now })
+      .where(eq(table.id, row.id));
+    return toAuthUser({ ...row, email: profile.email, name, avatarUrl, updatedAt: now });
+  }
+  const created: UserRow = {
+    id: randomUUID(),
+    googleSub: profile.sub,
+    email: profile.email,
+    name,
+    avatarUrl,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.insert(table).values(created);
+  return toAuthUser(created);
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   Ellipsis,
@@ -37,6 +37,7 @@ type EditorChromeProps = {
   onClear: () => void;
   onToggleSimulate: () => void;
   onResetSimulation: () => void;
+  account?: ReactNode;
 };
 
 export function EditorChrome({
@@ -58,6 +59,7 @@ export function EditorChrome({
   onClear,
   onToggleSimulate,
   onResetSimulation,
+  account,
 }: EditorChromeProps) {
   const compactViewport = useCompactViewport();
   const compact = compactProp ?? compactViewport;
@@ -160,6 +162,7 @@ export function EditorChrome({
             Reset process
           </ChromeMenuItem>
         </ChromeMenu>
+        {account}
       </div>
       <ConfirmDialog
         open={confirmClear}

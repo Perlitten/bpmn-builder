@@ -21,6 +21,7 @@ import { draftNameFromTemplate, TemplatesSection } from '../components/process-l
 import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Skeleton } from '../components/ui/Skeleton';
+import { UserMenu } from '../components/shell/UserMenu';
 import { api, type ProcessListSort } from '../lib/api';
 import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPreview';
 import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
@@ -273,6 +274,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           >
             New blank
           </Button>
+          <UserMenu />
         </div>
         <div className="border-t border-border px-4 py-2">
           <div className="flex items-center gap-2">

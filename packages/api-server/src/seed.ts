@@ -2,45 +2,13 @@ import { eq } from 'drizzle-orm';
 import { bpmnToWorkflow } from '../../bpmn-adapter/src/index.js';
 import { getProcessesTable, getQueryDb } from '../../db/src/index.js';
 import { DEFAULT_BPMN_XML } from './defaultBpmn.js';
-import { countProcesses } from './services/processService.js';
 
-const SEED_PROCESSES = [
-  {
-    id: 'onboarding',
-    name: 'Customer Onboarding',
-    description: 'Onboard new customers end-to-end',
-  },
-  {
-    id: 'approval',
-    name: 'Purchase Approval',
-    description: 'Route purchase requests for approval',
-  },
-];
-
-export async function seedIfEmpty(): Promise<void> {
-  if (await countProcesses() > 0) return;
-
-  const db = getQueryDb();
-  const table = getProcessesTable();
-  const now = new Date().toISOString();
-  const workflowJson = JSON.stringify(await bpmnToWorkflow(DEFAULT_BPMN_XML));
-
-  for (const seed of SEED_PROCESSES) {
-    await db.insert(table).values({
-      id: seed.id,
-      name: seed.name,
-      description: seed.description,
-      status: 'draft',
-      bpmnXml: DEFAULT_BPMN_XML,
-      workflowJson,
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
-
-  console.log(`Seeded ${SEED_PROCESSES.length} demo processes`);
-}
+/**
+ * Processes are owned by a signed-in Google user.
+ * Existing rows without `user_id` stay in sqlite as orphans and are never listed.
+ * Do not insert unowned demo diagrams — they would be invisible after auth.
+ */
+export async function seedIfEmpty(): Promise<void> {}
 
 export async function repairEmptyDiagrams(): Promise<void> {
   const db = getQueryDb();

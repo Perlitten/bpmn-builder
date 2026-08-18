@@ -1,7 +1,8 @@
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ProcessSummary } from '@bpmn/domain';
+import { AuthProvider } from '../auth/AuthGate';
 import { ListKindTabs } from './ListKindTabs';
 import { ListPaginationFooter } from './ListPaginationFooter';
 import { ProcessListPage } from '../../pages/ProcessListPage';
@@ -137,10 +138,17 @@ describe('templates tab content', () => {
   });
 });
 
+function listPage(): ReactElement {
+  return createElement(AuthProvider, {
+    user: { id: 'user-1', email: 'ada@example.com', name: 'Ada', avatarUrl: null },
+    children: createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+  });
+}
+
 describe('ProcessListPage', () => {
   it('uses two tabs and a pinned pagination footer instead of kind pills', () => {
     const html = renderToStaticMarkup(
-      createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+      createElement(listPage),
     );
     expect(html).toContain('role="tablist"');
     expect(html).toContain('>Processes<');
@@ -156,7 +164,7 @@ describe('ProcessListPage', () => {
 
   it('keeps search, actions, and describe-to-create in one sticky header', () => {
     const html = renderToStaticMarkup(
-      createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+      createElement(listPage),
     );
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
     expect(header).toContain('sticky');
@@ -173,7 +181,7 @@ describe('ProcessListPage', () => {
 
   it('uses one explicit sort control with visible directions instead of tab-like toggles', () => {
     const html = renderToStaticMarkup(
-      createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+      createElement(listPage),
     );
     expect(html).toContain('Sort by');
     expect(html).toContain('aria-label="Sort processes"');
@@ -186,7 +194,7 @@ describe('ProcessListPage', () => {
 
   it('does not show the duplicate dialog until the user confirms from the row menu', () => {
     const html = renderToStaticMarkup(
-      createElement(ProcessListPage, { onOpenProcess: () => undefined }),
+      createElement(listPage),
     );
     expect(html).not.toContain('Duplicate process');
     expect(html).not.toContain('Make a copy');

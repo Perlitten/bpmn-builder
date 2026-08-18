@@ -8,6 +8,7 @@ import {
   findMatchingReplaceTarget,
   flowNodeLaneAssignment,
   isXorOr,
+  outgoingFlowRows,
   lanesInPool,
   matchesReplaceTarget,
   poolLaneCreate,
@@ -221,5 +222,29 @@ describe('inspector model', () => {
         parentBpmnType: 'bpmn:Process',
       }),
     ).toBe(false);
+  });
+
+  it('labels XOR outgoing rows with the flow name, not the target id', () => {
+    const xor: DiagramElement = {
+      id: 'ExclusiveGateway_1',
+      type: 'bpmn:ExclusiveGateway',
+      outgoing: [
+        {
+          id: 'SequenceFlow_2',
+          type: 'bpmn:SequenceFlow',
+          businessObject: { name: 'Yes' },
+          target: { id: 'Task_2', type: 'bpmn:Task', businessObject: { name: 'Place order' } },
+        },
+        {
+          id: 'SequenceFlow_4',
+          type: 'bpmn:SequenceFlow',
+          businessObject: { name: 'No' },
+          target: { id: 'ExclusiveGateway_2', type: 'bpmn:ExclusiveGateway' },
+        },
+      ],
+    };
+    const rows = outgoingFlowRows(xor);
+    expect(rows.map((row) => row.label)).toEqual(['Yes', 'No']);
+    expect(rows.every((row) => row.label !== row.id)).toBe(true);
   });
 });

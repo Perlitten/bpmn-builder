@@ -72,6 +72,14 @@ describe('palette keyboard a11y', () => {
     expect(css).toMatch(/\.palette-rail-btn\.is-tool-active[\s\S]*?color:\s*var\(--color-canvas\)/);
   });
 
+  it('keeps the open Add caret inside the rail padding', () => {
+    const css = readFileSync(join(dir, 'palette.css'), 'utf8');
+    const caret = css.match(/\.palette-add-btn\.is-active::after\s*\{[^}]+\}/)?.[0];
+    expect(caret).toBeTruthy();
+    const rightPx = Number(caret?.match(/right:\s*(-?\d+)px/)?.[1]);
+    expect(rightPx).toBeGreaterThanOrEqual(-4);
+  });
+
   it('treats Suggested rows as pick-to-create, not submenu chevrons', () => {
     const html = renderToStaticMarkup(
       createElement(CatalogFlyout, {

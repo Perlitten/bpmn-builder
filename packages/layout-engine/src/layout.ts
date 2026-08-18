@@ -71,12 +71,10 @@ function layoutGraph(
   /* Lane membership moves nodes vertically only; the canonical chain owns X. */
   const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx) : new Map<string, LaneBand>();
 
-  const edges: LayoutResult['edges'] = associationEdges(input.artifacts ?? [], placed);
-  for (const flow of [...input.sequenceFlows].sort((a, b) => a.id.localeCompare(b.id))) {
-    const from = placed.get(flow.source);
-    const to = placed.get(flow.target);
-    if (from && to) edges[flow.id] = routeOrthogonal(from, to);
-  }
+  const edges: LayoutResult['edges'] = {
+    ...associationEdges(input.artifacts ?? [], placed),
+    ...routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? []),
+  };
   const shapes = sortRecord(placed);
   return {
     result: {
@@ -509,6 +507,45 @@ function flattenRegions(regions: StructuredRegion[]): StructuredRegion[] {
   };
   walk(regions);
   return out;
+}
+
+function flowBandIndex(flow: SequenceFlow, regions: StructuredRegion[]): number {
+  for (const region of flattenRegions(regions)) {
+    const i = region.branches.findIndex((b) => b.entryFlowId === flow.id);
+    if (i >= 0) return i;
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * Empty XOR/AND/OR branches share split→join. Route them on distinct rails
+ * (Yes above, No below) instead of one stroke with stacked labels.
+ */
+function routeSequenceFlows(
+  flows: SequenceFlow[],
+  placed: Map<string, Bounds>,
+  regions: StructuredRegion[],
+): Record<string, Point[]> {
+  const groups = new Map<string, SequenceFlow[]>();
+  for (const flow of flows) {
+    if (!placed.has(flow.source) || !placed.has(flow.target)) continue;
+    const key = `${flow.source}\0${flow.target}`;
+    const list = groups.get(key) ?? [];
+    list.push(flow);
+    groups.set(key, list);
+  }
+  const edges: Record<string, Point[]> = {};
+  const spacing = TOKENS.edgeClearance * 2;
+  for (const group of groups.values()) {
+    group.sort((a, b) => flowBandIndex(a, regions) - flowBandIndex(b, regions) || a.id.localeCompare(b.id));
+    const n = group.length;
+    for (let i = 0; i < n; i++) {
+      const flow = group[i]!;
+      const offset = n === 1 ? 0 : snapToGrid((i - (n - 1) / 2) * spacing);
+      edges[flow.id] = routeOrthogonal(placed.get(flow.source)!, placed.get(flow.target)!, offset);
+    }
+  }
+  return edges;
 }
 
 function buildMainChain(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>, ctx: Ctx): ChainItem[] {
@@ -1042,7 +1079,7 @@ function collectLabels(
     if (!name) continue;
     const points = edges[edge.id];
     if (!points?.length) continue;
-    /* Branch labels ("Yes" / "No") share a midpoint when branches are short — stack them. */
+    /* Parallel empty branches already sit on distinct rails; this only separates leftover clashes. */
     const box = clearOfLabels(flowLabelBox(points, name), taken);
     labels.set(edge.id, box);
     taken.push(box);

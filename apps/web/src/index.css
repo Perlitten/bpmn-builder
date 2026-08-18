@@ -204,3 +204,16 @@ html.is-editor #root {
   overflow: visible;
   font-size: 12px;
 }
+
+/*
+ * Typed-task markers sit after the rounded-rect body. bpmn-js fills them with
+ * opaque white while the body is fill-opacity .95 — a white tile on the glyph.
+ * Only knock out that task-fill; stroke-colored head/envelope stays. Loop/MI
+ * use data-marker. Event bodies start with a circle, not a path.
+ */
+.bpmn-stage .djs-visual > path:first-child ~ path:not([data-marker])[fill='white'],
+.bpmn-editor-stage .djs-visual > path:first-child ~ path:not([data-marker])[fill='white'],
+.bpmn-stage .djs-visual > path:first-child ~ circle[fill='white'],
+.bpmn-editor-stage .djs-visual > path:first-child ~ circle[fill='white'] {
+  fill: none;
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AuthGate } from './components/auth/AuthGate';
 import { AppShell } from './components/shell/AppShell';
 import { ProcessEditorPage } from './pages/ProcessEditorPage';
 import { ProcessListPage } from './pages/ProcessListPage';
@@ -28,15 +29,17 @@ export default function App() {
   }, [navigate]);
 
   return (
-    <AppShell route={route} onNavigate={navigate}>
-      {route.name === 'list' ? (
-        <ProcessListPage onOpenProcess={(id) => navigate({ name: 'editor', processId: id })} />
-      ) : (
-        <ProcessEditorPage
-          processId={route.processId}
-          onBack={returnToList}
-        />
-      )}
-    </AppShell>
+    <AuthGate>
+      <AppShell route={route} onNavigate={navigate}>
+        {route.name === 'list' ? (
+          <ProcessListPage onOpenProcess={(id) => navigate({ name: 'editor', processId: id })} />
+        ) : (
+          <ProcessEditorPage
+            processId={route.processId}
+            onBack={returnToList}
+          />
+        )}
+      </AppShell>
+    </AuthGate>
   );
 }
