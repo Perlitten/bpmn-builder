@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["fra1"],
-  "buildCommand": "pnpm db:migrate && pnpm --filter @bpmn/web build",
+  "buildCommand": "pnpm --filter @bpmn/web build",
   "outputDirectory": "apps/web/dist",
   "functions": {
     "api/index.ts": {

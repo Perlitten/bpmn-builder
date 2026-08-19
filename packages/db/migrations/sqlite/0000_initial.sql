@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS `processes` (
 	`updated_at` text NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `processes_user_id_idx` ON `processes` (`user_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `processes_updated_at_idx` ON `processes` (`updated_at`);--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS `sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
@@ -18,6 +20,8 @@ CREATE TABLE IF NOT EXISTS `sessions` (
 	`created_at` text NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `sessions_user_id_idx` ON `sessions` (`user_id`);--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `sessions_expires_at_idx` ON `sessions` (`expires_at`);--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS `users` (
 	`id` text PRIMARY KEY NOT NULL,
 	`google_sub` text NOT NULL,

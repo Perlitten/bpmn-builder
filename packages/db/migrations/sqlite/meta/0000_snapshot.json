@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "329f5cad-3545-4b58-8efe-d5708ed9a3bc",
+  "id": "951c37c6-51c6-491a-9d78-4da1ba8b5b9b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "processes": {
@@ -80,7 +80,22 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "processes_user_id_idx": {
+          "name": "processes_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "processes_updated_at_idx": {
+          "name": "processes_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -118,7 +133,22 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "sessions_user_id_idx": {
+          "name": "sessions_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "sessions_expires_at_idx": {
+          "name": "sessions_expires_at_idx",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

@@ -105,7 +105,7 @@ jobs:
 
       - name: Run Playwright E2E tests
         env:
-          ENABLE_TEST_AUTH: 'true',
+          ENABLE_TEST_AUTH: 'true'
           NODE_ENV: 'test'
         run: pnpm test:e2e
 

@@ -28,3 +28,8 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"updated_at" text NOT NULL,
 	CONSTRAINT "users_google_sub_unique" UNIQUE("google_sub")
 );
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "processes_user_id_idx" ON "processes" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "processes_updated_at_idx" ON "processes" USING btree ("updated_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "sessions_expires_at_idx" ON "sessions" USING btree ("expires_at");
