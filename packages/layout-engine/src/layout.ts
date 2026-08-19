@@ -240,10 +240,10 @@ function applyLaneBands(
   const bands: LaneBand[] = new Array(lanes.length);
   const anchor = content.findIndex((box) => box != null);
   if (anchor === -1) {
-    let y = snapToGrid(BASELINE_CY - (lanes.length * TOKENS.laneMinHeight) / 2);
+    let startY = snapToGrid(BASELINE_CY - (lanes.length * TOKENS.laneMinHeight) / 2);
     for (let i = 0; i < lanes.length; i++) {
-      bands[i] = { y, height: TOKENS.laneMinHeight };
-      y += TOKENS.laneMinHeight;
+      bands[i] = { y: startY, height: TOKENS.laneMinHeight };
+      startY += TOKENS.laneMinHeight;
     }
     return new Map(lanes.map((lane, i) => [lane.id, bands[i]!]));
   }
@@ -874,7 +874,7 @@ function placeOrphans(input: Pick<LayoutInput, 'nodes'>, placed: Map<string, Bou
   if (!leftover.length) return;
   const content = bbox(Object.fromEntries(placed));
   let x = content?.x ?? ORIGIN_X;
-  let y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
+  const y = content ? content.y + content.height + TOKENS.branchGap : BASELINE_CY;
   for (const node of leftover) {
     const size = sizeOf(node.type);
     placed.set(node.id, { x, y, width: size.width, height: size.height });
@@ -973,15 +973,15 @@ function measureRegion(region: StructuredRegion, ctx: Ctx): Extent {
 }
 
 function stackMetrics(branches: Extent[]): { total: number; bandCys: number[] } {
-  let y = 0;
+  let accY = 0;
   const bandCys: number[] = [];
   for (let i = 0; i < branches.length; i++) {
     const b = branches[i]!;
-    bandCys.push(y + b.above);
-    y += b.above + b.below;
-    if (i < branches.length - 1) y += TOKENS.branchGap;
+    bandCys.push(accY + b.above);
+    accY += b.above + b.below;
+    if (i < branches.length - 1) accY += TOKENS.branchGap;
   }
-  return { total: y, bandCys };
+  return { total: accY, bandCys };
 }
 
 function nodeExtent(type: string): Extent {

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./vendor.d.ts" />
 import type { BpmnPreserve, ExtensionValue } from '../../semantic-core/src/index.js';
 import { BpmnModdle } from 'bpmn-moddle';

@@ -1,5 +1,6 @@
 /** Safe download filename from a process name. XML stays the interchange, not the editing model. */
 
+// eslint-disable-next-line no-control-regex
 const UNSAFE = /[<>:"/\\|?*\u0000-\u001f]/g;
 const KNOWN_EXT = /\.(bpmn|svg|pdf)$/i;
 

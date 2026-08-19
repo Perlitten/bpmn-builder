@@ -11,6 +11,7 @@ export const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       cookies: Record<string, string>;

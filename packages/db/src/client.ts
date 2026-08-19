@@ -19,14 +19,30 @@ export function getDb(): AppDb {
   return db;
 }
 
+export type QueryBuilderChain = {
+  from: (table: unknown) => QueryBuilderChain;
+  where: (...args: unknown[]) => QueryBuilderChain;
+  orderBy: (...args: unknown[]) => QueryBuilderChain;
+  limit: (n: number) => QueryBuilderChain;
+  offset: (n: number) => QueryBuilderChain;
+  set: (values: Record<string, unknown>) => QueryBuilderChain;
+  values: (values: unknown) => QueryBuilderChain;
+  then: <TResult1 = unknown, TResult2 = never>(
+    onfulfilled?: ((value: unknown) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>;
+};
+
+export type DbQueryClient = {
+  select: (fields?: Record<string, unknown>) => QueryBuilderChain;
+  insert: (table: unknown) => QueryBuilderChain;
+  update: (table: unknown) => QueryBuilderChain;
+  delete: (table: unknown) => QueryBuilderChain;
+};
+
 /** sqlite/pg union is not callable; query APIs match for this app. */
-export function getQueryDb() {
-  return getDb() as unknown as {
-    select: (fields?: object) => any;
-    insert: (table: unknown) => any;
-    update: (table: unknown) => any;
-    delete: (table: unknown) => any;
-  };
+export function getQueryDb(): DbQueryClient {
+  return getDb() as unknown as DbQueryClient;
 }
 
 export function getDbDriver(): 'sqlite' | 'postgres' {

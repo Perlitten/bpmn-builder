@@ -9,6 +9,7 @@ import { googleCallbackUrl, publicOrigin, readGoogleAuthConfig } from '../auth/e
 import { exchangeGoogleCode, googleAuthorizeUrl } from '../auth/google.js';
 import { createSession, destroySession, equalSecret, generateOAuthState } from '../auth/session.js';
 import { OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
+import { issueTestSession } from '../auth/testSession.js';
 import { upsertGoogleUser } from '../auth/users.js';
 
 function redirectHome(res: Response, origin: string, error?: string): void {
@@ -97,4 +98,19 @@ export function registerAuthRoutes(app: Application): void {
     clearSessionCookie(res);
     res.json({ ok: true });
   });
+
+  // Guarded test-session endpoint strictly prohibited in NODE_ENV=production
+  const isProduction = process.env.NODE_ENV === 'production';
+  const testAuthEnabled = process.env.ENABLE_TEST_AUTH === 'true';
+
+  if (!isProduction && testAuthEnabled) {
+    console.warn('[SECURITY WARNING] Test auth endpoint POST /api/auth/test-session is REGISTERED.');
+    app.post('/api/auth/test-session', async (req: Request, res: Response) => {
+      const email = typeof req.body?.email === 'string' ? req.body.email : undefined;
+      const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
+      const { user, token } = await issueTestSession({ email, name });
+      setSessionCookie(res, token);
+      res.json({ ok: true, user, token });
+    });
+  }
 }

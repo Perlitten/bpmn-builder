@@ -1,4 +1,4 @@
-import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, Process, RegionKind, UnstructuredMark } from '../../semantic-core/src/index.js';
+import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, Process as _Process, RegionKind, UnstructuredMark } from '../../semantic-core/src/index.js';
 
 export const TOOL_NAMES = [
   'inspectProcess',

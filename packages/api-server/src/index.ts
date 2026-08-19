@@ -37,6 +37,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
+    // eslint-disable-next-line no-console
     console.log(`BPMN builder running on http://localhost:${PORT}`);
   });
 }
