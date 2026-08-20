@@ -92,15 +92,6 @@ export function hasActionVerb(name: string): boolean {
       : [`${verb}s`, `${verb}ed`, `${verb}ing`];
     if (inflections.includes(word0)) return true;
   }
-  if (words.length >= 2) {
-    const word1 = words[1]!;
-    for (const verb of ACTION_VERBS) {
-      const inflections = verb.endsWith('e')
-        ? [`${verb}s`, `${verb}d`, `${verb.slice(0, -1)}ing`]
-        : [`${verb}s`, `${verb}ed`, `${verb}ing`];
-      if (inflections.includes(word1)) return true;
-    }
-  }
   return false;
 }
 
