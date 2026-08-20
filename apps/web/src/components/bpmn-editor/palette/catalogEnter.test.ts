@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { bpmnComponentRegistry } from '@bpmn/semantic-core';
+import { CatalogFlyout } from './CatalogFlyout';
 import { catalogEnterTarget, enabledCatalogItems, flattenCatalogItems, stepCatalogHighlight } from './catalogEnter';
 import { catalogForFlyout, type ResolvedCatalogItem } from './contextFilter';
 
@@ -55,11 +56,10 @@ describe('catalog Enter', () => {
 });
 
 describe('catalog Enter markup', () => {
-  it('wires search Enter in the flyout', async () => {
+  it('wires search Enter in the flyout', () => {
     const src = readFileSync(new URL('./CatalogFlyout.tsx', import.meta.url), 'utf8');
     expect(src).toMatch(/event\.key === 'Enter'/);
     expect(src).toMatch(/catalogEnterTarget/);
-    const { CatalogFlyout } = await import('./CatalogFlyout');
     const html = renderToStaticMarkup(
       createElement(CatalogFlyout, {
         view: 'activities',

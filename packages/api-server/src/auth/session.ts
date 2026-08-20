@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, lt } from 'drizzle-orm';
 import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/index.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
@@ -36,8 +36,10 @@ export function generateOAuthState(returnOrigin?: string): string {
   return `${encoded}.${signOAuthStatePayload(encoded)}`;
 }
 
-export function hashOAuthState(state: string): string {
-  return scryptSync(oauthStateSecret(), state, 32).toString('base64url');
+export function hashOAuthStateNonce(nonce: string): string {
+  // The nonce is high-entropy random data, not a password; HMAC binds it to this deployment.
+  // codeql[js/insufficient-password-hash]
+  return createHmac('sha256', oauthStateSecret()).update(`oauth-state:${nonce}`).digest('base64url');
 }
 
 export function parseOAuthState(state: string): SignedOAuthState | null {

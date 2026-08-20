@@ -13,7 +13,7 @@ import {
   destroySession,
   equalSecret,
   generateOAuthState,
-  hashOAuthState,
+  hashOAuthStateNonce,
   parseOAuthState,
   readSession,
 } from '../auth/session.js';
@@ -92,12 +92,16 @@ export function registerAuthRoutes(app: Application): void {
 
     const state = suppliedState ?? generateOAuthState();
     const parsedState = parseOAuthState(state);
-    if (parsedState?.returnOrigin && !isSafeRelayOrigin(parsedState.returnOrigin)) {
+    if (!parsedState) {
+      res.status(400).json({ error: 'Invalid OAuth state' });
+      return;
+    }
+    if (parsedState.returnOrigin && !isSafeRelayOrigin(parsedState.returnOrigin)) {
       res.status(400).json({ error: 'Invalid OAuth return origin' });
       return;
     }
 
-    setOAuthStateCookie(res, hashOAuthState(state));
+    setOAuthStateCookie(res, hashOAuthStateNonce(parsedState.nonce));
     res.redirect(
       googleAuthorizeUrl({
         clientId: config.value.clientId,
@@ -110,14 +114,19 @@ export function registerAuthRoutes(app: Application): void {
   app.get('/api/auth/google/callback', authRateLimit, async (req: Request, res: Response) => {
     const authOrigin = publicOrigin(req);
     const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const parsedState = parseOAuthState(state);
     const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
-    if (!state || !expected || !equalSecret(hashOAuthState(state), expected)) {
+    if (
+      !state ||
+      !parsedState?.nonce ||
+      !expected ||
+      !equalSecret(hashOAuthStateNonce(parsedState.nonce), expected)
+    ) {
       clearOAuthStateCookie(res);
       redirectHome(res, authOrigin, 'state');
       return;
     }
 
-    const parsedState = parseOAuthState(state);
     const returnOrigin = parsedState?.returnOrigin;
     const targetOrigin = returnOrigin && isSafeRelayOrigin(returnOrigin) ? returnOrigin : authOrigin;
 
@@ -143,8 +152,8 @@ export function registerAuthRoutes(app: Application): void {
 
       if (returnOrigin && isSafeRelayOrigin(returnOrigin)) {
         const { token: handoffToken } = await createSession(user.id, OAUTH_HANDOFF_TTL_MS);
-        const complete = new URL('/api/auth/complete', returnOrigin);
-        complete.searchParams.set('token', handoffToken);
+        const complete = new URL('/', returnOrigin);
+        complete.hash = `auth_token=${encodeURIComponent(handoffToken)}`;
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.redirect(complete.toString());
         return;
@@ -158,12 +167,12 @@ export function registerAuthRoutes(app: Application): void {
     }
   });
 
-  app.get('/api/auth/complete', authRateLimit, async (req: Request, res: Response) => {
-    const origin = requestOrigin(req);
-    const handoffToken = typeof req.query.token === 'string' ? req.query.token : '';
+  app.post('/api/auth/complete', authRateLimit, async (req: Request, res: Response) => {
+    const handoffToken = typeof req.body?.token === 'string' ? req.body.token : '';
     res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Cache-Control', 'no-store');
     if (!handoffToken) {
-      redirectHome(res, origin, 'oauth');
+      res.status(400).json({ error: 'Invalid OAuth handoff' });
       return;
     }
 
@@ -171,14 +180,14 @@ export function registerAuthRoutes(app: Application): void {
       const user = await readSession(handoffToken, { refresh: false });
       await destroySession(handoffToken);
       if (!user) {
-        redirectHome(res, origin, 'oauth');
+        res.status(401).json({ error: 'Invalid OAuth handoff' });
         return;
       }
       const { token } = await createSession(user.id);
       setSessionCookie(res, token);
-      redirectHome(res, origin);
+      res.json({ ok: true });
     } catch {
-      redirectHome(res, origin, 'oauth');
+      res.status(401).json({ error: 'Invalid OAuth handoff' });
     }
   });
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { fetchSessionUser, signOut as postSignOut, type SessionUser } from '../../lib/auth';
+import { completeOAuthHandoff, fetchSessionUser, signOut as postSignOut, type SessionUser } from '../../lib/auth';
 import { SignInPage } from '../../pages/SignInPage';
 
 type AuthContextValue = {
@@ -37,7 +37,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const ac = new AbortController();
-    void fetchSessionUser(ac.signal)
+    void completeOAuthHandoff(ac.signal)
+      .catch(() => undefined)
+      .then(() => fetchSessionUser(ac.signal))
       .then((next) => {
         setUser(next);
         setLoading(false);

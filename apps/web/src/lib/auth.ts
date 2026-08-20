@@ -32,6 +32,25 @@ export async function fetchSessionUser(signal?: AbortSignal): Promise<SessionUse
   return body.user;
 }
 
+export async function completeOAuthHandoff(signal?: AbortSignal): Promise<void> {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#')) return;
+
+  const params = new URLSearchParams(hash.slice(1));
+  const token = params.get('auth_token');
+  if (!token) return;
+
+  window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+  const response = await fetch('/api/auth/complete', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+    signal,
+  });
+  if (!response.ok) throw new Error('Failed to complete OAuth handoff');
+}
+
 export async function signOut(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
 }
