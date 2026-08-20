@@ -122,7 +122,7 @@ describe('lintProcess', () => {
     const canonical = lintProcess(processXml(p));
     expect(canonical.layout).toBe('canonical');
     expect(canonical.scores.geometry).toBe(100);
-    expect(formatScores(canonical)).toContain('Layout 100');
+    expect(formatScores(canonical)).toContain('Layout: canonical');
     expect(formatScores(canonical)).not.toContain('Layout ✓');
 
     const free = lintProcess(
@@ -152,9 +152,9 @@ describe('lintProcess', () => {
     expect(free.layout).toBe('free');
     expect(free.scores.geometry).toBeUndefined();
     expect(free.suggestions.some((f) => f.id === 'geometry.free-di')).toBe(true);
-    expect(formatScores(free)).toContain('Layout free DI');
+    expect(formatScores(free)).toContain('Layout: free DI');
     expect(formatScores(free)).not.toContain('Layout ✓');
-    expect(formatScores(free)).not.toContain('Layout 100');
+    expect(formatScores(free)).not.toContain('Layout: canonical');
   });
 
   it('flags complex gateway and ad-hoc as unsupported on Camunda 8 / Zeebe', () => {
@@ -440,6 +440,107 @@ describe('lintProcess', () => {
     expect(result.errors.filter((f) => f.elementId === 'Bnd_Comp' || f.elementId === 'Undo_Hotel')).toEqual([]);
     expect(result.errors.filter((f) => f.elementId === 'Throw_Link' || f.elementId === 'Catch_Link')).toEqual([]);
     expect(result.errors.some((f) => /is not connected/.test(f.message))).toBe(false);
+  });
+
+  it('reports geometry findings and free layout for a model with overlapping labels', () => {
+    const modelWithOverlappingLabels = xml(
+      `
+      <bpmn:startEvent id="StartEvent_1" name="Start" />
+      <bpmn:task id="Activity_1" name="Review" />
+      <bpmn:endEvent id="EndEvent_1" name="End" />
+      <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Activity_1" />
+      <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_1" targetRef="EndEvent_1" />
+      `,
+      `<bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+          <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+            <dc:Bounds x="100" y="100" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Activity_1_di" bpmnElement="Activity_1">
+            <dc:Bounds x="200" y="100" width="100" height="80" />
+            <bpmndi:BPMNLabel>
+              <dc:Bounds x="210" y="105" width="80" height="20" />
+            </bpmndi:BPMNLabel>
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+            <dc:Bounds x="350" y="100" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+            <bpmndi:BPMNLabel>
+              <dc:Bounds x="205" y="102" width="50" height="20" />
+            </bpmndi:BPMNLabel>
+          </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+      </bpmndi:BPMNDiagram>`,
+    );
+
+    const result = lintProcess(modelWithOverlappingLabels);
+    expect(result.layout).toBe('free');
+    expect(result.layout).not.toBe('canonical');
+    expect(result.suggestions.some((f) => f.id.startsWith('geometry.'))).toBe(true);
+  });
+
+  it('reports canonical layout and overlap finding without free-di for canonical DI that has overlaps', () => {
+    let p = createProcess({ name: 'Canonical' });
+    p = addTask(p, { name: 'Review request' }).process;
+    const baseXml = processXml(p);
+
+    const xmlWithOverlap = baseXml.replace(
+      '</bpmndi:BPMNPlane>',
+      `<bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="SequenceFlow_1">
+         <bpmndi:BPMNLabel>
+           <dc:Bounds x="230" y="160" width="50" height="20" />
+         </bpmndi:BPMNLabel>
+       </bpmndi:BPMNEdge>
+       </bpmndi:BPMNPlane>`,
+    );
+
+    const result = lintProcess(xmlWithOverlap);
+    expect(result.layout).toBe('canonical');
+    expect(result.suggestions.some((f) => f.id === 'geometry.label-overlaps-node')).toBe(true);
+    expect(result.suggestions.some((f) => f.id === 'geometry.free-di')).toBe(false);
+  });
+
+  it('reports canonical layout with no geometry findings for a model laid out by layout-engine', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Submit request' }).process;
+    p = addTask(p, { name: 'Review request' }).process;
+    const result = lintProcess(processXml(p));
+    expect(result.layout).toBe('canonical');
+    expect(result.suggestions.filter((f) => f.id.startsWith('geometry.'))).toEqual([]);
+  });
+
+  it('fails Quality score (returns less than 100) when the model contains an unnamed task', () => {
+    const modelWithUnnamedTask = xml(`
+      <bpmn:startEvent id="Start" name="Start" />
+      <bpmn:task id="Activity_1" />
+      <bpmn:endEvent id="End" name="End" />
+      <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="Activity_1" />
+      <bpmn:sequenceFlow id="F2" sourceRef="Activity_1" targetRef="End" />
+    `);
+    const result = lintProcess(modelWithUnnamedTask);
+    expect(result.warnings.some((f) => f.id === 'quality.unnamed-task')).toBe(true);
+    expect(result.scores.quality).toBeLessThan(100);
+  });
+
+  it('scores Quality 100 for an unnamed parallel gateway and unlabeled AND branches', () => {
+    const parallelModel = xml(`
+      <bpmn:startEvent id="S" name="Start" />
+      <bpmn:parallelGateway id="G1" />
+      <bpmn:task id="T1" name="Send invoice" />
+      <bpmn:task id="T2" name="Notify customer" />
+      <bpmn:parallelGateway id="G2" />
+      <bpmn:endEvent id="E" name="End" />
+      <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="G1" />
+      <bpmn:sequenceFlow id="F2" sourceRef="G1" targetRef="T1" />
+      <bpmn:sequenceFlow id="F3" sourceRef="G1" targetRef="T2" />
+      <bpmn:sequenceFlow id="F4" sourceRef="T1" targetRef="G2" />
+      <bpmn:sequenceFlow id="F5" sourceRef="T2" targetRef="G2" />
+      <bpmn:sequenceFlow id="F6" sourceRef="G2" targetRef="E" />
+    `);
+    const result = lintProcess(parallelModel);
+    expect(result.scores.quality).toBe(100);
+    expect(result.warnings.filter((f) => f.layer === 5)).toEqual([]);
   });
 
   it('does not apply task-verb to an event subprocess, boundary, or gateway collapsed as task', () => {
