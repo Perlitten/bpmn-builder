@@ -6,21 +6,27 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
     name: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 22
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Setup Corepack & pnpm
         run: |
@@ -30,21 +36,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit production dependencies
+        run: pnpm audit:deps
+
       - name: Lint workspace
         run: pnpm lint
 
       - name: Typecheck workspace
         run: pnpm typecheck
 
-      - name: Run Vitest unit tests
-        run: pnpm test
+      - name: Run Vitest with coverage thresholds
+        run: pnpm test:coverage
 
       - name: Build monorepo
         run: pnpm build
 
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
   database:
     name: database
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16-alpine
@@ -61,12 +80,13 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 22
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Setup Corepack & pnpm
         run: |
@@ -86,14 +106,16 @@ jobs:
   e2e:
     name: e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 22
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Setup Corepack & pnpm
         run: |
@@ -106,7 +128,7 @@ jobs:
       - name: Build monorepo
         run: pnpm build
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run Playwright E2E tests
@@ -120,10 +142,11 @@ jobs:
 
       - name: Upload Playwright artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: playwright-results
           path: |
             playwright-report/
             test-results/
-          retire-days: 14
+          if-no-files-found: ignore
+          retention-days: 14

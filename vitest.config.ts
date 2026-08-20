@@ -12,5 +12,23 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['packages/**/*.{test,spec}.ts', 'apps/**/*.{test,spec}.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'lcov', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['packages/**/src/**/*.ts', 'apps/web/src/**/*.{ts,tsx}'],
+      exclude: [
+        '**/*.{test,spec}.ts',
+        '**/*.d.ts',
+        '**/index.ts',
+        '**/vite-env.d.ts',
+      ],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        statements: 60,
+        branches: 50,
+      },
+    },
   },
 });
