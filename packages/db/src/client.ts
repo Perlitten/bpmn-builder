@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import Database from 'better-sqlite3';
+import { sql } from 'drizzle-orm';
 import pg from 'pg';
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
@@ -64,6 +65,20 @@ export function getQueryDb(): DbQueryClient {
 
 export function getDbDriver(): 'sqlite' | 'postgres' {
   return getDbProvider();
+}
+
+/** Executes a real database round-trip for readiness checks. */
+export async function pingDb(): Promise<void> {
+  const database = getDb();
+  if (getDbProvider() === 'postgres') {
+    const executable = database as unknown as {
+      execute: (query: ReturnType<typeof sql>) => Promise<unknown>;
+    };
+    await executable.execute(sql`select 1`);
+    return;
+  }
+  const client = (database as unknown as { $client: Database.Database }).$client;
+  client.prepare('select 1').get();
 }
 
 export async function resetDbForTests(): Promise<void> {

@@ -5,6 +5,7 @@ export {
   getQueryDb,
   getSessionsTable,
   getUsersTable,
+  pingDb,
   resetDbForTests,
 } from './client.js';
 export type { AppDb } from './client.js';

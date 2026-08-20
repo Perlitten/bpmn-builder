@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible product defect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, tokens, or security vulnerabilities. Use the private process in SECURITY.md for security reports.
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What user outcome is blocked or incorrect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest reliable sequence of steps.
+      placeholder: |
+        1. Open …
+        2. Select …
+        3. Observe …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and environment
+      description: Browser, viewport, deployment URL, screenshots, logs with secrets removed.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed secrets, personal data, and production credentials.
+          required: true
