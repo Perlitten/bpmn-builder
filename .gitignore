@@ -11,3 +11,5 @@ coverage/
 playwright-report/
 test-results/
 graphify-out/cache/
+lighthouse-reports/
+.lighthouseci/
