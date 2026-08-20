@@ -28,6 +28,9 @@ import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
 import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
 
+export const DESCRIPTION_PLACEHOLDER =
+  'Receive invoice. Review details. If approved, pay the supplier, otherwise request a revision.';
+
 const PAGE_SIZE = 20;
 
 type ProcessListPageProps = {
@@ -281,7 +284,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             <input
               value={prompt}
               maxLength={MAX_DESCRIPTION_CHARS}
-              placeholder="e.g. Receive invoice, review details, if approved pay supplier else request revision"
+              placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Describe the process. Text is saved as the description."
               className="min-w-0 flex-1 rounded border border-border bg-canvas px-2.5 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
               onChange={(event) => setPrompt(event.target.value)}
