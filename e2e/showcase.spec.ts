@@ -15,8 +15,11 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await page.goto('/');
 
     await expect(page.locator('h1')).toContainText('Describe processes in plain words');
+    await expect(page.locator('#showcase-description')).toBeVisible();
+    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.locator('h2')).toContainText('Sign in to save processes');
 
-    // Accessibility check on pre-login page
+    // Scan only after authentication state and the showcase viewer have settled.
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze();
@@ -25,8 +28,6 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     );
     expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
 
-    await expect(page.locator('#showcase-description')).toBeVisible();
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
     await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(0);
 
     const decisionBtn = page.getByRole('button', { name: 'Decision flow' });
@@ -40,7 +41,5 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(2);
 
     expect(processApiRequests).toEqual([]);
-
-    await expect(page.locator('h2')).toContainText('Sign in to save processes');
   });
 });
