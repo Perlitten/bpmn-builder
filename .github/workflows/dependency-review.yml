@@ -2,7 +2,7 @@ name: Dependency audit
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 permissions:
   contents: read
