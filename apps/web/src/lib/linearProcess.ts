@@ -88,6 +88,7 @@ function splitLine(line: string): string[] {
     (_match, connector: string) => (SEQUENCE_WORDS.has(connector.toLowerCase()) ? '\u0000' : _match),
   );
   const markedCjk = markedConnectors.replace(/(?:然后|接着|随后)/gu, '\u0000');
+  // eslint-disable-next-line no-control-regex
   return markedCjk.split(/\s*(?:\u0000|[;；])\s*/u);
 }
 

@@ -37,6 +37,7 @@ describe('bindKeyboardToHost', () => {
     const keyboard = {
       _target: svg,
       bind: vi.fn(function bind(this: { _target: EventTarget }) {
+        // eslint-disable-next-line no-self-assign
         this._target = this._target;
       }),
       unbind: vi.fn(),
