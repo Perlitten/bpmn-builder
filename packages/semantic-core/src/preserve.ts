@@ -14,7 +14,7 @@ type PreserveOwner = {
 };
 
 type ProcessHost = ProcessGraph | Process;
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const UNSAFE_KEYS = new Set(['__proto__']);
 
 function setRecordValue<T extends object>(record: T, key: string, value: unknown): void {
   if (UNSAFE_KEYS.has(key)) return;

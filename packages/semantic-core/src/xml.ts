@@ -93,19 +93,34 @@ export function* scanXmlTags(xml: string, from = 0): Generator<XmlTag> {
   }
 }
 
+const ENTITIES: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  amp: '&',
+};
+
+function isValidCodePoint(cp: number): boolean {
+  if (cp === 0 || isNaN(cp)) return false;
+  if (cp >= 0xd800 && cp <= 0xdfff) return false;
+  if (cp > 0x10ffff) return false;
+  return true;
+}
+
 function decodeXmlEntities(value: string): string {
-  return value
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&apos;', "'")
-    .replaceAll('&amp;', '&')
-    .replace(/&#([0-9]+);/g, (_, dec) => {
-      try { return String.fromCodePoint(parseInt(dec, 10)); } catch { return _; }
-    })
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
-      try { return String.fromCodePoint(parseInt(hex, 16)); } catch { return _; }
-    });
+  return value.replace(/&(lt|gt|quot|apos|amp|#x[0-9a-fA-F]+|#[0-9]+);/g, (match, inner) => {
+    if (ENTITIES[inner]) {
+      return ENTITIES[inner];
+    }
+    const isHex = inner.startsWith('#x');
+    const digits = isHex ? inner.slice(2) : inner.slice(1);
+    const cp = parseInt(digits, isHex ? 16 : 10);
+    if (isValidCodePoint(cp)) {
+      return String.fromCodePoint(cp);
+    }
+    return match;
+  });
 }
 
 export function parseXmlAttributes(raw: string): Map<string, string> {
