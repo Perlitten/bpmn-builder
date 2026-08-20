@@ -1,11 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { neon, Pool } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
 import { migrate as migrateNeon } from 'drizzle-orm/neon-http/migrator';
-import { drizzle as drizzlePool } from 'drizzle-orm/neon-serverless';
-import { migrate as migratePool } from 'drizzle-orm/neon-serverless/migrator';
 import { migrate as migrateSqlite } from 'drizzle-orm/better-sqlite3/migrator';
 import { getDb, getDbDriver } from './client.js';
 import * as pgSchema from './schema/postgres.js';
@@ -36,10 +34,6 @@ function addSqliteColumnIfMissing(sqlite: SqliteClient, table: string, column: s
   }
 }
 
-function isLocalPgUrl(url: string): boolean {
-  return url.includes('localhost') || url.includes('127.0.0.1');
-}
-
 export async function migrate(): Promise<void> {
   const driver = getDbDriver();
 
@@ -51,19 +45,6 @@ export async function migrate(): Promise<void> {
       throw new Error(
         'DATABASE_URL or DATABASE_URL_UNPOOLED is required when DB_PROVIDER=postgres.',
       );
-    }
-
-    if (isLocalPgUrl(url)) {
-      const pool = new Pool({ connectionString: url });
-      const migrationDb = drizzlePool(pool, { schema: pgSchema });
-      await migrationDb.execute(
-        sql.raw('ALTER TABLE IF EXISTS processes ADD COLUMN IF NOT EXISTS user_id TEXT'),
-      );
-      await migratePool(migrationDb, {
-        migrationsFolder: migrationsPgFolder,
-      });
-      await pool.end();
-      return;
     }
 
     // Connect directly using DATABASE_URL_UNPOOLED (or DATABASE_URL as fallback) for DDL migrations

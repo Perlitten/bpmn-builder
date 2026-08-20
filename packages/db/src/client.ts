@@ -1,7 +1,6 @@
-import { neon, Pool } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 import Database from 'better-sqlite3';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
-import { drizzle as drizzlePool } from 'drizzle-orm/neon-serverless';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { getDbProvider, resolveSqlitePath } from './config.js';
 import * as pgSchema from './schema/postgres.js';
@@ -9,12 +8,10 @@ import * as sqliteSchema from './schema/sqlite.js';
 
 export type AppDb =
   | ReturnType<typeof drizzleSqlite<typeof sqliteSchema>>
-  | ReturnType<typeof drizzleNeon<typeof pgSchema>>
-  | ReturnType<typeof drizzlePool<typeof pgSchema>>;
+  | ReturnType<typeof drizzleNeon<typeof pgSchema>>;
 
 let db: AppDb | null = null;
 let sqlite: Database.Database | null = null;
-let pool: Pool | null = null;
 
 export function getDb(): AppDb {
   if (db) return db;
@@ -55,23 +52,13 @@ export function getDbDriver(): 'sqlite' | 'postgres' {
 export function resetDbForTests(): void {
   sqlite?.close();
   sqlite = null;
-  void pool?.end();
-  pool = null;
   db = null;
-}
-
-function isLocalPgUrl(url: string): boolean {
-  return url.includes('localhost') || url.includes('127.0.0.1');
 }
 
 function createDb(): AppDb {
   if (getDbProvider() === 'postgres') {
     const url = process.env.DATABASE_URL?.trim();
     if (!url) throw new Error('DATABASE_URL is required for postgres provider');
-    if (isLocalPgUrl(url)) {
-      pool = new Pool({ connectionString: url });
-      return drizzlePool(pool, { schema: pgSchema });
-    }
     return drizzleNeon(neon(url), { schema: pgSchema });
   }
   const file = resolveSqlitePath();
