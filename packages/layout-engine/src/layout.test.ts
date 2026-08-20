@@ -77,6 +77,65 @@ function expectDistinctBands(boxes: Bounds[]) {
   }
 }
 
+/** Reusable geometric assertion: asserts no label bounding box intersects any node shape bounding box. */
+function assertNoLabelNodeIntersections(result: LayoutResult, input?: LayoutInput) {
+  const containerIds = new Set([
+    ...(input?.participants ?? []).map((p) => p.id),
+    ...(input?.lanes ?? []).map((l) => l.id),
+  ]);
+  const nodeShapes = Object.entries(result.shapes).filter(([id]) => !containerIds.has(id));
+
+  for (const [labelId, labelBox] of Object.entries(result.labels)) {
+    for (const [nodeId, nodeBox] of nodeShapes) {
+      if (labelId === nodeId) continue; // External label for node itself sits directly below node
+      expect(
+        overlaps(labelBox, nodeBox),
+        `Label '${labelId}' overlaps node/shape '${nodeId}'`,
+      ).toBe(false);
+    }
+  }
+}
+
+/** Reusable geometric assertion: asserts no label bounding box intersects any other label bounding box. */
+function assertNoLabelLabelIntersections(result: LayoutResult) {
+  const labelEntries = Object.entries(result.labels);
+  for (let i = 0; i < labelEntries.length; i++) {
+    for (let j = i + 1; j < labelEntries.length; j++) {
+      const [id1, box1] = labelEntries[i]!;
+      const [id2, box2] = labelEntries[j]!;
+      expect(
+        overlaps(box1, box2),
+        `Label '${id1}' overlaps label '${id2}'`,
+      ).toBe(false);
+    }
+  }
+}
+
+/** Reusable geometric assertion: asserts branch vertical bands do not overlap and have minimum clearance. */
+function assertNonOverlappingBranchBands(
+  branchBoxes: Bounds[][],
+  minClearance = TOKENS.branchGap,
+) {
+  const bands = branchBoxes.map((boxes, i) => {
+    expect(boxes.length, `Branch band ${i} should have shapes`).toBeGreaterThan(0);
+    const minY = Math.min(...boxes.map((b) => b.y));
+    const maxY = Math.max(...boxes.map((b) => b.y + b.height));
+    return { minY, maxY };
+  });
+
+  bands.sort((a, b) => a.minY - b.minY);
+
+  for (let i = 0; i < bands.length - 1; i++) {
+    const current = bands[i]!;
+    const next = bands[i + 1]!;
+    const gap = next.minY - current.maxY;
+    expect(
+      gap,
+      `Band ${i} (y:${current.minY}..${current.maxY}) overlaps or is too close to Band ${i + 1} (y:${next.minY}..${next.maxY})`,
+    ).toBeGreaterThanOrEqual(minClearance);
+  }
+}
+
 /** Longest horizontal segment Y — the visible rail of an orthogonal sequence flow. */
 function railY(points: Array<{ x: number; y: number }>): number {
   let bestY = points[0]!.y;
@@ -725,5 +784,223 @@ describe('layout', () => {
     expect(di.edges[String(assoc.id)]?.length).toBeGreaterThan(1);
     const host = di.shapes[p.nodes.find((n) => n.name === 'Review')!.id]!;
     expect(di.shapes[String(data.id)]!.y).toBeGreaterThan(host.y);
+  });
+
+  describe('regression tests for defect requirements', () => {
+    it('Requirement 1: XOR split gateway branches sit in separate vertical bands with guaranteed clearance', () => {
+      // 1a. Structured XOR split
+      let p = createProcess();
+      p = addTask(p, { name: 'Check data' }).process;
+      p = splitExclusive(p, {
+        after: p.nodes.find((n) => n.name === 'Check data')!.id,
+        name: 'Is valid?',
+      }).process;
+      const yesBranch = p.regions[0]!.branches[0]!.id;
+      const noBranch = p.regions[0]!.branches[1]!.id;
+      p = addTask(p, { name: 'Process request', branchId: yesBranch }).process;
+      p = addTask(p, { name: 'Send error notice', branchId: noBranch }).process;
+
+      const result = layoutProcess(p);
+      const yesTask = result.shapes[p.nodes.find((n) => n.name === 'Process request')!.id]!;
+      const noTask = result.shapes[p.nodes.find((n) => n.name === 'Send error notice')!.id]!;
+
+      assertNonOverlappingBranchBands([[yesTask], [noTask]], TOKENS.branchGap);
+
+      // 1b. Unstructured XOR split (no matching join gateway)
+      const inputUnstructured: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway' },
+          { id: 'validTask', type: 'task', name: 'Process request' },
+          { id: 'end1', type: 'endEvent' },
+          { id: 'invalidTask', type: 'task', name: 'Send error notice' },
+          { id: 'end2', type: 'endEvent' },
+        ],
+        sequenceFlows: [
+          { id: 'f_start', source: 'start', target: 'split' },
+          { id: 'f_valid', source: 'split', target: 'validTask', name: 'Данные верны' },
+          { id: 'f_end1', source: 'validTask', target: 'end1' },
+          { id: 'f_invalid', source: 'split', target: 'invalidTask', name: 'Данные некорректны' },
+          { id: 'f_end2', source: 'invalidTask', target: 'end2' },
+        ],
+      };
+      const unstructResult = layout(inputUnstructured);
+      const branch1Boxes = [unstructResult.shapes.validTask!, unstructResult.shapes.end1!];
+      const branch2Boxes = [unstructResult.shapes.invalidTask!, unstructResult.shapes.end2!];
+
+      assertNonOverlappingBranchBands([branch1Boxes, branch2Boxes], TOKENS.branchGap);
+    });
+
+    it('Requirement 2: Every edge label bounding box does not intersect any node bounding box', () => {
+      let p = createProcess();
+      p = addTask(p, { name: 'Check data' }).process;
+      p = splitExclusive(p, {
+        after: p.nodes.find((n) => n.name === 'Check data')!.id,
+        name: 'Is valid?',
+      }).process;
+      const yesBranch = p.regions[0]!.branches[0]!.id;
+      const noBranch = p.regions[0]!.branches[1]!.id;
+      p = addTask(p, { name: 'Process request', branchId: yesBranch }).process;
+      p = addTask(p, { name: 'Send error notice', branchId: noBranch }).process;
+
+      // Give flow long label strings as in reported defect
+      const yesFlow = p.flows.find((f) => f.target === p.nodes.find((n) => n.name === 'Process request')!.id)!;
+      const noFlow = p.flows.find((f) => f.target === p.nodes.find((n) => n.name === 'Send error notice')!.id)!;
+      yesFlow.name = 'Данные абсолютно верны';
+      noFlow.name = 'Данные некорректны';
+
+      const result = layoutProcess(p);
+      assertNoLabelNodeIntersections(result);
+
+      // Unstructured XOR split with edge labels
+      const inputUnstructured: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway' },
+          { id: 'validTask', type: 'task', name: 'Process request' },
+          { id: 'end1', type: 'endEvent' },
+          { id: 'invalidTask', type: 'task', name: 'Send error notice' },
+          { id: 'end2', type: 'endEvent' },
+        ],
+        sequenceFlows: [
+          { id: 'f_start', source: 'start', target: 'split' },
+          { id: 'f_valid', source: 'split', target: 'validTask', name: 'Данные абсолютно верны' },
+          { id: 'f_end1', source: 'validTask', target: 'end1' },
+          { id: 'f_invalid', source: 'split', target: 'invalidTask', name: 'Данные некорректны' },
+          { id: 'f_end2', source: 'invalidTask', target: 'end2' },
+        ],
+      };
+      const unstructResult = layout(inputUnstructured);
+      assertNoLabelNodeIntersections(unstructResult, inputUnstructured);
+    });
+
+    it('Requirement 3: Edge labels do not intersect other edge labels or external node labels', () => {
+      let p = createProcess();
+      p = addTask(p, { name: 'Check data' }).process;
+      p = splitExclusive(p, {
+        after: p.nodes.find((n) => n.name === 'Check data')!.id,
+        name: 'Is valid?',
+      }).process;
+      const yesBranch = p.regions[0]!.branches[0]!.id;
+      const noBranch = p.regions[0]!.branches[1]!.id;
+      p = addTask(p, { name: 'Process request', branchId: yesBranch }).process;
+      p = addTask(p, { name: 'Send error notice', branchId: noBranch }).process;
+
+      const result = layoutProcess(p);
+      assertNoLabelLabelIntersections(result);
+    });
+
+    it('Requirement 3 (linear non-regression): Straight sequence of tasks lays out identically', () => {
+      const input = linear();
+      const result = layout(input);
+      expect(centerY(result.shapes.start!)).toBe(BASELINE_CY);
+      expect(centerY(result.shapes.task!)).toBe(BASELINE_CY);
+      expect(centerY(result.shapes.end!)).toBe(BASELINE_CY);
+      expect(result.shapes.task!.x - (result.shapes.start!.x + result.shapes.start!.width)).toBe(TOKENS.forwardFlowGap);
+      expect(result.shapes.end!.x - (result.shapes.task!.x + result.shapes.task!.width)).toBe(TOKENS.forwardFlowGap);
+      allOrthogonal(result);
+      assertNoLabelNodeIntersections(result, input);
+      assertNoLabelLabelIntersections(result);
+    });
+
+    it('Item 1 regression: reconverging unstructured split places shared suffix once after the longest branch', () => {
+      const input: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway' },
+          { id: 'a1', type: 'task', name: 'A1' },
+          { id: 'a2', type: 'task', name: 'A2' },
+          { id: 'b1', type: 'task', name: 'B1' },
+          { id: 'join', type: 'task', name: 'Join Task' },
+          { id: 'end', type: 'endEvent' },
+        ],
+        sequenceFlows: [
+          { id: 'f0', source: 'start', target: 'split' },
+          { id: 'fa1', source: 'split', target: 'a1' },
+          { id: 'fa2', source: 'a1', target: 'a2' },
+          { id: 'fa_join', source: 'a2', target: 'join' },
+          { id: 'fb1', source: 'split', target: 'b1' },
+          { id: 'fb_join', source: 'b1', target: 'join' },
+          { id: 'f_end', source: 'join', target: 'end' },
+        ],
+      };
+      const result = layout(input);
+
+      for (const flow of input.sequenceFlows) {
+        const src = result.shapes[flow.source]!;
+        const tgt = result.shapes[flow.target]!;
+        expect(src.x + src.width, `Flow ${flow.id} from ${flow.source} to ${flow.target}`).toBeLessThanOrEqual(tgt.x);
+      }
+
+      expect(result.shapes.join!.x).toBeGreaterThan(result.shapes.a2!.x + result.shapes.a2!.width);
+      expect(result.shapes.join!.x).toBeGreaterThan(result.shapes.b1!.x + result.shapes.b1!.width);
+      allOrthogonal(result);
+    });
+
+    it('Item 2 regression: empty expanded subprocess retains canonical minimum 120px height', () => {
+      let p = createProcess();
+      p = addTask(p, { name: 'A' }).process;
+      p = wrapInSubprocess(p, [p.nodes.find((n) => n.name === 'A')!.id], { name: 'Empty Sub' }).process;
+      const task = p.nodes.find((n) => n.name === 'A')!;
+      p.nodes = p.nodes.filter((n) => n.id !== task.id);
+      p.flows = [];
+      p.regions[0]!.branches[0]!.nodeIds = [];
+
+      const result = layoutProcess(p);
+      const sub = p.nodes.find((n) => n.type === 'subProcess')!;
+      const subBox = result.shapes[sub.id]!;
+
+      expect(subBox.height).toBeGreaterThanOrEqual(120);
+    });
+
+    it('Item 3 regression: long gateway label does not collide with lower branch task', () => {
+      const input: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway', name: 'Very long gateway question label that occupies substantial horizontal width' },
+          { id: 'task1', type: 'task', name: 'Upper task' },
+          { id: 'task2', type: 'task', name: 'Lower task' },
+        ],
+        sequenceFlows: [
+          { id: 'f0', source: 'start', target: 'split' },
+          { id: 'f1', source: 'split', target: 'task1' },
+          { id: 'f2', source: 'split', target: 'task2' },
+        ],
+      };
+      const result = layout(input);
+      const gatewayLabel = result.labels.split!;
+      const lowerTask = result.shapes.task2!;
+
+      expect(overlaps(gatewayLabel, lowerTask), 'Gateway label overlaps lower task').toBe(false);
+      expect(lowerTask.y).toBeGreaterThanOrEqual(gatewayLabel.y + gatewayLabel.height);
+      assertNoLabelNodeIntersections(result, input);
+    });
+
+    it('Item 4 regression: displaced edge flow label is contained inside lane and pool bounds', () => {
+      let p = createProcess();
+      p = addPool(p, { name: 'Pool' }).process;
+      p = addLane(p, { name: 'Lane 1' }).process;
+      for (const name of ['Step 1', 'Step 2']) {
+        const after = p.nodes.filter((n) => n.type === 'task').at(-1)?.id;
+        p = addTask(p, { name, ...(after ? { after } : {}) }).process;
+      }
+      p = splitExclusive(p, {
+        after: p.nodes.find((n) => n.name === 'Step 2')!.id,
+        name: 'Check',
+      }).process;
+
+      const flow = p.flows.find((f) => f.name === 'Yes')!;
+      flow.name = 'This is an exceptionally long branch label designed to trigger multi-directional collision displacement in the layout engine';
+
+      const result = layoutProcess(p);
+      const pool = result.shapes[p.participants[0]!.id]!;
+      const lane = result.shapes[p.lanes[0]!.id]!;
+      const label = result.labels[flow.id]!;
+
+      expect(label.y, 'Label top above lane top').toBeGreaterThanOrEqual(lane.y);
+      expect(label.y + label.height, 'Label bottom below lane bottom').toBeLessThanOrEqual(lane.y + lane.height);
+      expect(label.y, 'Label top above pool top').toBeGreaterThanOrEqual(pool.y);
+      expect(label.y + label.height, 'Label bottom below pool bottom').toBeLessThanOrEqual(pool.y + pool.height);
+    });
   });
 });
