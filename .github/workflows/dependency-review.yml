@@ -1,4 +1,4 @@
-name: Dependency review
+name: Dependency audit
 
 on:
   pull_request:
@@ -6,7 +6,10 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+
+concurrency:
+  group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   dependency-review:
@@ -14,8 +17,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Review dependency changes
-        uses: actions/dependency-review-action@v5.0.0
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
         with:
-          fail-on-severity: high
-          comment-summary-in-pr: always
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Setup Corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.14.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        run: pnpm audit:deps
