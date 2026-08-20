@@ -130,14 +130,14 @@ export function simulationMarks(process: Process, snap: SimSnapshot): SimMarks {
 }
 
 export function createTokenSimulation(process: Process): TokenSimulation {
-  let tokens: Record<string, number> = {};
-  let joinWait: Record<string, Record<string, number>> = {};
-  let completed: Record<string, number> = {};
+  let tokens: Record<string, number> = Object.create(null);
+  let joinWait: Record<string, Record<string, number>> = Object.create(null);
+  let completed: Record<string, number> = Object.create(null);
   const queue: Array<{ nodeId: string; via: string }> = [];
   let draining = false;
 
   function snapshot(): SimSnapshot {
-    const wait: Record<string, Record<string, number>> = {};
+    const wait: Record<string, Record<string, number>> = Object.create(null);
     for (const [id, buf] of Object.entries(joinWait)) {
       const used = Object.fromEntries(Object.entries(buf).filter(([, n]) => n > 0));
       if (Object.keys(used).length) wait[id] = used;
@@ -191,7 +191,7 @@ export function createTokenSimulation(process: Process): TokenSimulation {
       const ins = incomingFlows(process, nodeId);
       const outs = outgoingFlows(process, nodeId);
       if (ins.length > 1) {
-        const buf = (joinWait[nodeId] ??= {});
+        const buf = (joinWait[nodeId] ??= Object.create(null));
         bump(buf, via);
         if (ins.every((flow) => (buf[flow.id] ?? 0) > 0)) {
           for (const flow of ins) bump(buf, flow.id, -1);
@@ -258,9 +258,9 @@ export function createTokenSimulation(process: Process): TokenSimulation {
   return {
     snapshot,
     reset() {
-      tokens = {};
-      joinWait = {};
-      completed = {};
+      tokens = Object.create(null);
+      joinWait = Object.create(null);
+      completed = Object.create(null);
       queue.length = 0;
       draining = false;
       return snapshot();

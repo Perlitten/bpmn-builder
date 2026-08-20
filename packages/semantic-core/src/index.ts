@@ -122,3 +122,13 @@ export {
   listByCategory,
   search,
 } from './components/index.js';
+
+export {
+  collectXmlElements,
+  localXmlName,
+  parseXmlAttributes,
+  scanXmlTags,
+  stripXmlComments,
+  stripXmlElements,
+  xmlAttr,
+} from './xml.js';

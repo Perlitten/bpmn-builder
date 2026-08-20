@@ -15,8 +15,9 @@ export const ID_PREFIX: Record<FlowNodeType, string> = {
 };
 
 export function alloc(idSeq: Record<string, number>, prefix: string): string {
-  const n = (idSeq[prefix] ?? 0) + 1;
-  idSeq[prefix] = n;
+  const existing = Object.prototype.hasOwnProperty.call(idSeq, prefix) ? idSeq[prefix] : undefined;
+  const n = (typeof existing === 'number' ? existing : 0) + 1;
+  Object.defineProperty(idSeq, prefix, { configurable: true, enumerable: true, writable: true, value: n });
   return `${prefix}_${n}`;
 }
 
