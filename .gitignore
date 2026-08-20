@@ -7,3 +7,5 @@ dist
 !.env.example
 data/
 .vercel/
+playwright-report/
+test-results/

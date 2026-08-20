@@ -10,12 +10,12 @@ type SqliteClient = {
 describe('database integration tests (PostgreSQL / SQLite)', () => {
   const snapshot = { ...process.env };
 
-  beforeEach(() => {
-    resetDbForTests();
+  beforeEach(async () => {
+    await resetDbForTests();
   });
 
-  afterEach(() => {
-    resetDbForTests();
+  afterEach(async () => {
+    await resetDbForTests();
     for (const key of Object.keys(process.env)) {
       if (!(key in snapshot)) delete process.env[key];
     }

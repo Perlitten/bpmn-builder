@@ -13,15 +13,15 @@ function sqliteClient(): SqliteClient {
 describe('sqlite migrate user_id', () => {
   const snapshot = { ...process.env };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.DB_PROVIDER = 'sqlite';
     process.env.DATABASE_URL = ':memory:';
     delete process.env.SQLITE_PATH;
-    resetDbForTests();
+    await resetDbForTests();
   });
 
-  afterEach(() => {
-    resetDbForTests();
+  afterEach(async () => {
+    await resetDbForTests();
     for (const key of Object.keys(process.env)) {
       if (!(key in snapshot)) delete process.env[key];
     }
