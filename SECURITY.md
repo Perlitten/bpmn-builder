@@ -22,3 +22,25 @@ If private reporting is unavailable, contact the repository owner through their 
 - remediation target: critical issues within 7 days, high issues within 30 days.
 
 These targets are goals rather than a warranty.
+
+## Accepted dependency risks
+
+Temporary dependency exceptions must be narrowly scoped, documented here, and
+given an expiry date in `osv-scanner.toml` so the scanner continues to report
+every unrelated advisory.
+
+### GHSA-jmr9-qjv8-65gv / CVE-2026-56876
+
+- Affected package: `extract-zip@2.0.1`.
+- Dependency path: `@lhci/cli -> lighthouse -> puppeteer-core ->
+  @puppeteer/browsers -> extract-zip`.
+- Scope: development and CI performance tooling only; the package is absent
+  from the production dependency graph.
+- Exposure: the repository does not pass user-controlled archives to
+  `extract-zip`; Lighthouse obtains browser artifacts from its configured
+  upstream tooling.
+- Upstream status: no patched `extract-zip` release is currently available.
+- Compensating controls: production dependency auditing remains mandatory and
+  all other OSV findings remain enabled.
+- Review deadline: 2026-11-20, or immediately if a patched release becomes
+  available.

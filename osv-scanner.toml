@@ -1,0 +1,4 @@
+[[IgnoredVulns]]
+id = "GHSA-jmr9-qjv8-65gv"
+ignoreUntil = 2026-11-20
+reason = "extract-zip@2.0.1 is only reachable through @lhci/cli -> lighthouse -> puppeteer-core -> @puppeteer/browsers in CI/dev tooling. Production dependencies are unaffected, this repository does not pass untrusted archives to extract-zip, and no patched extract-zip release exists. Re-evaluate before expiry."
