@@ -107,15 +107,33 @@ export async function destroySession(token: string | undefined): Promise<void> {
   await db.delete(table).where(eq(table.id, hashSessionToken(token)));
 }
 
+export async function destroySessionCookie(cookieValue: string | undefined): Promise<void> {
+  if (!cookieValue) return;
+  const db = getQueryDb();
+  const table = getSessionsTable();
+  await db.delete(table).where(eq(table.id, cookieValue));
+}
+
 export async function readSession(
   token: string | undefined,
   options?: { refresh?: boolean },
 ): Promise<AuthUser | null> {
   if (!token) return null;
+  return readSessionById(hashSessionToken(token), options);
+}
+
+export async function readSessionCookie(
+  cookieValue: string | undefined,
+  options?: { refresh?: boolean },
+): Promise<AuthUser | null> {
+  if (!cookieValue) return null;
+  return readSessionById(cookieValue, options);
+}
+
+async function readSessionById(id: string, options?: { refresh?: boolean }): Promise<AuthUser | null> {
   const db = getQueryDb();
   const sessions = getSessionsTable();
   const users = getUsersTable();
-  const id = hashSessionToken(token);
   const sessionRows = (await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)) as SessionRow[];
   const session = sessionRows[0];
   if (!session) return null;

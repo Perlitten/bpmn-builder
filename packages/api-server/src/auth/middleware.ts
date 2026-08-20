@@ -1,13 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 import { SESSION_COOKIE } from './types.js';
-import { readSession } from './session.js';
+import { readSessionCookie } from './session.js';
 
 export function attachSession(req: Request, res: Response, next: NextFunction): void {
   if (!req.path.startsWith('/api')) {
     next();
     return;
   }
-  void readSession(req.cookies?.[SESSION_COOKIE])
+  void readSessionCookie(req.cookies?.[SESSION_COOKIE])
     .then((user) => {
       req.user = user ?? undefined;
       next();

@@ -7,7 +7,16 @@ import {
 } from '../auth/cookies.js';
 import { googleCallbackUrl, publicOrigin, requestOrigin, readGoogleAuthConfig } from '../auth/env.js';
 import { exchangeGoogleCode, googleAuthorizeUrl } from '../auth/google.js';
-import { createSession, destroySession, equalSecret, generateOAuthState, hashOAuthStateNonce, parseOAuthState, readSession } from '../auth/session.js';
+import {
+  createSession,
+  destroySession,
+  destroySessionCookie,
+  equalSecret,
+  generateOAuthState,
+  hashOAuthStateNonce,
+  parseOAuthState,
+  readSession,
+} from '../auth/session.js';
 import { OAUTH_HANDOFF_TTL_MS, OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { issueTestSession } from '../auth/testSession.js';
 import { upsertGoogleUser } from '../auth/users.js';
@@ -135,8 +144,8 @@ export function registerAuthRoutes(app: Application): void {
 
       if (returnOrigin && isSafeRelayOrigin(returnOrigin)) {
         const { token: handoffToken } = await createSession(user.id, OAUTH_HANDOFF_TTL_MS);
-        const complete = new URL('/api/auth/complete', returnOrigin);
-        complete.searchParams.set('token', handoffToken);
+        const complete = new URL('/', returnOrigin);
+        complete.hash = `auth_token=${encodeURIComponent(handoffToken)}`;
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.redirect(complete.toString());
         return;
@@ -150,12 +159,12 @@ export function registerAuthRoutes(app: Application): void {
     }
   });
 
-  app.get('/api/auth/complete', async (req: Request, res: Response) => {
-    const origin = requestOrigin(req);
-    const handoffToken = typeof req.query.token === 'string' ? req.query.token : '';
+  app.post('/api/auth/complete', async (req: Request, res: Response) => {
+    const handoffToken = typeof req.body?.token === 'string' ? req.body.token : '';
     res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Cache-Control', 'no-store');
     if (!handoffToken) {
-      redirectHome(res, origin, 'oauth');
+      res.status(400).json({ error: 'Invalid OAuth handoff' });
       return;
     }
 
@@ -163,19 +172,19 @@ export function registerAuthRoutes(app: Application): void {
       const user = await readSession(handoffToken, { refresh: false });
       await destroySession(handoffToken);
       if (!user) {
-        redirectHome(res, origin, 'oauth');
+        res.status(401).json({ error: 'Invalid OAuth handoff' });
         return;
       }
       const { token } = await createSession(user.id);
       setSessionCookie(res, token);
-      redirectHome(res, origin);
+      res.json({ ok: true });
     } catch {
-      redirectHome(res, origin, 'oauth');
+      res.status(401).json({ error: 'Invalid OAuth handoff' });
     }
   });
 
   app.post('/api/auth/logout', async (req: Request, res: Response) => {
-    await destroySession(req.cookies?.[SESSION_COOKIE]);
+    await destroySessionCookie(req.cookies?.[SESSION_COOKIE]);
     clearSessionCookie(res);
     res.json({ ok: true });
   });

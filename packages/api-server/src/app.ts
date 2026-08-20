@@ -3,9 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { attachCookies } from './auth/cookies.js';
 import { attachSession, requireAuth } from './auth/middleware.js';
-import { rateLimit } from './http/rateLimit.js';
 import './auth/types.js';
 import { registerRoutes } from './routes/index.js';
 
@@ -34,8 +34,8 @@ function operationalHeaders(
 export function createApp(): express.Express {
   const app = express();
   app.disable('x-powered-by');
-  app.use(rateLimit({ windowMs: 60_000, max: 300 }));
-  app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 30 }));
+  app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+  app.use('/api/auth', rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false }));
   app.use(operationalHeaders);
   app.use(express.json({ limit: '2mb' }));
   app.use(attachCookies);

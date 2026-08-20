@@ -180,6 +180,26 @@ describe('google auth and process isolation', () => {
     expect(callback.headers.get('location')).toMatch(/error=state/);
   });
 
+  it('completes an OAuth handoff through a POST body', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const handoff = await issueTestSession({ email: 'handoff@example.com', name: 'Handoff User' });
+
+    const completed = await fetch(`${url}/api/auth/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: handoff.token }),
+    });
+    expect(completed.status).toBe(200);
+    expect(completed.headers.get('cache-control')).toContain('no-store');
+    const sessionToken = cookieValue(completed.headers, SESSION_COOKIE);
+    expect(sessionToken).toBeTruthy();
+
+    const me = await fetch(`${url}/api/auth/me`, { headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` } });
+    expect(me.status).toBe(200);
+    expect(((await me.json()) as { user: { email: string } }).user.email).toBe('handoff@example.com');
+  });
+
   it('isolates processes between two users and hides orphan rows', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);

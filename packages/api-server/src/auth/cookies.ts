@@ -1,4 +1,5 @@
 import type { CookieOptions, Request, Response } from 'express';
+import { hashSessionToken } from './session.js';
 import { OAUTH_STATE_COOKIE, OAUTH_STATE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from './types.js';
 
 export function parseCookieHeader(header: string | undefined): Record<string, string> {
@@ -47,7 +48,7 @@ function clearOptions(): CookieOptions {
 }
 
 export function setSessionCookie(res: Response, token: string): void {
-  res.cookie(SESSION_COOKIE, token, cookieOptions(SESSION_TTL_MS));
+  res.cookie(SESSION_COOKIE, hashSessionToken(token), cookieOptions(SESSION_TTL_MS));
 }
 
 export function clearSessionCookie(res: Response): void {

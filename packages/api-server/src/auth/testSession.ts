@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createSession } from './session.js';
+import { createSession, hashSessionToken } from './session.js';
 import type { AuthUser } from './types.js';
 import { SESSION_COOKIE } from './types.js';
 import { upsertGoogleUser } from './users.js';
@@ -17,5 +17,5 @@ export async function issueTestSession(input?: {
     picture: input?.avatarUrl ?? null,
   });
   const { token } = await createSession(user.id);
-  return { user, token, cookie: `${SESSION_COOKIE}=${token}` };
+  return { user, token, cookie: `${SESSION_COOKIE}=${hashSessionToken(token)}` };
 }

@@ -69,10 +69,11 @@ function layoutGraph(
   placeRemainder(input, placed, ctx);
   placeArtifacts(input.artifacts ?? [], placed);
 
-  const edges: LayoutResult['edges'] = {
-    ...associationEdges(input.artifacts ?? [], placed),
-    ...routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? [], ctx),
-  };
+  const edges: LayoutResult['edges'] = Object.assign(
+    Object.create(null),
+    associationEdges(input.artifacts ?? [], placed),
+    routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? [], ctx),
+  );
   const shapes = sortRecord(placed);
   const labels = collectLabels(input, input.sequenceFlows, shapes, edges);
 
@@ -308,9 +309,9 @@ function snapBoxOut(x: number, y: number, width: number, height: number): Bounds
 
 function layoutCollaboration(input: LayoutInput, root: GraphResult): LayoutResult {
   const inner = root.result;
-  const shapes = { ...inner.shapes };
-  const edges = { ...inner.edges };
-  const labels = { ...inner.labels };
+  const shapes: Record<string, Bounds> = Object.assign(Object.create(null), inner.shapes);
+  const edges: Record<string, Point[]> = Object.assign(Object.create(null), inner.edges);
+  const labels: Record<string, Bounds> = Object.assign(Object.create(null), inner.labels);
   const participants = input.participants ?? [];
   const lanes = input.lanes ?? [];
   const messageFlows = [...(input.messageFlows ?? [])].sort((a, b) => a.id.localeCompare(b.id));
@@ -319,7 +320,7 @@ function layoutCollaboration(input: LayoutInput, root: GraphResult): LayoutResul
   const pad = TOKENS.poolPad;
   const header = TOKENS.poolHeader;
 
-  const rootShapes: Record<string, Bounds> = {};
+  const rootShapes: Record<string, Bounds> = Object.create(null);
   const rootIds = new Set(input.nodes.map((n) => n.id));
   for (const [id, box] of Object.entries(inner.shapes)) {
     if (rootIds.has(id)) rootShapes[id] = box;
@@ -567,7 +568,7 @@ function routeSequenceFlows(
     list.push(flow);
     groups.set(key, list);
   }
-  const edges: Record<string, Point[]> = {};
+  const edges: Record<string, Point[]> = Object.create(null);
   const spacing = TOKENS.edgeClearance * 2;
   for (const group of groups.values()) {
     group.sort((a, b) => flowBandIndex(a, regions) - flowBandIndex(b, regions) || a.id.localeCompare(b.id));
@@ -982,7 +983,7 @@ function placeArtifacts(artifacts: LayoutArtifact[], placed: Map<string, Bounds>
 }
 
 function associationEdges(artifacts: LayoutArtifact[], placed: Map<string, Bounds>): Record<string, Point[]> {
-  const edges: Record<string, Point[]> = {};
+  const edges: Record<string, Point[]> = Object.create(null);
   for (const item of artifacts.filter((a) => a.kind === 'association').sort((a, b) => a.id.localeCompare(b.id))) {
     if (!item.source || !item.target) continue;
     const from = placed.get(item.source);
