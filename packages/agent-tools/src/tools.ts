@@ -1,4 +1,4 @@
-import { lintProcess } from '../../rules/src/index.js';
+import { lintProcess, normalizeTaskName } from '../../rules/src/index.js';
 import {
   BPMN,
   addAfter as coreAddAfter,
@@ -191,6 +191,8 @@ function taskPlace(process: Process, args: Record<string, unknown>, lastId?: str
       'gateways must be created with splitExclusive / splitParallel / splitInclusive / splitEventBased / splitComplex',
     );
   }
+  const rawName = str(args, 'name');
+  const name = rawName ? normalizeTaskName(rawName) : undefined;
   if (componentId) {
     const def = componentDef(componentId);
     const split = GATEWAY_TOOLS[def.id];
@@ -199,7 +201,7 @@ function taskPlace(process: Process, args: Record<string, unknown>, lastId?: str
       throw new ToolPlanError(`no semantic create op for ${def.id}`);
     }
     return {
-      name: str(args, 'name') ?? def.title,
+      name: name ?? def.title,
       bpmnType: def.bpmnType,
       type: 'task',
       after,
@@ -208,7 +210,7 @@ function taskPlace(process: Process, args: Record<string, unknown>, lastId?: str
       componentId: def.id,
     };
   }
-  return { name: str(args, 'name'), after, before, branchId, type, bpmnType: str(args, 'bpmnType') };
+  return { name, after, before, branchId, type, bpmnType: str(args, 'bpmnType') };
 }
 
 function addTask(process: Process, args: Record<string, unknown>, lastId?: string): ToolResult {
@@ -367,8 +369,14 @@ const HANDLERS: Record<ToolName, (process: Process, args: Record<string, unknown
         after: ref(process, args, 'after', lastId),
       }),
     ),
-  renameElement: (process, args, lastId) =>
-    wrap('renameElement', coreRenameElement(process, reqRef(process, args, 'id', lastId), req(args, 'name'))),
+  renameElement: (process, args, lastId) => {
+    const id = reqRef(process, args, 'id', lastId);
+    const rawName = req(args, 'name');
+    const node = process.nodes.find((n) => n.id === id);
+    const isTaskNode = node && (node.type === 'task' || node.type === 'subProcess');
+    const name = isTaskNode ? normalizeTaskName(rawName) : rawName;
+    return wrap('renameElement', coreRenameElement(process, id, name));
+  },
   removeElement: (process, args, lastId) =>
     wrap('removeElement', coreRemoveElement(process, reqRef(process, args, 'id', lastId))),
   lint: (process) => unchanged(process, 'lint', lintProcess(process)),

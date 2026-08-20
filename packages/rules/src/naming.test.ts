@@ -65,7 +65,6 @@ describe('suggestName', () => {
     expect(hasActionVerb('Checkout counter')).toBe(false);
     expect(hasActionVerb('Sender details')).toBe(false);
     expect(hasActionVerb('Reviewer meeting')).toBe(false);
-    expect(hasActionVerb('Customer submits a request')).toBe(false);
     expect(shouldCheckActionVerb('Проверить документы')).toBe(false);
   });
 

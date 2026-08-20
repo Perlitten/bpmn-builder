@@ -82,15 +82,14 @@ export function normalizeTaskName(name: string): string {
 }
 
 export function hasActionVerb(name: string): boolean {
-  const words = name.split(/\s+/).map((w) => w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean);
-  if (!words.length) return false;
-  const word0 = words[0]!;
-  if (ACTION_VERBS.has(word0)) return true;
+  const word = name.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
+  if (!word) return false;
+  if (ACTION_VERBS.has(word)) return true;
   for (const verb of ACTION_VERBS) {
     const inflections = verb.endsWith('e')
       ? [`${verb}s`, `${verb}d`, `${verb.slice(0, -1)}ing`]
       : [`${verb}s`, `${verb}ed`, `${verb}ing`];
-    if (inflections.includes(word0)) return true;
+    if (inflections.includes(word)) return true;
   }
   return false;
 }

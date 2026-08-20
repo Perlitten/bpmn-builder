@@ -216,8 +216,6 @@ function layerStyle(model: LintModel, style: Finding[]): void {
 function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
   if (!model.hasDi) return 'none';
 
-  let hasOverlap = false;
-
   const labelEntries = Object.entries(model.labels);
   const nodeEntries = Object.entries(model.bounds);
 
@@ -225,7 +223,6 @@ function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
     for (const [nodeId, nodeBox] of nodeEntries) {
       if (labelId === nodeId) continue;
       if (overlaps(labelBox, nodeBox)) {
-        hasOverlap = true;
         suggestions.push({
           id: 'geometry.label-overlaps-node',
           layer: 4,
@@ -242,7 +239,6 @@ function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
       const [id1, box1] = labelEntries[i]!;
       const [id2, box2] = labelEntries[j]!;
       if (overlaps(box1, box2)) {
-        hasOverlap = true;
         suggestions.push({
           id: 'geometry.label-overlaps-label',
           layer: 4,
@@ -261,8 +257,7 @@ function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
     for (let j = i + 1; j < flowNodeEntries.length; j++) {
       const [id1, box1] = flowNodeEntries[i]!;
       const [id2, box2] = flowNodeEntries[j]!;
-      if (overlaps(box1, box2) && !intentionalNodeOverlap(model, id1, box1, id2, box2)) {
-        hasOverlap = true;
+      if (overlaps(box1, box2)) {
         suggestions.push({
           id: 'geometry.node-overlap',
           layer: 4,
@@ -274,7 +269,7 @@ function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
     }
   }
 
-  if (!hasOverlap && matchesLayoutEngine(model)) return 'canonical';
+  if (matchesLayoutEngine(model)) return 'canonical';
 
   suggestions.push({
     id: 'geometry.free-di',
@@ -289,48 +284,16 @@ function overlaps(a: Bounds, b: Bounds): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-function intentionalNodeOverlap(
-  model: LintModel,
-  id1: string,
-  box1: Bounds,
-  id2: string,
-  box2: Bounds,
-): boolean {
-  const node1 = model.nodes.find((node) => node.id === id1);
-  const node2 = model.nodes.find((node) => node.id === id2);
-  if (node1?.attachedTo === id2 || node2?.attachedTo === id1) return true;
-  if (node1?.kind === 'subprocess' && contains(box1, box2)) return true;
-  if (node2?.kind === 'subprocess' && contains(box2, box1)) return true;
-  return false;
-}
-
-function contains(outer: Bounds, inner: Bounds): boolean {
-  return (
-    inner.x >= outer.x &&
-    inner.y >= outer.y &&
-    inner.x + inner.width <= outer.x + outer.width &&
-    inner.y + inner.height <= outer.y + outer.height
-  );
-}
-
 function layerQuality(model: LintModel, warnings: Finding[], limit: number): void {
   const outgoing = new Map<string, LintFlow[]>();
+  const incoming = new Set<string>();
   for (const flow of model.flows) {
     if (flow.source) {
       const list = outgoing.get(flow.source) ?? [];
       list.push(flow);
       outgoing.set(flow.source, list);
     }
-  }
-
-  const reachable = new Set(model.nodes.filter((node) => node.kind === 'start').map((node) => node.id));
-  const queue = [...reachable];
-  for (let cursor = 0; cursor < queue.length; cursor++) {
-    for (const flow of outgoing.get(queue[cursor]!) ?? []) {
-      if (!flow.target || reachable.has(flow.target)) continue;
-      reachable.add(flow.target);
-      queue.push(flow.target);
-    }
+    if (flow.target) incoming.add(flow.target);
   }
 
   for (const node of model.nodes) {
@@ -380,12 +343,12 @@ function layerQuality(model: LintModel, warnings: Finding[], limit: number): voi
       !model.adHocInnerIds.includes(node.id) &&
       !sequenceOptional(node, model)
     ) {
-      if (!reachable.has(node.id)) {
+      if (!incoming.has(node.id)) {
         warnings.push({
           id: 'quality.unreachable-node',
           layer: 5,
           severity: 'warning',
-          message: `Node ${label(node)} is not reachable from a start event`,
+          message: `Node ${label(node)} has no incoming flow`,
           elementId: node.id,
         });
       }
@@ -434,15 +397,10 @@ function matchesLayoutEngine(model: LintModel): boolean {
     processes: [],
   };
   const structured = detectStructure(draft);
-  const expected = layoutProcess(structured);
-  const shapeIds = Object.keys(expected.shapes);
-  const labelIds = Object.keys(expected.labels);
-  if (!shapeIds.length) return false;
-  return (
-    shapeIds.every((id) => sameBox(model.bounds[id], expected.shapes[id])) &&
-    Object.keys(model.labels).length === labelIds.length &&
-    labelIds.every((id) => sameBox(model.labels[id], expected.labels[id]))
-  );
+  const expected = layoutProcess(structured).shapes;
+  const ids = Object.keys(expected);
+  if (!ids.length) return false;
+  return ids.every((id) => sameBox(model.bounds[id], expected[id]));
 }
 
 function sameBox(actual: { x: number; y: number; width: number; height: number } | undefined, expected: { x: number; y: number; width: number; height: number } | undefined): boolean {
@@ -455,14 +413,14 @@ function label(node: LintNode): string {
   return name ? `“${name}”` : node.id;
 }
 
-function isExclusiveXor(node: LintNode): boolean {
-  return node.kind === 'gateway' && (node.bpmnType ?? 'bpmn:ExclusiveGateway') === 'bpmn:ExclusiveGateway';
-}
-
 function isDecisionGateway(node: LintNode): boolean {
   if (node.kind !== 'gateway') return false;
-  const type = node.bpmnType ?? 'bpmn:ExclusiveGateway';
-  return type === 'bpmn:ExclusiveGateway' || type === 'bpmn:InclusiveGateway';
+  const tag = (node.bpmnType ?? node.coreType).replace(/^bpmn:/i, '').toLowerCase();
+  return tag === 'exclusivegateway' || tag === 'inclusivegateway';
+}
+
+function isExclusiveXor(node: LintNode): boolean {
+  return node.kind === 'gateway' && (node.bpmnType ?? 'bpmn:ExclusiveGateway') === 'bpmn:ExclusiveGateway';
 }
 
 function sequenceOptional(node: LintNode, model: LintModel): boolean {
