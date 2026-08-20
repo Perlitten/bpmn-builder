@@ -9,7 +9,7 @@ export default defineConfig({
     middlewareMode: true,
   },
   optimizeDeps: {
-    include: ['bpmn-js/lib/Modeler', 'bpmn-js/lib/features/replace/ReplaceOptions'],
+    include: ['bpmn-js/lib/Modeler', 'bpmn-js/lib/NavigatedViewer', 'bpmn-js/lib/features/replace/ReplaceOptions'],
     exclude: [
       '@bpmn/agent-tools',
       '@bpmn/semantic-core',
