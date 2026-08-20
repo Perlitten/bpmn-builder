@@ -51,9 +51,9 @@ jobs:
 
       - name: Commit visual baselines
         run: |
-          git diff --quiet -- e2e/visual.spec.ts-snapshots && exit 0
+          git add -- e2e/visual.spec.ts-snapshots
+          git diff --cached --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- e2e/visual.spec.ts-snapshots
           git commit -m "test(e2e): add Linux visual baselines"
           git push
