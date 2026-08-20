@@ -53,6 +53,7 @@ export type LintModel = {
   associations: LintAssociation[];
   adHocInnerIds: string[];
   bounds: Record<string, Bounds>;
+  labels: Record<string, Bounds>;
   hasDi: boolean;
   parseError?: string;
 };
@@ -115,7 +116,7 @@ export function toLintModel(input: unknown): LintModel {
 }
 
 function emptyModel(parseError?: string): LintModel {
-  return { nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, hasDi: false, ...(parseError ? { parseError } : {}) };
+  return { nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, labels: {}, hasDi: false, ...(parseError ? { parseError } : {}) };
 }
 
 function fromGraph(process: Process): LintModel {
@@ -129,6 +130,7 @@ function fromGraph(process: Process): LintModel {
     associations: [],
     adHocInnerIds,
     bounds: {},
+    labels: {},
     hasDi: false,
   };
 }
@@ -294,24 +296,58 @@ function processBodies(xml: string): string[] {
   return bodies;
 }
 
-function parseBounds(xml: string): Record<string, Bounds> {
+function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; labels: Record<string, Bounds> } {
   const bounds: Record<string, Bounds> = {};
+  const labels: Record<string, Bounds> = {};
+
   const shapeRe = /<(?:[\w.-]+:)?BPMNShape\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNShape>/gi;
   let match: RegExpExecArray | null;
   while ((match = shapeRe.exec(xml))) {
     const id = attrs(match[1] ?? '').bpmnelement;
     if (!id) continue;
-    const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(match[2] ?? '');
-    if (!box) continue;
-    const a = attrs(box[1] ?? '');
-    const x = Number(a.x);
-    const y = Number(a.y);
-    const width = Number(a.width);
-    const height = Number(a.height);
-    if (![x, y, width, height].every(Number.isFinite)) continue;
-    bounds[id] = { x, y, width, height };
+    const body = match[2] ?? '';
+    const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
+    if (labelMatch) {
+      const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(labelMatch[1] ?? '');
+      if (box) {
+        const b = parseBoxAttrs(box[1] ?? '');
+        if (b) labels[id] = b;
+      }
+    }
+    const shapeBody = labelMatch ? body.slice(0, labelMatch.index) : body;
+    const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(shapeBody);
+    if (box) {
+      const b = parseBoxAttrs(box[1] ?? '');
+      if (b) bounds[id] = b;
+    }
   }
-  return bounds;
+
+  const edgeRe = /<(?:[\w.-]+:)?BPMNEdge\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNEdge>/gi;
+  while ((match = edgeRe.exec(xml))) {
+    const id = attrs(match[1] ?? '').bpmnelement;
+    if (!id) continue;
+    const body = match[2] ?? '';
+    const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
+    if (labelMatch) {
+      const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(labelMatch[1] ?? '');
+      if (box) {
+        const b = parseBoxAttrs(box[1] ?? '');
+        if (b) labels[id] = b;
+      }
+    }
+  }
+
+  return { bounds, labels };
+}
+
+function parseBoxAttrs(raw: string): Bounds | null {
+  const a = attrs(raw);
+  const x = Number(a.x);
+  const y = Number(a.y);
+  const width = Number(a.width);
+  const height = Number(a.height);
+  if (![x, y, width, height].every(Number.isFinite)) return null;
+  return { x, y, width, height };
 }
 
 function xmlTrue(value: string | undefined): boolean {
@@ -379,6 +415,6 @@ function fromXml(xml: string): LintModel {
     }
   }
 
-  const bounds = parseBounds(trimmed);
-  return { nodes, flows, associations, adHocInnerIds, bounds, hasDi: Object.keys(bounds).length > 0 };
+  const { bounds, labels } = parseBoundsAndLabels(trimmed);
+  return { nodes, flows, associations, adHocInnerIds, bounds, labels, hasDi: Object.keys(bounds).length > 0 };
 }
