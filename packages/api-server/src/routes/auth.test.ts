@@ -180,6 +180,50 @@ describe('google auth and process isolation', () => {
     expect(callback.headers.get('location')).toMatch(/error=state/);
   });
 
+  it('sets secure cookie flag based on request protocol and host', async () => {
+    process.env.ENABLE_TEST_AUTH = 'true';
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const apiUrl = `${url}/api/auth/test-session`;
+
+    // Case 1: x-forwarded-proto https gives secure true
+    const httpsRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-proto': 'https',
+      },
+      body: JSON.stringify({ email: 'secure@example.com' }),
+    });
+    expect(httpsRes.status).toBe(200);
+    const httpsCookies = httpsRes.headers.getSetCookie().join('; ');
+    expect(httpsCookies.toLowerCase()).toContain('secure');
+
+    // Case 2: http on localhost gives secure false
+    // Since fetch to `url` (which is http://127.0.0.1:port) uses http and localhost/127.0.0.1
+    const localRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'local@example.com' }),
+    });
+    expect(localRes.status).toBe(200);
+    const localCookies = localRes.headers.getSetCookie().join('; ');
+    expect(localCookies.toLowerCase()).not.toContain('secure');
+
+    // Case 3: http on a non-local host gives secure true
+    const externalRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-host': 'example.com',
+      },
+      body: JSON.stringify({ email: 'external@example.com' }),
+    });
+    expect(externalRes.status).toBe(200);
+    const externalCookies = externalRes.headers.getSetCookie().join('; ');
+    expect(externalCookies.toLowerCase()).toContain('secure');
+  });
+
   it('completes an OAuth handoff through a POST body', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);

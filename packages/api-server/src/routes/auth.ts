@@ -93,7 +93,7 @@ export function registerAuthRoutes(app: Application): void {
       return;
     }
 
-    setOAuthStateCookie(res, hashOAuthStateNonce(parsedState.nonce));
+    setOAuthStateCookie(req, res, hashOAuthStateNonce(parsedState.nonce));
     res.redirect(
       googleAuthorizeUrl({
         clientId: config.value.clientId,
@@ -117,7 +117,7 @@ export function registerAuthRoutes(app: Application): void {
     }
 
     const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
-    clearOAuthStateCookie(res);
+    clearOAuthStateCookie(req, res);
     if (!state || !parsedState?.nonce || !expected || !equalSecret(hashOAuthStateNonce(parsedState.nonce), expected)) {
       redirectHome(res, targetOrigin, 'state');
       return;
@@ -152,7 +152,7 @@ export function registerAuthRoutes(app: Application): void {
       }
 
       const { token } = await createSession(user.id);
-      setSessionCookie(res, token);
+      setSessionCookie(req, res, token);
       redirectHome(res, authOrigin);
     } catch {
       redirectHome(res, targetOrigin, 'oauth');
@@ -176,7 +176,7 @@ export function registerAuthRoutes(app: Application): void {
         return;
       }
       const { token } = await createSession(user.id);
-      setSessionCookie(res, token);
+      setSessionCookie(req, res, token);
       res.json({ ok: true });
     } catch {
       res.status(401).json({ error: 'Invalid OAuth handoff' });
@@ -185,7 +185,7 @@ export function registerAuthRoutes(app: Application): void {
 
   app.post('/api/auth/logout', async (req: Request, res: Response) => {
     await destroySessionCookie(req.cookies?.[SESSION_COOKIE]);
-    clearSessionCookie(res);
+    clearSessionCookie(req, res);
     res.json({ ok: true });
   });
 
@@ -199,7 +199,7 @@ export function registerAuthRoutes(app: Application): void {
       const email = typeof req.body?.email === 'string' ? req.body.email : undefined;
       const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
       const { user, token } = await issueTestSession({ email, name });
-      setSessionCookie(res, token);
+      setSessionCookie(req, res, token);
       res.json({ ok: true, user, token });
     });
   }

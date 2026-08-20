@@ -1,6 +1,7 @@
 import type { CookieOptions, Request, Response } from 'express';
 import { hashSessionToken } from './session.js';
 import { OAUTH_STATE_COOKIE, OAUTH_STATE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from './types.js';
+import { isSecureRequest } from './env.js';
 
 export function parseCookieHeader(header: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};
@@ -28,37 +29,37 @@ export function attachCookies(req: Request, _res: Response, next: () => void): v
   next();
 }
 
-function cookieOptions(maxAgeMs: number): CookieOptions {
+function cookieOptions(req: Request, maxAgeMs: number): CookieOptions {
   return {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureRequest(req),
     path: '/',
     maxAge: maxAgeMs,
   };
 }
 
-function clearOptions(): CookieOptions {
+function clearOptions(req: Request): CookieOptions {
   return {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureRequest(req),
     path: '/',
   };
 }
 
-export function setSessionCookie(res: Response, token: string): void {
-  res.cookie(SESSION_COOKIE, hashSessionToken(token), cookieOptions(SESSION_TTL_MS));
+export function setSessionCookie(req: Request, res: Response, token: string): void {
+  res.cookie(SESSION_COOKIE, hashSessionToken(token), cookieOptions(req, SESSION_TTL_MS));
 }
 
-export function clearSessionCookie(res: Response): void {
-  res.clearCookie(SESSION_COOKIE, clearOptions());
+export function clearSessionCookie(req: Request, res: Response): void {
+  res.clearCookie(SESSION_COOKIE, clearOptions(req));
 }
 
-export function setOAuthStateCookie(res: Response, nonce: string): void {
-  res.cookie(OAUTH_STATE_COOKIE, nonce, cookieOptions(OAUTH_STATE_TTL_MS));
+export function setOAuthStateCookie(req: Request, res: Response, nonce: string): void {
+  res.cookie(OAUTH_STATE_COOKIE, nonce, cookieOptions(req, OAUTH_STATE_TTL_MS));
 }
 
-export function clearOAuthStateCookie(res: Response): void {
-  res.clearCookie(OAUTH_STATE_COOKIE, clearOptions());
+export function clearOAuthStateCookie(req: Request, res: Response): void {
+  res.clearCookie(OAUTH_STATE_COOKIE, clearOptions(req));
 }

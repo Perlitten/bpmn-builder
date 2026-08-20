@@ -29,6 +29,20 @@ export function requestOrigin(req: {
   return normalizeOrigin(`${proto}://${host}`) || 'http://localhost:5173';
 }
 
+export function isSecureRequest(req: {
+  get: (name: string) => string | undefined;
+  protocol?: string;
+}): boolean {
+  const proto = (req.get('x-forwarded-proto') ?? req.protocol ?? 'http').split(',')[0]?.trim() || 'http';
+  if (proto === 'https') return true;
+
+  const host = (req.get('x-forwarded-host') ?? req.get('host') ?? 'localhost').split(',')[0]?.trim() || 'localhost';
+  const hostname = host.split(':')[0] || 'localhost';
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+
+  return true;
+}
+
 export function configuredAuthOrigin(): string | null {
   const configured = process.env.AUTH_BASE_URL?.trim();
   return configured ? normalizeOrigin(configured) || null : null;
