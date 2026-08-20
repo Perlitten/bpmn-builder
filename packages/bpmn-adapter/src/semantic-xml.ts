@@ -91,14 +91,14 @@ const DEFAULT_BPMN: Record<FlowNodeType, string> = {
 };
 
 export function idSeqFrom(ids: string[]): Record<string, number> {
-  const seq: Record<string, number> = {};
+  const seq = new Map<string, number>();
   for (const id of ids) {
     const match = id.match(/^(.*)_(\d+)$/);
     if (!match) continue;
     const prefix = match[1]!;
-    seq[prefix] = Math.max(seq[prefix] ?? 0, Number(match[2]));
+    seq.set(prefix, Math.max(seq.get(prefix) ?? 0, Number(match[2])));
   }
-  return seq;
+  return Object.fromEntries(seq);
 }
 
 function withExt<T extends object>(obj: T, ext?: ExtensionValue[]): T {
@@ -911,35 +911,35 @@ export function exportProcessXml(process: Process): string {
 export async function readDiFromXml(xml: string): Promise<LayoutResult> {
   const definitions = await parseDefinitions(xml);
   const plane = many(definitions, 'diagrams')[0]?.get('plane') as ModdleEl | undefined;
-  const shapes: LayoutResult['shapes'] = {};
-  const edges: LayoutResult['edges'] = {};
-  const labels: LayoutResult['labels'] = {};
+  const shapes = new Map<string, LayoutResult['shapes'][string]>();
+  const edges = new Map<string, LayoutResult['edges'][string]>();
+  const labels = new Map<string, LayoutResult['labels'][string]>();
   for (const el of plane ? many(plane, 'planeElement') : []) {
     const bpmnId = idOf(el.get('bpmnElement'));
     if (!bpmnId) continue;
     if (isType(el, 'bpmndi:BPMNShape')) {
       const box = el.get('bounds') as ModdleEl | undefined;
       if (!box) continue;
-      shapes[bpmnId] = {
+      shapes.set(bpmnId, {
         x: Number(box.get('x')),
         y: Number(box.get('y')),
         width: Number(box.get('width')),
         height: Number(box.get('height')),
-      };
+      });
     } else if (isType(el, 'bpmndi:BPMNEdge')) {
-      edges[bpmnId] = many(el, 'waypoint').map((p) => ({ x: Number(p.get('x')), y: Number(p.get('y')) }));
+      edges.set(bpmnId, many(el, 'waypoint').map((p) => ({ x: Number(p.get('x')), y: Number(p.get('y')) })));
     }
     const labelBox = (el.get('label') as ModdleEl | undefined)?.get('bounds') as ModdleEl | undefined;
     if (labelBox) {
-      labels[bpmnId] = {
+      labels.set(bpmnId, {
         x: Number(labelBox.get('x')),
         y: Number(labelBox.get('y')),
         width: Number(labelBox.get('width')),
         height: Number(labelBox.get('height')),
-      };
+      });
     }
   }
   const sort = <T>(record: Record<string, T>): Record<string, T> =>
     Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
-  return { shapes: sort(shapes), edges: sort(edges), labels: sort(labels) };
+  return { shapes: sort(Object.fromEntries(shapes)), edges: sort(Object.fromEntries(edges)), labels: sort(Object.fromEntries(labels)) };
 }
