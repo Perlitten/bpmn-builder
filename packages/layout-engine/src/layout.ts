@@ -58,7 +58,7 @@ function collaborationFlowGap(input: LayoutInput): number {
 }
 
 function layoutGraph(
-  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts' | 'participants' | 'lanes'>,
   flowGap: number = TOKENS.forwardFlowGap,
   lanes: LayoutLane[] = [],
 ): GraphResult {
@@ -73,14 +73,14 @@ function layoutGraph(
 
   const edges: LayoutResult['edges'] = {
     ...associationEdges(input.artifacts ?? [], placed),
-    ...routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? []),
+    ...routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? [], ctx),
   };
   const shapes = sortRecord(placed);
   return {
     result: {
       shapes,
       edges,
-      labels: collectLabels(input.nodes, input.sequenceFlows, shapes, edges),
+      labels: collectLabels(input, input.sequenceFlows, shapes, edges),
     },
     bands,
   };
@@ -219,13 +219,13 @@ function laneIndexByShape(
  * Band height follows lane content (empty lanes keep `laneMinHeight`), never `pool / laneCount`.
  */
 function applyLaneBands(
-  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts'>,
+  input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions' | 'artifacts' | 'participants' | 'lanes'>,
   lanes: LayoutLane[],
   placed: Map<string, Bounds>,
   ctx: Ctx,
 ): Map<string, LaneBand> {
   const pad = TOKENS.poolPad;
-  const labels = collectLabels(input.nodes, [], sortRecord(placed), {});
+  const labels = collectLabels(input, [], sortRecord(placed), {});
   const laneOf = laneIndexByShape(input, lanes, placed, ctx);
   const members = lanes.map<string[]>(() => []);
   for (const id of [...placed.keys()].sort((a, b) => a.localeCompare(b))) {
@@ -406,7 +406,7 @@ function layoutCollaboration(input: LayoutInput, root: GraphResult): LayoutResul
     const offset = (i - (messageFlows.length - 1) / 2) * TOKENS.baseGrid * 2;
     edges[mf.id] = routeOrthogonalVertical(from, to, offset);
   });
-  Object.assign(labels, collectLabels([], messageFlows, shapes, edges));
+  Object.assign(labels, collectLabels(input, messageFlows, shapes, edges));
 
   return {
     shapes: sortRecord(new Map(Object.entries(shapes))),
@@ -517,6 +517,35 @@ function flowBandIndex(flow: SequenceFlow, regions: StructuredRegion[]): number 
   return Number.MAX_SAFE_INTEGER;
 }
 
+function emptyBranchRailY(
+  flow: SequenceFlow,
+  regions: StructuredRegion[],
+  ctx: Ctx,
+  placed: Map<string, Bounds>,
+): number | undefined {
+  for (const region of flattenRegions(regions)) {
+    if (isContainerRegion(region, ctx)) continue;
+    if (flow.source !== region.split || flow.target !== region.join) continue;
+    let branchIndex = region.branches.findIndex((b) => b.entryFlowId === flow.id);
+    if (branchIndex === -1) {
+      const splitFlows = (ctx.outgoing.get(region.split) ?? []).filter((f) => f.target === region.join);
+      const flowIdx = splitFlows.findIndex((f) => f.id === flow.id);
+      if (flowIdx >= 0 && flowIdx < region.branches.length) {
+        branchIndex = flowIdx;
+      }
+    }
+    if (branchIndex === -1) continue;
+    const splitBox = placed.get(region.split);
+    if (!splitBox) continue;
+    const cy = splitBox.y + splitBox.height / 2;
+    const chains = region.branches.map((b) => branchItems(b, ctx));
+    const extents = chains.map((items) => measureChain(items, ctx));
+    const { total, bandCys } = stackMetrics(extents);
+    return cy - total / 2 + bandCys[branchIndex]!;
+  }
+  return undefined;
+}
+
 /**
  * Empty XOR/AND/OR branches share split→join. Route them on distinct rails
  * (Yes above, No below) instead of one stroke with stacked labels.
@@ -525,6 +554,7 @@ function routeSequenceFlows(
   flows: SequenceFlow[],
   placed: Map<string, Bounds>,
   regions: StructuredRegion[],
+  ctx: Ctx,
 ): Record<string, Point[]> {
   const groups = new Map<string, SequenceFlow[]>();
   for (const flow of flows) {
@@ -541,7 +571,15 @@ function routeSequenceFlows(
     const n = group.length;
     for (let i = 0; i < n; i++) {
       const flow = group[i]!;
-      const offset = n === 1 ? 0 : snapToGrid((i - (n - 1) / 2) * spacing);
+      const railY = emptyBranchRailY(flow, regions, ctx, placed);
+      let offset = 0;
+      if (railY !== undefined) {
+        const fromBox = placed.get(flow.source)!;
+        const cy = fromBox.y + fromBox.height / 2;
+        offset = snapToGrid(railY - cy);
+      } else if (n > 1) {
+        offset = snapToGrid((i - (n - 1) / 2) * spacing);
+      }
       edges[flow.id] = routeOrthogonal(placed.get(flow.source)!, placed.get(flow.target)!, offset);
     }
   }
@@ -568,7 +606,12 @@ function buildMainChain(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 're
       continue;
     }
     items.push({ kind: 'node', id, type: typeOf(ctx, id) });
-    const next = (ctx.outgoing.get(id) ?? []).find((f) => !ctx.interior.has(f.target));
+    const outs = ctx.outgoing.get(id) ?? [];
+    if (outs.length > 1) {
+      /* Unstructured split gateway: stop main chain here so fanUnplaced places all branches in separate bands. */
+      break;
+    }
+    const next = outs.find((f) => !ctx.interior.has(f.target));
     id = next?.target;
   }
   return items;
@@ -748,13 +791,22 @@ function placeOpenBranches(
   if (!splitBox) return;
   const extents = chains.map((items) => measureChain(items, ctx));
   const { total, bandCys } = stackMetrics(extents);
-  let belowY = splitBox.y + splitBox.height;
-  for (const flow of ctx.outgoing.get(splitId) ?? []) {
-    const box = placed.get(flow.target);
-    if (box) belowY = Math.max(belowY, box.y + box.height);
+  let cy: number;
+  const placedTargets = (ctx.outgoing.get(splitId) ?? [])
+    .map((flow) => placed.get(flow.target))
+    .filter((box): box is Bounds => box != null);
+
+  if (placedTargets.length > 0) {
+    let belowY = splitBox.y + splitBox.height;
+    for (const box of placedTargets) {
+      belowY = Math.max(belowY, box.y + box.height);
+    }
+    cy = belowY + TOKENS.branchGap + total / 2;
+  } else {
+    cy = splitBox.y + splitBox.height / 2;
   }
+
   const innerLeft = splitBox.x + splitBox.width + ctx.flowGap;
-  const cy = belowY + TOKENS.branchGap + total / 2;
   for (let i = 0; i < chains.length; i++) {
     if (!chains[i]!.length) continue;
     placeChain(chains[i]!, innerLeft, cy - total / 2 + bandCys[i]!, placed, ctx);
@@ -938,7 +990,9 @@ function placeRegion(
 }
 
 function measureChain(items: ChainItem[], ctx: Ctx): Extent {
-  if (!items.length) return { width: 0, above: 0, below: 0 };
+  if (!items.length) {
+    return { width: 0, above: TOKENS.gateway.height / 2, below: TOKENS.gateway.height / 2 };
+  }
   let width = 0;
   let above = 0;
   let below = 0;
@@ -1059,13 +1113,70 @@ function flowLabelBox(points: Point[], name: string): Bounds {
   };
 }
 
+function clearOfObstacles(box: Bounds, obstacles: Bounds[]): Bounds {
+  if (!obstacles.some((obs) => intersects(box, obs))) return box;
+
+  const grid = TOKENS.baseGrid;
+  const maxR = 40;
+  for (let r = 1; r <= maxR; r++) {
+    const dist = r * grid;
+    const candidates: Point[] = [
+      { x: 0, y: -dist },
+      { x: 0, y: dist },
+      { x: -dist, y: 0 },
+      { x: dist, y: 0 },
+    ];
+    for (let k = 1; k < r; k++) {
+      const kd = k * grid;
+      candidates.push(
+        { x: kd, y: -dist },
+        { x: -kd, y: -dist },
+        { x: kd, y: dist },
+        { x: -kd, y: dist },
+        { x: -dist, y: kd },
+        { x: -dist, y: -kd },
+        { x: dist, y: kd },
+        { x: dist, y: -kd },
+      );
+    }
+    candidates.push(
+      { x: -dist, y: -dist },
+      { x: dist, y: -dist },
+      { x: -dist, y: dist },
+      { x: dist, y: dist },
+    );
+
+    for (const offset of candidates) {
+      const candidate: Bounds = {
+        x: box.x + offset.x,
+        y: box.y + offset.y,
+        width: box.width,
+        height: box.height,
+      };
+      if (!obstacles.some((obs) => intersects(candidate, obs))) {
+        return candidate;
+      }
+    }
+  }
+  return box;
+}
+
 function collectLabels(
-  nodes: LayoutNode[],
+  input: Pick<LayoutInput, 'nodes' | 'participants' | 'lanes' | 'artifacts'>,
   namedEdges: Array<{ id: string; name?: string }>,
   shapes: Record<string, Bounds>,
   edges: Record<string, Point[]>,
 ): Record<string, Bounds> {
+  const containerIds = new Set([
+    ...(input.participants ?? []).map((p) => p.id),
+    ...(input.lanes ?? []).map((l) => l.id),
+  ]);
+  const nodeObstacles = Object.entries(shapes)
+    .filter(([id]) => !containerIds.has(id))
+    .map(([, box]) => box);
+
   const labels = new Map<string, Bounds>();
+  const nodes = input.nodes ?? [];
   for (const node of nodes) {
     if (!isExternalLabelType(node.type)) continue;
     const name = visibleNodeName(node.type, node.name);
@@ -1073,27 +1184,19 @@ function collectLabels(
     const box = shapes[node.id];
     if (box) labels.set(node.id, externalLabelBox(box, name));
   }
-  const taken = [...labels.values()];
+
+  const obstacles = [...nodeObstacles, ...labels.values()];
+
   for (const edge of [...namedEdges].sort((a, b) => a.id.localeCompare(b.id))) {
     const name = edge.name?.trim();
     if (!name) continue;
     const points = edges[edge.id];
     if (!points?.length) continue;
-    /* Parallel empty branches already sit on distinct rails; this only separates leftover clashes. */
-    const box = clearOfLabels(flowLabelBox(points, name), taken);
+    const box = clearOfObstacles(flowLabelBox(points, name), obstacles);
     labels.set(edge.id, box);
-    taken.push(box);
+    obstacles.push(box);
   }
   return sortRecord(labels);
-}
-
-function clearOfLabels(box: Bounds, taken: Bounds[]): Bounds {
-  const step = TOKENS.label.height + TOKENS.baseGrid;
-  let out = box;
-  for (let i = 1; i <= 8 && taken.some((other) => intersects(out, other)); i++) {
-    out = { ...box, y: box.y + i * step };
-  }
-  return out;
 }
 
 function sortRecord<T>(placed: Map<string, T>): Record<string, T> {
