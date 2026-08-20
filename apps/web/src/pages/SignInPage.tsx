@@ -41,28 +41,59 @@ export function SignInPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
-      <header className="flex h-11 items-center border-b border-border px-4 shrink-0">
-        <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
-        <span className="ml-3 font-mono text-[11px] text-muted">2.0 semantic editor</span>
-        <span className="ml-auto font-mono text-[11px] text-muted">{getBuildVersionInfo()}</span>
+      <header className="flex h-11 items-center justify-between border-b border-border px-4 shrink-0">
+        <span className="text-sm font-semibold tracking-tight text-ink">BPMN Builder</span>
+        <div className="flex items-center gap-4">
+          {status === null ? null : configured ? (
+            <a
+              href="/api/auth/google"
+              className="text-sm font-medium text-ink hover:underline outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-1"
+            >
+              Sign in
+            </a>
+          ) : (
+            <span className="text-sm text-muted cursor-not-allowed">Sign in</span>
+          )}
+        </div>
       </header>
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-8">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
-          <div className="text-center">
-            <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
-              Describe processes in plain words — get canonical BPMN 2.0
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-12">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+          <div className="text-center mx-auto max-w-3xl">
+            <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-5xl leading-tight">
+              Turn plain-language processes into clean BPMN 2.0.
             </h1>
-            <p className="mt-2 text-sm text-muted sm:text-base">
-              A semantic workflow editor that computes layout automatically, not a manual drawing tool.
+            <p className="mt-4 text-base text-muted sm:text-lg max-w-2xl mx-auto">
+              Describe steps and decisions in plain text. Get an automatically laid-out canonical diagram. Sign in to edit and export.
             </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => document.getElementById('showcase-description')?.focus()}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-ink px-6 font-medium text-canvas hover:bg-ink/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink transition-colors w-full sm:w-auto"
+              >
+                Try the live demo
+              </button>
+              {status === null ? null : configured ? (
+                <a
+                  href="/api/auth/google"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-canvas px-6 font-medium text-ink hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink transition-colors w-full sm:w-auto"
+                >
+                  <GoogleMark />
+                  Continue with Google
+                </a>
+              ) : (
+                <Button variant="outline" size="sm" className="h-11 px-6 w-full sm:w-auto" disabled>
+                  Continue with Google
+                </Button>
+              )}
+            </div>
           </div>
 
           <ShowcaseDemo />
 
-          <section className="mx-auto w-full max-w-md border border-border bg-canvas p-5">
+          <section className="mx-auto w-full max-w-md border border-border bg-canvas p-5 rounded-md">
             <h2 className="text-base font-semibold tracking-tight text-ink">Sign in to save processes</h2>
             <p className="mt-2 text-sm leading-5 text-muted">
-              Signing in is what lets you save and manage your processes. Google OAuth only. Your BPMN diagrams stay private to this account.
+              Continue with Google. No password. Your diagrams stay private to your account.
             </p>
             {oauthError ? (
               <p className="mt-3 border border-danger/40 bg-surface px-3 py-2 text-sm text-danger" role="alert">
@@ -85,19 +116,22 @@ export function SignInPage() {
             ) : configured ? (
               <a
                 href="/api/auth/google"
-                className="mt-6 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-border bg-canvas text-sm font-medium text-ink outline-none hover:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-border bg-canvas text-sm font-medium text-ink outline-none hover:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 <GoogleMark />
                 Continue with Google
               </a>
             ) : (
-              <Button variant="outline" size="sm" className="mt-6 w-full" disabled>
+              <Button variant="outline" size="sm" className="mt-6 h-10 w-full" disabled>
                 Continue with Google
               </Button>
             )}
           </section>
         </div>
       </main>
+      <footer className="py-4 text-center">
+        <span className="font-mono text-[11px] text-muted">{getBuildVersionInfo()}</span>
+      </footer>
     </div>
   );
 }
