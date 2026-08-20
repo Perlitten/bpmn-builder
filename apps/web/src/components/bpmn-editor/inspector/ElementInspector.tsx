@@ -435,13 +435,16 @@ export function InspectorLintFooter({ lint, elementId }: { lint: LintResult; ele
   const focused = elementId ? findings.filter((f) => f.elementId === elementId) : [];
   const rest = elementId ? findings.filter((f) => f.elementId !== elementId) : findings;
   const shown = [...focused, ...rest].slice(0, 4);
+  const incompleteChecks = lint.layout === 'none' || lint.executionProfile === 'none';
   return (
     <footer className="element-inspector-footer">
       <p>
         <ScoreChips lint={lint} />
       </p>
       {shown.length === 0 ? (
-        <p className="element-inspector-hint">No rule findings</p>
+        <p className="element-inspector-hint">
+          {incompleteChecks ? 'Some checks were not run' : 'No rule findings'}
+        </p>
       ) : (
         <ul>
           {shown.map((finding, index) => (

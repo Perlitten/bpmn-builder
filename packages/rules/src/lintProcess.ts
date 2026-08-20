@@ -1,7 +1,7 @@
 import { layoutProcess } from '../../layout-engine/src/index.js';
 import { detectStructure, type Process } from '../../semantic-core/src/index.js';
 import { executionScore, layerExecution } from './execution.js';
-import { toLintModel, type LintModel, type LintNode } from './model.js';
+import { toLintModel, type Bounds, type LintFlow, type LintModel, type LintNode } from './model.js';
 import { hasActionVerb, isPlaceholderName, shouldCheckActionVerb } from './naming.js';
 import {
   DEFAULT_EXECUTION_PROFILE,
@@ -39,8 +39,8 @@ export function lintProcess(processOrXml: unknown, options: LintOptions = {}): L
 export function scoreParts(result: LintResult): string[] {
   const parts = [`BPMN ${result.scores.bpmn}`, `Style ${result.scores.style}`, `Quality ${result.scores.quality}`];
   if (result.scores.execution !== undefined) parts.push(`Execution ${result.scores.execution}`);
-  if (result.scores.geometry === 100) parts.push('Layout 100');
-  else if (result.layout === 'free') parts.push('Layout free DI');
+  if (result.layout === 'canonical') parts.push('Layout: canonical');
+  else if (result.layout === 'free') parts.push('Layout: free DI');
   return parts;
 }
 
@@ -215,7 +215,62 @@ function layerStyle(model: LintModel, style: Finding[]): void {
 
 function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
   if (!model.hasDi) return 'none';
+
+  const labelEntries = Object.entries(model.labels);
+  const nodeEntries = Object.entries(model.bounds);
+
+  for (const [labelId, labelBox] of labelEntries) {
+    for (const [nodeId, nodeBox] of nodeEntries) {
+      if (labelId === nodeId) continue;
+      if (overlaps(labelBox, nodeBox)) {
+        suggestions.push({
+          id: 'geometry.label-overlaps-node',
+          layer: 4,
+          severity: 'suggestion',
+          message: `Label '${labelId}' overlaps node '${nodeId}'`,
+          elementId: labelId,
+        });
+      }
+    }
+  }
+
+  for (let i = 0; i < labelEntries.length; i++) {
+    for (let j = i + 1; j < labelEntries.length; j++) {
+      const [id1, box1] = labelEntries[i]!;
+      const [id2, box2] = labelEntries[j]!;
+      if (overlaps(box1, box2)) {
+        suggestions.push({
+          id: 'geometry.label-overlaps-label',
+          layer: 4,
+          severity: 'suggestion',
+          message: `Label '${id1}' overlaps label '${id2}'`,
+          elementId: id1,
+        });
+      }
+    }
+  }
+
+  const flowNodeIds = new Set(model.nodes.map((n) => n.id));
+  const flowNodeEntries = nodeEntries.filter(([id]) => flowNodeIds.has(id));
+
+  for (let i = 0; i < flowNodeEntries.length; i++) {
+    for (let j = i + 1; j < flowNodeEntries.length; j++) {
+      const [id1, box1] = flowNodeEntries[i]!;
+      const [id2, box2] = flowNodeEntries[j]!;
+      if (overlaps(box1, box2) && !intentionalNodeOverlap(model, id1, box1, id2, box2)) {
+        suggestions.push({
+          id: 'geometry.node-overlap',
+          layer: 4,
+          severity: 'suggestion',
+          message: `Node '${id1}' overlaps node '${id2}'`,
+          elementId: id1,
+        });
+      }
+    }
+  }
+
   if (matchesLayoutEngine(model)) return 'canonical';
+
   suggestions.push({
     id: 'geometry.free-di',
     layer: 4,
@@ -225,7 +280,113 @@ function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
   return 'free';
 }
 
+function overlaps(a: Bounds, b: Bounds): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function intentionalNodeOverlap(
+  model: LintModel,
+  id1: string,
+  box1: Bounds,
+  id2: string,
+  box2: Bounds,
+): boolean {
+  const node1 = model.nodes.find((node) => node.id === id1);
+  const node2 = model.nodes.find((node) => node.id === id2);
+  if (node1?.attachedTo === id2 || node2?.attachedTo === id1) return true;
+  if (node1?.kind === 'subprocess' && contains(box1, box2)) return true;
+  if (node2?.kind === 'subprocess' && contains(box2, box1)) return true;
+  return false;
+}
+
+function contains(outer: Bounds, inner: Bounds): boolean {
+  return (
+    inner.x >= outer.x &&
+    inner.y >= outer.y &&
+    inner.x + inner.width <= outer.x + outer.width &&
+    inner.y + inner.height <= outer.y + outer.height
+  );
+}
+
 function layerQuality(model: LintModel, warnings: Finding[], limit: number): void {
+  const outgoing = new Map<string, LintFlow[]>();
+  for (const flow of model.flows) {
+    if (flow.source) {
+      const list = outgoing.get(flow.source) ?? [];
+      list.push(flow);
+      outgoing.set(flow.source, list);
+    }
+  }
+
+  const reachable = new Set(model.nodes.filter((node) => node.kind === 'start').map((node) => node.id));
+  const queue = [...reachable];
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    for (const flow of outgoing.get(queue[cursor]!) ?? []) {
+      if (!flow.target || reachable.has(flow.target)) continue;
+      reachable.add(flow.target);
+      queue.push(flow.target);
+    }
+  }
+
+  for (const node of model.nodes) {
+    if (node.kind === 'task' && !node.triggeredByEvent) {
+      const name = node.name.trim();
+      if (!name || isPlaceholderName(name, node.id)) {
+        warnings.push({
+          id: 'quality.unnamed-task',
+          layer: 5,
+          severity: 'warning',
+          message: `Task ${node.id} has no name`,
+          elementId: node.id,
+        });
+      }
+    }
+
+    if (isDecisionGateway(node)) {
+      const flowsOut = outgoing.get(node.id) ?? [];
+      if (flowsOut.length >= 2) {
+        if (isPlaceholderName(node.name, node.id)) {
+          warnings.push({
+            id: 'quality.unnamed-gateway',
+            layer: 5,
+            severity: 'warning',
+            message: `Gateway ${node.id} has no name`,
+            elementId: node.id,
+          });
+        }
+        for (const flow of flowsOut) {
+          if (!flow.name.trim()) {
+            warnings.push({
+              id: 'quality.unlabeled-branch',
+              layer: 5,
+              severity: 'warning',
+              message: `Sequence flow ${flow.id} from gateway ${node.id} has no label`,
+              elementId: flow.id,
+            });
+          }
+        }
+      }
+    }
+
+    if (
+      node.kind !== 'start' &&
+      node.coreType !== 'boundaryEvent' &&
+      !node.triggeredByEvent &&
+      !model.adHocInnerIds.includes(node.id) &&
+      !sequenceOptional(node, model)
+    ) {
+      if (!reachable.has(node.id)) {
+        warnings.push({
+          id: 'quality.unreachable-node',
+          layer: 5,
+          severity: 'warning',
+          message: `Node ${label(node)} is not reachable from a start event`,
+          elementId: node.id,
+        });
+      }
+    }
+  }
+
   const count = model.nodes.filter((n) => n.kind === 'gateway').length;
   if (count > limit) {
     warnings.push({
@@ -268,10 +429,15 @@ function matchesLayoutEngine(model: LintModel): boolean {
     processes: [],
   };
   const structured = detectStructure(draft);
-  const expected = layoutProcess(structured).shapes;
-  const ids = Object.keys(expected);
-  if (!ids.length) return false;
-  return ids.every((id) => sameBox(model.bounds[id], expected[id]));
+  const expected = layoutProcess(structured);
+  const shapeIds = Object.keys(expected.shapes);
+  const labelIds = Object.keys(expected.labels);
+  if (!shapeIds.length) return false;
+  return (
+    shapeIds.every((id) => sameBox(model.bounds[id], expected.shapes[id])) &&
+    Object.keys(model.labels).length === labelIds.length &&
+    labelIds.every((id) => sameBox(model.labels[id], expected.labels[id]))
+  );
 }
 
 function sameBox(actual: { x: number; y: number; width: number; height: number } | undefined, expected: { x: number; y: number; width: number; height: number } | undefined): boolean {
@@ -282,6 +448,12 @@ function sameBox(actual: { x: number; y: number; width: number; height: number }
 function label(node: LintNode): string {
   const name = node.name.trim();
   return name ? `“${name}”` : node.id;
+}
+
+function isDecisionGateway(node: LintNode): boolean {
+  if (node.kind !== 'gateway') return false;
+  const tag = (node.bpmnType ?? node.coreType).replace(/^bpmn:/i, '').toLowerCase();
+  return tag === 'exclusivegateway' || tag === 'inclusivegateway';
 }
 
 function isExclusiveXor(node: LintNode): boolean {

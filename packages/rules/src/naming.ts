@@ -56,6 +56,31 @@ export type NameSuggestion = {
   reason: string;
 };
 
+export function normalizeTaskName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const word0 = words[0]!.toLowerCase().replace(/[^a-z]/g, '');
+    const word1 = words[1]!.toLowerCase().replace(/[^a-z]/g, '');
+    let verbBase: string | undefined;
+    for (const verb of ACTION_VERBS) {
+      const inflections = verb.endsWith('e')
+        ? [`${verb}s`, `${verb}d`, `${verb.slice(0, -1)}ing`]
+        : [`${verb}s`, `${verb}ed`, `${verb}ing`];
+      if (inflections.includes(word1)) {
+        verbBase = verb;
+        break;
+      }
+    }
+    if (verbBase && !ACTION_VERBS.has(word0)) {
+      const objectWords = words.slice(2).filter((w) => !/^(a|an|the)$/i.test(w));
+      const objectStr = objectWords.join(' ');
+      const capitalizedVerb = verbBase.charAt(0).toUpperCase() + verbBase.slice(1);
+      return objectStr ? `${capitalizedVerb} ${objectStr.toLowerCase()}` : capitalizedVerb;
+    }
+  }
+  return name;
+}
+
 export function hasActionVerb(name: string): boolean {
   const word = name.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
   if (!word) return false;
@@ -198,6 +223,8 @@ function asTask(label: string): string {
   const base = sentenceCase(stripQuestion(label));
   if (!base) return 'Validate customer';
   if (isPlaceholderName(base)) return 'Validate customer';
+  const normalized = normalizeTaskName(base);
+  if (normalized !== base) return normalized;
   const words = base.split(/\s+/);
   if (words.length === 1) {
     return hasActionVerb(words[0]) ? `${capitalize(words[0].toLowerCase())} request` : `Check ${words[0].toLowerCase()}`;

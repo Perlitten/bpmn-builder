@@ -184,6 +184,38 @@ describe('ElementInspector lane assignment', () => {
   });
 });
 
+describe('ElementInspector incomplete checks hint', () => {
+  it('displays "Some checks were not run" when checks were skipped and findings are empty', () => {
+    const skippedLint: LintResult = {
+      errors: [],
+      warnings: [],
+      style: [],
+      suggestions: [],
+      scores: { bpmn: 100, style: 100, quality: 100 },
+      layout: 'none',
+      executionProfile: 'none',
+    };
+    const html = renderToStaticMarkup(
+      createElement(ElementInspector, {
+        element: task,
+        canDelete: true,
+        lint: skippedLint,
+        replaceWorks: () => true,
+        onRename: noop,
+        onChangeTo: noop,
+        onDelete: noop,
+        onFlowKind: noop,
+        onCondition: noop,
+        onDefaultOutgoing: noop,
+        onAttach: noop,
+        onCreate: noop,
+      }),
+    );
+    expect(html).toContain('Some checks were not run');
+    expect(html).not.toContain('No rule findings');
+  });
+});
+
 describe('ElementInspector preserved BPMN fields', () => {
   it('includes PreservedBpmnFields for graph-backed documentation', async () => {
     const xml = readFileSync(
