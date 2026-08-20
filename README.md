@@ -153,6 +153,6 @@ GitHub Actions is the authoritative verification environment. Every pull request
 - lint, strict TypeScript, production dependency audit, coverage thresholds, and build;
 - PostgreSQL migration/integration tests;
 - Playwright desktop and mobile critical journeys with WCAG checks;
-- dependency review and CodeQL security analysis.
+- an independent production dependency audit and CodeQL security analysis.
 
 Dependabot opens grouped weekly updates for pnpm and GitHub Actions. Coverage and Playwright failure artifacts are retained for 14 days.
