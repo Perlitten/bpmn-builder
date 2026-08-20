@@ -5,10 +5,10 @@ import {
   setOAuthStateCookie,
   setSessionCookie,
 } from '../auth/cookies.js';
-import { googleCallbackUrl, publicOrigin, readGoogleAuthConfig } from '../auth/env.js';
+import { googleCallbackUrl, publicOrigin, requestOrigin, readGoogleAuthConfig } from '../auth/env.js';
 import { exchangeGoogleCode, googleAuthorizeUrl } from '../auth/google.js';
-import { createSession, destroySession, equalSecret, generateOAuthState } from '../auth/session.js';
-import { OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
+import { createSession, destroySession, equalSecret, generateOAuthState, parseOAuthState, readSession } from '../auth/session.js';
+import { OAUTH_HANDOFF_TTL_MS, OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { issueTestSession } from '../auth/testSession.js';
 import { upsertGoogleUser } from '../auth/users.js';
 
@@ -16,6 +16,18 @@ function redirectHome(res: Response, origin: string, error?: string): void {
   const url = new URL('/', origin);
   if (error) url.searchParams.set('error', error);
   res.redirect(url.toString());
+}
+
+function isSafeRelayOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    if (url.protocol === 'http:') {
+      return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    }
+    return url.protocol === 'https:' && (url.hostname.endsWith('.vercel.app') || url.hostname.endsWith('.vercel.sh'));
+  } catch {
+    return false;
+  }
 }
 
 export function registerAuthRoutes(app: Application): void {
@@ -48,43 +60,104 @@ export function registerAuthRoutes(app: Application): void {
       res.status(503).json({ error: config.error });
       return;
     }
-    const origin = publicOrigin(req);
-    const state = generateOAuthState();
+
+    const requestBase = requestOrigin(req);
+    const authBase = publicOrigin(req);
+    const suppliedState = typeof req.query.state === 'string' ? req.query.state : undefined;
+
+    if (requestBase !== authBase) {
+      const relayState = generateOAuthState(requestBase);
+      const relayStart = new URL('/api/auth/google', authBase);
+      relayStart.searchParams.set('state', relayState);
+      res.redirect(relayStart.toString());
+      return;
+    }
+
+    const state = suppliedState ?? generateOAuthState();
+    const parsedState = parseOAuthState(state);
+    if (parsedState?.returnOrigin && !isSafeRelayOrigin(parsedState.returnOrigin)) {
+      res.status(400).json({ error: 'Invalid OAuth return origin' });
+      return;
+    }
+
     setOAuthStateCookie(res, state);
-    res.redirect(googleAuthorizeUrl({
-      clientId: config.value.clientId,
-      redirectUri: googleCallbackUrl(origin),
-      state,
-    }));
+    res.redirect(
+      googleAuthorizeUrl({
+        clientId: config.value.clientId,
+        redirectUri: googleCallbackUrl(authBase),
+        state,
+      }),
+    );
   });
 
   app.get('/api/auth/google/callback', async (req: Request, res: Response) => {
-    const origin = publicOrigin(req);
+    const authOrigin = publicOrigin(req);
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const parsedState = parseOAuthState(state);
+    const returnOrigin = parsedState?.returnOrigin;
+    const targetOrigin = returnOrigin && isSafeRelayOrigin(returnOrigin) ? returnOrigin : authOrigin;
+
     const config = readGoogleAuthConfig();
     if (!config.ok) {
-      redirectHome(res, origin, 'config');
+      redirectHome(res, targetOrigin, 'config');
       return;
     }
+
     const denied = typeof req.query.error === 'string' ? req.query.error : '';
     if (denied) {
       clearOAuthStateCookie(res);
-      redirectHome(res, origin, denied === 'access_denied' ? 'denied' : 'oauth');
+      redirectHome(res, targetOrigin, denied === 'access_denied' ? 'denied' : 'oauth');
       return;
     }
+
     const code = typeof req.query.code === 'string' ? req.query.code : '';
-    const state = typeof req.query.state === 'string' ? req.query.state : '';
     const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
     clearOAuthStateCookie(res);
     if (!code || !state || !expected || !equalSecret(state, expected)) {
-      redirectHome(res, origin, 'state');
+      redirectHome(res, targetOrigin, 'state');
       return;
     }
+
     try {
       const profile = await exchangeGoogleCode(config.value, {
         code,
-        redirectUri: googleCallbackUrl(origin),
+        redirectUri: googleCallbackUrl(authOrigin),
       });
       const user = await upsertGoogleUser(profile);
+
+      if (returnOrigin && isSafeRelayOrigin(returnOrigin)) {
+        const { token: handoffToken } = await createSession(user.id, OAUTH_HANDOFF_TTL_MS);
+        const complete = new URL('/api/auth/complete', returnOrigin);
+        complete.searchParams.set('token', handoffToken);
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.redirect(complete.toString());
+        return;
+      }
+
+      const { token } = await createSession(user.id);
+      setSessionCookie(res, token);
+      redirectHome(res, authOrigin);
+    } catch {
+      redirectHome(res, targetOrigin, 'oauth');
+    }
+  });
+
+  app.get('/api/auth/complete', async (req: Request, res: Response) => {
+    const origin = requestOrigin(req);
+    const handoffToken = typeof req.query.token === 'string' ? req.query.token : '';
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    if (!handoffToken) {
+      redirectHome(res, origin, 'oauth');
+      return;
+    }
+
+    try {
+      const user = await readSession(handoffToken, { refresh: false });
+      await destroySession(handoffToken);
+      if (!user) {
+        redirectHome(res, origin, 'oauth');
+        return;
+      }
       const { token } = await createSession(user.id);
       setSessionCookie(res, token);
       redirectHome(res, origin);
