@@ -103,6 +103,13 @@ describe('previewBpmn', () => {
     expect(preview.happyPath).toBe('Could not parse BPMN');
     expect(preview.happyPath).not.toMatch(/○\s*▭\s*○/);
   });
+
+  it('never treats commented markup as process nodes', () => {
+    const commented = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="P"><!-- <bpmn:task id="Injected" name="Injected" /> --></bpmn:process>
+    </bpmn:definitions>`;
+    expect(previewBpmn(commented)).toMatchObject({ kind: 'empty', happyPath: 'Empty process' });
+  });
 });
 
 describe('process names', () => {

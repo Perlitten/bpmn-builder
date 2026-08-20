@@ -13,6 +13,14 @@ import type { AiModelClient, ChatTurn } from '../ai/types.js';
 
 type ClientFactory = () => AiModelClient;
 
+function writeAssistantWarning(event: string, error: unknown): void {
+  const detail =
+    error instanceof Error
+      ? { name: error.name, message: error.message }
+      : { message: String(error) };
+  process.stderr.write(`${JSON.stringify({ level: 'warn', event, error: detail })}\n`);
+}
+
 const parseHistory = (value: unknown): ChatTurn[] => {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
@@ -28,7 +36,7 @@ function sendJson(res: Response, status: number, body: unknown): void {
   try {
     res.status(status).json(body);
   } catch (error) {
-    console.warn('[assistant] failed to write response:', error instanceof Error ? error.message : error);
+    writeAssistantWarning('assistant_response_write_failed', error);
   }
 }
 
@@ -82,7 +90,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     });
     void work.catch((error) => {
       if (res.headersSent) {
-        console.warn('[assistant] upstream after abort:', error instanceof Error ? error.message : error);
+        writeAssistantWarning('assistant_upstream_after_abort', error);
       }
     });
     const stop = whenAborted(ac.signal);
@@ -94,7 +102,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     } catch (error: unknown) {
       if (res.headersSent) return;
       if (isTimeoutError(error)) {
-        console.warn('[assistant] aborted:', error instanceof Error ? `${error.name}: ${error.message}` : error);
+        writeAssistantWarning('assistant_aborted', error);
         sendTimeout();
         return;
       }

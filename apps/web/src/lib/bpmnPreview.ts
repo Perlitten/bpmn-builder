@@ -74,9 +74,25 @@ function attrs(raw: string): Record<string, string> {
   return out;
 }
 
+function stripXmlComments(xml: string): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf('<!--', cursor);
+    if (start < 0) {
+      parts.push(xml.slice(cursor));
+      break;
+    }
+    parts.push(xml.slice(cursor, start));
+    const end = xml.indexOf('-->', start + 4);
+    if (end < 0) break;
+    cursor = end + 3;
+  }
+  return parts.join('');
+}
+
 function stripIgnored(xml: string): string {
-  return xml
-    .replace(/<!--[\s\S]*?-->/g, '')
+  return stripXmlComments(xml)
     .replace(/<(?:[\w.-]+:)?BPMNDiagram\b[\s\S]*?<\/(?:[\w.-]+:)?BPMNDiagram>/gi, '');
 }
 

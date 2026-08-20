@@ -8,6 +8,7 @@ import {
   splitExclusive,
   type Process,
 } from '@bpmn/semantic-core';
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { formatScores, lintProcess, scoreParts } from './lintProcess.js';
 
@@ -68,6 +69,16 @@ function processXml(p: Process): string {
 }
 
 describe('lintProcess', () => {
+  it('never throws while linting arbitrary untrusted text', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 4_096 }), (source) => {
+        const result = lintProcess(source, { geometry: 'skip', executionProfile: 'none' });
+        expect(result.scores.bpmn).toBeGreaterThanOrEqual(0);
+      }),
+      { numRuns: 150 },
+    );
+  });
+
   it('flags missing start/end, broken flows, and dangling nodes', () => {
     const result = lintProcess(
       xml(`

@@ -8,7 +8,10 @@ Security fixes are applied to the latest version on the `main` branch.
 
 Do not disclose suspected vulnerabilities, credentials, or user data in a public issue.
 
-Use GitHub's private vulnerability reporting flow under **Security → Advisories → Report a vulnerability**. Include reproduction steps, affected routes or packages, expected impact, and any suggested mitigation.
+Use GitHub's private vulnerability reporting form:
+https://github.com/Perlitten/bpmn-builder/security/advisories/new
+
+Include reproduction steps, affected routes or packages, expected impact, and any suggested mitigation.
 
 If private reporting is unavailable, contact the repository owner through their GitHub profile first and wait for a private channel before sharing sensitive details.
 

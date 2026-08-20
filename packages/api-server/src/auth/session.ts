@@ -22,6 +22,8 @@ function oauthStateSecret(): string {
 }
 
 function signOAuthStatePayload(encoded: string): string {
+  // HMAC-SHA-256 authenticates a high-entropy OAuth state payload; this is not password hashing.
+  // codeql[js/insufficient-password-hash]
   return createHmac('sha256', oauthStateSecret()).update(encoded).digest('base64url');
 }
 
@@ -32,6 +34,12 @@ export function generateOAuthState(returnOrigin?: string): string {
   };
   const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   return `${encoded}.${signOAuthStatePayload(encoded)}`;
+}
+
+export function hashOAuthStateNonce(nonce: string): string {
+  // The nonce is high-entropy random data, not a password; HMAC binds it to this deployment.
+  // codeql[js/insufficient-password-hash]
+  return createHmac('sha256', oauthStateSecret()).update(`oauth-state:${nonce}`).digest('base64url');
 }
 
 export function parseOAuthState(state: string): SignedOAuthState | null {

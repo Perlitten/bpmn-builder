@@ -1,8 +1,10 @@
 import {
   bpmnComponentRegistry,
+  collectXmlElements,
   DEFAULT_BPMN_TYPE,
   type FlowNode,
   type FlowNodeType,
+  parseXmlAttributes,
   type Process,
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
@@ -205,16 +207,51 @@ function localTag(name: string): string {
   return (i >= 0 ? name.slice(i + 1) : name).toLowerCase();
 }
 
+function isXmlSpace(code: number): boolean {
+  return code === 9 || code === 10 || code === 13 || code === 32;
+}
+
+function isAttributeNameCode(code: number): boolean {
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    code === 45 ||
+    code === 46 ||
+    code === 58 ||
+    code === 95
+  );
+}
+
 function attrs(raw: string): Record<string, string> {
-  const out: Record<string, string> = Object.create(null);
-  const re = /([:\w.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(raw))) {
-    const key = localTag(match[1]);
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    out[key] = decode(match[2] ?? match[3] ?? '');
+  const parsed = new Map<string, string>();
+  let cursor = 0;
+  while (cursor < raw.length) {
+    while (cursor < raw.length && isXmlSpace(raw.charCodeAt(cursor))) cursor += 1;
+    const nameStart = cursor;
+    while (cursor < raw.length && isAttributeNameCode(raw.charCodeAt(cursor))) cursor += 1;
+    if (cursor === nameStart) {
+      cursor += 1;
+      continue;
+    }
+    const name = raw.slice(nameStart, cursor);
+    while (cursor < raw.length && isXmlSpace(raw.charCodeAt(cursor))) cursor += 1;
+    if (raw.charCodeAt(cursor) !== 61) continue;
+    cursor += 1;
+    while (cursor < raw.length && isXmlSpace(raw.charCodeAt(cursor))) cursor += 1;
+    const quote = raw.charCodeAt(cursor);
+    if (quote !== 34 && quote !== 39) continue;
+    cursor += 1;
+    const valueStart = cursor;
+    while (cursor < raw.length && raw.charCodeAt(cursor) !== quote) cursor += 1;
+    if (cursor >= raw.length) break;
+    const key = localTag(name);
+    if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+      parsed.set(key, decode(raw.slice(valueStart, cursor)));
+    }
+    cursor += 1;
   }
-  return out;
+  return Object.fromEntries(parsed);
 }
 
 function decode(value: string): string {
@@ -227,40 +264,37 @@ function decode(value: string): string {
 }
 
 function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
-  const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
+  const parts = tagAlt.split('|');
   const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(xml))) {
-    const tag = localTag(match[1]);
-    const attr = attrs(match[2] ?? '');
-    const selfClosing = Boolean(match[3]) || /\/\s*$/.test(match[2] ?? '');
-    const inner = selfClosing ? '' : innerXml(xml, match.index + match[0].length, match[1] ?? tag);
-    found.push({ tag, attr, inner });
+  for (const part of parts) {
+    const elements = collectXmlElements(xml, part);
+    for (const el of elements) {
+      const attrs = Object.fromEntries(parseXmlAttributes(el.rawAttributes));
+      found.push({
+        tag: el.localName,
+        attr: attrs,
+        inner: el.inner,
+      });
+    }
   }
   return found;
 }
 
-function innerXml(xml: string, from: number, tag: string): string {
-  const open = new RegExp(`<(?:[\\w.-]+:)?${tag}\\b`, 'gi');
-  const close = new RegExp(`</(?:[\\w.-]+:)?${tag}\\s*>`, 'gi');
-  let depth = 1;
-  let i = from;
-  while (depth > 0 && i < xml.length) {
-    open.lastIndex = i;
-    close.lastIndex = i;
-    const nextOpen = open.exec(xml);
-    const nextClose = close.exec(xml);
-    if (!nextClose) return xml.slice(from);
-    if (nextOpen && nextOpen.index < nextClose.index) {
-      depth += 1;
-      i = nextOpen.index + nextOpen[0].length;
-    } else {
-      depth -= 1;
-      if (depth === 0) return xml.slice(from, nextClose.index);
-      i = nextClose.index + nextClose[0].length;
+function stripXmlComments(xml: string): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf('<!--', cursor);
+    if (start < 0) {
+      parts.push(xml.slice(cursor));
+      break;
     }
+    parts.push(xml.slice(cursor, start));
+    const end = xml.indexOf('-->', start + 4);
+    if (end < 0) break;
+    cursor = end + 3;
   }
-  return xml.slice(from);
+  return parts.join('');
 }
 
 function eventDefinitionFromInner(inner: string): string | undefined {
@@ -275,7 +309,10 @@ function cancelActivityFrom(attr: Record<string, string>): boolean | undefined {
 }
 
 function processBodies(xml: string): string[] {
-  const cleaned = xml.replace(/<!--[\s\S]*?-->/g, '').replace(/<(?:[\w.-]+:)?BPMNDiagram\b[\s\S]*?<\/(?:[\w.-]+:)?BPMNDiagram>/gi, '');
+  const cleaned = stripXmlComments(xml).replace(
+    /<(?:[\w.-]+:)?BPMNDiagram\b[\s\S]*?<\/(?:[\w.-]+:)?BPMNDiagram>/gi,
+    '',
+  );
   const bodies: string[] = [];
   const openRe = /<(?:[\w.-]+:)?process\b([^>]*?)(\/)?>/gi;
   let match: RegExpExecArray | null;

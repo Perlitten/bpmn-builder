@@ -1,8 +1,7 @@
 module.exports = {
   ci: {
     collect: {
-      startServerCommand:
-        'NODE_ENV=production DB_PROVIDER=sqlite DATABASE_URL=file:./data/lighthouse.db SESSION_SECRET=lighthouse-ci-session-secret-at-least-16-chars PORT=4173 pnpm --filter @bpmn/api-server start',
+      startServerCommand: 'node scripts/start-lighthouse-server.mjs',
       startServerReadyPattern: 'BPMN builder running',
       url: ['http://localhost:4173/'],
       numberOfRuns: 2,

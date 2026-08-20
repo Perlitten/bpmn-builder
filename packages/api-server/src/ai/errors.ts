@@ -11,6 +11,7 @@ export function isUpstreamError(error: unknown): boolean {
 
 export function friendlyAiError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error || '');
+  const normalized = raw.toLowerCase();
   if (isUpstreamError(error)) {
     return 'AI provider did not respond. Check the API key and network, then retry.';
   }
@@ -25,7 +26,11 @@ export function friendlyAiError(error: unknown): string {
   if (/NVIDIA_API_KEY|GEMINI_API_KEY/i.test(raw) || /not configured/i.test(raw)) {
     return 'AI agent is not configured. Add the selected provider API key and restart the server.';
   }
-  if (/NVIDIA API 401|invalid.*api key|unauthorized/i.test(raw)) {
+  if (
+    normalized.includes('nvidia api 401') ||
+    normalized.includes('unauthorized') ||
+    (normalized.includes('invalid') && normalized.includes('api key'))
+  ) {
     return 'NVIDIA rejected the API key. Replace NVIDIA_API_KEY and restart the server.';
   }
   if (/credits (?:are )?depleted|prepayment/i.test(raw)) {
