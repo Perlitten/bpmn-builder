@@ -35,6 +35,7 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
 
   scorecard:
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
     name: scorecard
     runs-on: ubuntu-latest
     timeout-minutes: 15
