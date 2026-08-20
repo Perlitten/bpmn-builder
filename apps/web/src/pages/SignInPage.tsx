@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/Button';
+import { ShowcaseDemo } from '../components/showcase/ShowcaseDemo';
 import { fetchAuthStatus, type AuthStatus } from '../lib/auth';
 import { pageTitle } from '../lib/pageTitle';
 
@@ -38,50 +39,62 @@ export function SignInPage() {
   const setupError = status && !status.configured ? status.error : null;
 
   return (
-    <div className="flex h-dvh flex-col bg-canvas">
-      <header className="flex h-11 items-center border-b border-border px-4">
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      <header className="flex h-11 items-center border-b border-border px-4 shrink-0">
         <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
         <span className="ml-3 font-mono text-[11px] text-muted">2.0 semantic editor</span>
       </header>
-      <main className="flex min-h-0 flex-1 items-start justify-center px-4 py-16">
-        <section className="w-full max-w-md border border-border bg-canvas p-5">
-          <h1 className="text-base font-semibold tracking-tight text-ink">Sign in to model processes</h1>
-          <p className="mt-2 text-sm leading-5 text-muted">
-            Google OAuth only. Your BPMN diagrams stay private to this account. Layout is canonical — this is not a
-            drawing tool.
-          </p>
-          {oauthError ? (
-            <p className="mt-3 border border-danger/40 bg-surface px-3 py-2 text-sm text-danger" role="alert">
-              {oauthError}
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-8">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="text-center">
+            <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
+              Describe processes in plain words — get canonical BPMN 2.0
+            </h1>
+            <p className="mt-2 text-sm text-muted sm:text-base">
+              A semantic workflow editor that computes layout automatically, not a manual drawing tool.
             </p>
-          ) : null}
-          {setupError ? (
-            <div className="mt-3 border border-border bg-surface px-3 py-2 text-sm text-ink" role="alert">
-              <p className="font-medium">Google sign-in is not configured</p>
-              <p className="mt-1 text-muted">{setupError}</p>
-              {status?.callbackUrl ? (
-                <p className="mt-2 font-mono text-[11px] break-all text-muted">
-                  Redirect URI: {status.callbackUrl}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-          {status === null ? (
-            <p className="mt-6 text-sm text-muted">Checking Google OAuth…</p>
-          ) : configured ? (
-            <a
-              href="/api/auth/google"
-              className="mt-6 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-border bg-canvas text-sm font-medium text-ink outline-none hover:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            >
-              <GoogleMark />
-              Continue with Google
-            </a>
-          ) : (
-            <Button variant="outline" size="sm" className="mt-6 w-full" disabled>
-              Continue with Google
-            </Button>
-          )}
-        </section>
+          </div>
+
+          <ShowcaseDemo />
+
+          <section className="mx-auto w-full max-w-md border border-border bg-canvas p-5">
+            <h2 className="text-base font-semibold tracking-tight text-ink">Sign in to save processes</h2>
+            <p className="mt-2 text-sm leading-5 text-muted">
+              Signing in is what lets you save and manage your processes. Google OAuth only. Your BPMN diagrams stay private to this account.
+            </p>
+            {oauthError ? (
+              <p className="mt-3 border border-danger/40 bg-surface px-3 py-2 text-sm text-danger" role="alert">
+                {oauthError}
+              </p>
+            ) : null}
+            {setupError ? (
+              <div className="mt-3 border border-border bg-surface px-3 py-2 text-sm text-ink" role="alert">
+                <p className="font-medium">Google sign-in is not configured</p>
+                <p className="mt-1 text-muted">{setupError}</p>
+                {status?.callbackUrl ? (
+                  <p className="mt-2 font-mono text-[11px] break-all text-muted">
+                    Redirect URI: {status.callbackUrl}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {status === null ? (
+              <p className="mt-6 text-sm text-muted">Checking Google OAuth…</p>
+            ) : configured ? (
+              <a
+                href="/api/auth/google"
+                className="mt-6 inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-border bg-canvas text-sm font-medium text-ink outline-none hover:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                <GoogleMark />
+                Continue with Google
+              </a>
+            ) : (
+              <Button variant="outline" size="sm" className="mt-6 w-full" disabled>
+                Continue with Google
+              </Button>
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
