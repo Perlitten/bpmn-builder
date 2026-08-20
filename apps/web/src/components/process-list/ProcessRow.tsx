@@ -53,6 +53,8 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
   );
   const { lint, structure } = analyzeRow(process.bpmnXml);
   const quality = listQualitySignal(lint);
+  const updated = relativeTime(process.updatedAt, now);
+  const metadataId = `process-${process.id}-metadata`;
   const actions = Boolean(onRename || onDuplicate || onDelete);
 
   return (
@@ -60,6 +62,7 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
       <button
         type="button"
         aria-label={`Open ${process.name}`}
+        aria-describedby={metadataId}
         className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-surface ${actions ? 'pr-16' : ''}`}
         onClick={() => onOpen(process.id)}
       >
@@ -69,7 +72,7 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
           title={absoluteTime(process.updatedAt)}
           className="whitespace-nowrap pt-0.5 text-[11px] text-muted"
         >
-          {relativeTime(process.updatedAt, now)}
+          {updated}
         </time>
         <span className="col-span-2 flex min-w-0 items-center gap-2 text-[11px] text-muted">
           <span className="truncate">{structure}</span>
@@ -78,6 +81,9 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
               {quality.label}
             </span>
           ) : null}
+        </span>
+        <span id={metadataId} className="sr-only">
+          {`Updated ${updated}. ${structure}${quality ? `. ${quality.label}` : ''}`}
         </span>
       </button>
       {actions ? (

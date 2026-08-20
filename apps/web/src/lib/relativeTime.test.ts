@@ -24,8 +24,11 @@ describe('relativeTime', () => {
   it('includes the date when formatting save time if not from today', () => {
     const todaySave = formatSaveTime('2026-08-14T11:51:00.000Z', NOW);
     const yesterdaySave = formatSaveTime('2026-08-13T17:51:00.000Z', NOW);
+    const priorYearSave = formatSaveTime('2025-08-13T17:51:00.000Z', NOW);
     expect(todaySave).not.toMatch(/Aug|13|14/);
     expect(yesterdaySave).toContain('Aug');
     expect(yesterdaySave).toContain('13');
+    expect(yesterdaySave).not.toContain('2026');
+    expect(priorYearSave).toContain('2025');
   });
 });

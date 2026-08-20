@@ -21,7 +21,7 @@ describe('editor onboarding', () => {
     expect(readEditorOnboardingSeen(storage)).toBe(true);
     expect(EDITOR_ONBOARDING_COPY).toMatch(/Double-click a shape to rename it/);
     expect(EDITOR_ONBOARDING_COPY).toMatch(/Select a shape to append steps/);
-    expect(EDITOR_ONBOARDING_COPY).toMatch(/Drag the canvas to move around/);
+    expect(EDITOR_ONBOARDING_COPY).toMatch(/choose Pan or hold Space while dragging the canvas/);
     expect(EDITOR_ONBOARDING_COPY).not.toMatch(/board|process vibes|flow buddy|Continue\+|Fit accounts/i);
   });
 });

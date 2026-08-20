@@ -79,6 +79,11 @@ export function formatSaveTime(iso: string, now = Date.now()): string {
   if (isToday) {
     return timeStr;
   }
-  const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const sameYear = date.getFullYear() === nowDate.getFullYear();
+  const dateStr = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
   return `${dateStr}, ${timeStr}`;
 }
