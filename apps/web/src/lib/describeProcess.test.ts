@@ -1,5 +1,6 @@
 import { getNode } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
+import { DESCRIPTION_PLACEHOLDER } from '../pages/ProcessListPage';
 import {
   describeBpmnXml,
   describeSemanticProcess,
@@ -142,6 +143,19 @@ describe('describeSemanticProcess', () => {
     const text = 'Review request, then go back to step 2';
     expect(descriptionInputIssue(text)).toMatch(/Loops are not generated/);
     expect(() => describeSemanticProcess('Loop', text)).toThrow(/Loops are not generated/);
+  });
+
+  it('correctly parses the description placeholder constant into a decision diagram', () => {
+    const process = describeSemanticProcess('Invoice Process', DESCRIPTION_PLACEHOLDER);
+    expect(process.regions).toHaveLength(1);
+    const region = process.regions[0]!;
+    expect(region.type).toBe('exclusive');
+    expect(getNode(process, region.split).name).toBe('Approved?');
+    expect(region.branches.map((b) => b.name)).toEqual(['Approved', 'Otherwise']);
+    expect(region.branches.map((b) => b.nodeIds.map((id) => getNode(process, id).name))).toEqual([
+      ['pay the supplier'],
+      ['request a revision'],
+    ]);
   });
 });
 

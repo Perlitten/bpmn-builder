@@ -1,0 +1,8 @@
+# Default ownership for review routing.
+* @Perlitten
+
+# Security and delivery controls.
+.github/ @Perlitten
+vercel.json @Perlitten
+packages/api-server/ @Perlitten
+packages/db/ @Perlitten

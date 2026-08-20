@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "graphify": {
-      "command": "/Users/a.damashkevich/.local/bin/graphify-mcp",
-      "args": [
-        "/Users/a.damashkevich/Documents/BPMN 2.0/graphify-out/graph.json"
-      ]
+      "command": "graphify-mcp",
+      "args": ["graphify-out/graph.json"]
     }
   }
 }
