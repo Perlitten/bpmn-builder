@@ -693,10 +693,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     [selection],
   );
 
-  const lint = useMemo(() => {
-    const graph = sessionRef.current?.process();
-    return lintProcess(graph ?? usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE });
-  }, [xml, graphRev]);
+  const lint = useMemo(
+    () => lintProcess(usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE }),
+    [xml, graphRev],
+  );
 
   const poolLanes = useMemo(() => {
     if (selection?.type !== 'bpmn:Participant') return [];
