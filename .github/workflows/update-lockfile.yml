@@ -1,3 +1,4 @@
+# One-time cloud-only lockfile refresh.
 name: Update pnpm lockfile
 
 on:
