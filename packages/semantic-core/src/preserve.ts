@@ -14,6 +14,12 @@ type PreserveOwner = {
 };
 
 type ProcessHost = ProcessGraph | Process;
+const UNSAFE_KEYS = new Set(['__proto__']);
+
+function setRecordValue<T extends object>(record: T, key: string, value: unknown): void {
+  if (UNSAFE_KEYS.has(key)) return;
+  Object.defineProperty(record, key, { configurable: true, enumerable: true, writable: true, value });
+}
 
 function peers(draft: Process): ProcessHost[] {
   return [draft, ...(draft.processes ?? [])];
@@ -153,8 +159,9 @@ export function setPreserveAttr(process: Process, id: string, key: string, value
   return apply(process, (draft) => {
     const owner = locatePreserveOwner(draft, id);
     const attrs = { ...owner.bpmnPreserve?.attrs };
+    if (UNSAFE_KEYS.has(key)) return owner.id;
     if (!value) delete attrs[key];
-    else attrs[key] = value;
+    else setRecordValue(attrs, key, value);
     assignPreserve(owner, compactPreserve(attrs, owner.bpmnPreserve?.props));
     return owner.id;
   });
