@@ -1,3 +1,11 @@
+import {
+  collectXmlElements,
+  parseXmlAttributes,
+  scanXmlTags,
+  stripXmlComments,
+  stripXmlElements,
+} from '@bpmn/semantic-core';
+
 export type BpmnPreview = {
   kind: 'empty' | 'invalid' | 'starter' | 'process';
   happyPath: string;
@@ -58,58 +66,27 @@ const NODE_TAG_ALT = Object.keys(NODE_TAGS).join('|');
 const MAX_PATH = 14;
 const MAX_BRANCH = 5;
 
-function localTag(name: string): string {
-  const i = name.indexOf(':');
-  return (i >= 0 ? name.slice(i + 1) : name).toLowerCase();
-}
-
 function attrs(raw: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const re = /([:\w.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(raw))) {
-    const key = match[1].includes(':') ? match[1].slice(match[1].indexOf(':') + 1) : match[1];
-    out[key.toLowerCase()] = match[2] ?? match[3] ?? '';
-  }
-  return out;
+  return Object.fromEntries([...parseXmlAttributes(raw)].map(([key, value]) => ['$' + key, value]));
 }
 
 function stripIgnored(xml: string): string {
-  return xml
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<(?:[\w.-]+:)?BPMNDiagram\b[\s\S]*?<\/(?:[\w.-]+:)?BPMNDiagram>/gi, '');
+  return stripXmlElements(stripXmlComments(xml), 'BPMNDiagram');
 }
 
 function collectProcessBodies(xml: string): string[] | null {
   const cleaned = stripIgnored(xml);
-  const bodies: string[] = [];
-  const openRe = /<(?:[\w.-]+:)?process\b([^>]*?)(\/)?>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = openRe.exec(cleaned))) {
-    if (match[2]) {
-      bodies.push('');
-      continue;
-    }
-    const innerStart = match.index + match[0].length;
-    const rest = cleaned.slice(innerStart);
-    const close = rest.search(/<\/(?:[\w.-]+:)?process>/i);
-    if (close < 0) {
-      bodies.push(rest);
-      break;
-    }
-    bodies.push(rest.slice(0, close));
-    openRe.lastIndex = innerStart + close;
-  }
+  const bodies = collectXmlElements(cleaned, 'process').map((process) => process.inner);
   return bodies.length ? bodies : null;
 }
 
 function collapseSubprocesses(body: string): string {
   let current = body;
   for (let i = 0; i < 8; i += 1) {
-    const next = current.replace(
-      /<(?:[\w.-]+:)?subProcess\b([^>]*?)>([\s\S]*?)<\/(?:[\w.-]+:)?subProcess>/gi,
-      (_all, rawAttrs: string) => `<subProcess${rawAttrs} />`,
-    );
+    const element = collectXmlElements(current, 'subProcess').find((candidate) => candidate.inner.length > 0);
+    if (!element) break;
+    const next =
+      current.slice(0, element.start) + '<subProcess' + element.rawAttributes + ' />' + current.slice(element.end);
     if (next === current) break;
     current = next;
   }
@@ -117,12 +94,12 @@ function collapseSubprocesses(body: string): string {
 }
 
 function collectTags(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; order: number }[] {
-  const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
+  const allowed = new Set(tagAlt.split('|').map((tag) => tag.toLowerCase()));
   const found: { tag: string; attr: Record<string, string>; order: number }[] = [];
-  let match: RegExpExecArray | null;
   let order = 0;
-  while ((match = re.exec(xml))) {
-    found.push({ tag: localTag(match[1]), attr: attrs(match[2] ?? ''), order: order++ });
+  for (const match of scanXmlTags(xml)) {
+    if (match.closing || !allowed.has(match.localName)) continue;
+    found.push({ tag: match.localName, attr: attrs(match.rawAttributes), order: order++ });
   }
   return found;
 }
@@ -185,19 +162,19 @@ function parseGraph(processXml: string): { nodes: FlowNode[]; flows: Flow[] } {
   const nodes: FlowNode[] = [];
   for (const hit of nodeHits) {
     const kind = NODE_TAGS[hit.tag];
-    const id = hit.attr.id;
+    const id = hit.attr.$id;
     if (!kind || !id) continue;
     nodes.push({
       id,
       kind,
-      label: fallbackLabel(kind, hit.attr.name ?? ''),
+      label: fallbackLabel(kind, hit.attr.$name ?? ''),
       order: hit.order,
     });
   }
   const flows: Flow[] = collectTags(processXml, 'sequenceflow').flatMap((hit, index) => {
-    const id = hit.attr.id || `flow_${index}`;
-    const source = hit.attr.sourceref;
-    const target = hit.attr.targetref;
+    const id = hit.attr.$id || `flow_${index}`;
+    const source = hit.attr.$sourceref;
+    const target = hit.attr.$targetref;
     if (!source || !target) return [];
     return [{ id, source, target, order: hit.order }];
   });

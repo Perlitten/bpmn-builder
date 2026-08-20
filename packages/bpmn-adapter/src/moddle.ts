@@ -6,6 +6,12 @@ import { Writer } from 'moddle-xml';
 
 const SKIP_OWN = new Set(['$instanceOf', 'get', 'set', 'hasType', '$descriptor', '$model', '$parent', '$attrs']);
 const XMLNS_STD = /^(xmlns(?::(?:bpmn|bpmndi|dc|di|xsi))?)$/;
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function setRecordValue<T extends object>(record: T, key: string, value: unknown): void {
+  if (UNSAFE_KEYS.has(key)) return;
+  Object.defineProperty(record, key, { configurable: true, enumerable: true, writable: true, value });
+}
 
 type Prop = {
   name: string;
@@ -131,14 +137,15 @@ export function xmlnsAttrs(el: ModdleEl): Record<string, string> | undefined {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(el.$attrs ?? {})) {
     if (XMLNS_STD.test(key) || typeof value !== 'string') continue;
-    out[key] = value;
+    setRecordValue(out, key, value);
   }
   return Object.keys(out).length ? out : undefined;
 }
 
 export function applyXmlns(el: ModdleEl, attrs?: Record<string, string>): void {
   if (!attrs) return;
-  Object.assign(el.$attrs ?? {}, attrs);
+  if (!el.$attrs) el.$attrs = {};
+  for (const [key, value] of Object.entries(attrs)) setRecordValue(el.$attrs, key, value);
 }
 
 function isRef(value: unknown): value is { $ref: string } {
@@ -160,7 +167,7 @@ export function toPlain(el: ModdleEl): ExtensionValue {
       if (SKIP_OWN.has(key) || key === '$type') continue;
       if (key === '$children' && Array.isArray(value)) out.$children = (value as ModdleEl[]).map(toPlain);
       else if (key === '$body' && typeof value === 'string') out.$body = value;
-      else if (!key.startsWith('$')) out[key] = value;
+      else if (!key.startsWith('$')) setRecordValue(out, key, value);
     }
     return out;
   }
@@ -177,10 +184,10 @@ export function toPlain(el: ModdleEl): ExtensionValue {
     if (prop.isReference) {
       if (prop.isMany) {
         const refs = (value as unknown[]).map(refOf).filter(Boolean);
-        if (refs.length) out[prop.name] = refs;
+        if (refs.length) setRecordValue(out, prop.name, refs);
       } else {
         const ref = refOf(value);
-        if (ref) out[prop.name] = ref;
+        if (ref) setRecordValue(out, prop.name, ref);
       }
       continue;
     }
@@ -188,14 +195,14 @@ export function toPlain(el: ModdleEl): ExtensionValue {
       const items = (value as unknown[]).map((item) =>
         item && typeof item === 'object' && '$type' in (item as object) ? toPlain(item as ModdleEl) : item,
       );
-      if (items.length) out[prop.name] = items;
+      if (items.length) setRecordValue(out, prop.name, items);
       continue;
     }
     if (prop.isAttr || typeof value !== 'object') {
-      out[prop.name] = value;
+      setRecordValue(out, prop.name, value);
       continue;
     }
-    if ('$type' in (value as object)) out[prop.name] = toPlain(value as ModdleEl);
+    if ('$type' in (value as object)) setRecordValue(out, prop.name, toPlain(value as ModdleEl));
   }
   return out;
 }
@@ -229,9 +236,9 @@ export function fromPlain(moddle: Moddle, node: ExtensionValue, resolve?: Resolv
   for (const [key, value] of Object.entries(rest)) {
     const decoded = decodeValue(moddle, value, resolve);
     if (Array.isArray(decoded) || (decoded && typeof decoded === 'object' && !isRef(value) && '$type' in (value as object))) {
-      nested[key] = decoded;
+      setRecordValue(nested, key, decoded);
     } else {
-      attrs[key] = decoded;
+      setRecordValue(attrs, key, decoded);
     }
   }
 
@@ -257,7 +264,7 @@ export function snapshotPreserve(el: ModdleEl, skip: Set<string>): BpmnPreserve 
   const props: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(el.$attrs ?? {})) {
     if (XMLNS_STD.test(key) || key.startsWith('xmlns') || skip.has(key)) continue;
-    attrs[key] = value;
+    setRecordValue(attrs, key, value);
   }
   for (const prop of el.$descriptor?.properties ?? []) {
     if (prop.isVirtual || skip.has(prop.name)) continue;
@@ -273,7 +280,7 @@ export function snapshotPreserve(el: ModdleEl, skip: Set<string>): BpmnPreserve 
         ? (value as unknown[]).map(refOf).filter(Boolean)
         : refOf(value);
       if (stored && (!Array.isArray(stored) || stored.length)) {
-        (prop.isAttr ? attrs : props)[prop.name] = stored;
+        setRecordValue(prop.isAttr ? attrs : props, prop.name, stored);
       }
       continue;
     }
@@ -281,18 +288,18 @@ export function snapshotPreserve(el: ModdleEl, skip: Set<string>): BpmnPreserve 
       const items = (value as unknown[]).map((item) =>
         item && typeof item === 'object' && '$type' in (item as object) ? toPlain(item as ModdleEl) : item,
       );
-      if (items.length) props[prop.name] = items;
+      if (items.length) setRecordValue(props, prop.name, items);
       continue;
     }
     if (prop.isAttr || typeof value !== 'object') {
       if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number') {
-        attrs[prop.name] = value;
+        setRecordValue(attrs, prop.name, value);
       } else {
-        props[prop.name] = value;
+        setRecordValue(props, prop.name, value);
       }
       continue;
     }
-    if ('$type' in (value as object)) props[prop.name] = toPlain(value as ModdleEl);
+    if ('$type' in (value as object)) setRecordValue(props, prop.name, toPlain(value as ModdleEl));
   }
   const out: BpmnPreserve = {};
   if (Object.keys(attrs).length) out.attrs = attrs;
@@ -307,7 +314,7 @@ export function applyPreserve(moddle: Moddle, el: ModdleEl, preserve: BpmnPreser
     const prop = el.$descriptor?.properties?.find((p) => p.name === key);
     if (prop) el.set(key, decoded);
     else if (el.$attrs && decoded != null && decoded !== '' && !Array.isArray(decoded)) {
-      el.$attrs[key] = String(decoded);
+      setRecordValue(el.$attrs, key, String(decoded));
     }
   }
   for (const [key, value] of Object.entries(preserve.props ?? {})) {

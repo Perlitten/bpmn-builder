@@ -57,7 +57,7 @@ export type NameSuggestion = {
 };
 
 export function normalizeTaskName(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  const words = wordsFromText(name);
   if (words.length >= 2) {
     const word0 = words[0]!.toLowerCase().replace(/[^a-z]/g, '');
     const word1 = words[1]!.toLowerCase().replace(/[^a-z]/g, '');
@@ -72,7 +72,7 @@ export function normalizeTaskName(name: string): string {
       }
     }
     if (verbBase && !ACTION_VERBS.has(word0)) {
-      const objectWords = words.slice(2).filter((w) => !/^(a|an|the)$/i.test(w));
+      const objectWords = words.slice(2).filter((word) => !ARTICLES.has(word.toLowerCase()));
       const objectStr = objectWords.join(' ');
       const capitalizedVerb = verbBase.charAt(0).toUpperCase() + verbBase.slice(1);
       return objectStr ? `${capitalizedVerb} ${objectStr.toLowerCase()}` : capitalizedVerb;
@@ -82,7 +82,7 @@ export function normalizeTaskName(name: string): string {
 }
 
 export function hasActionVerb(name: string): boolean {
-  const word = name.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
+  const word = wordsFromText(name)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
   if (!word) return false;
   if (ACTION_VERBS.has(word)) return true;
   for (const verb of ACTION_VERBS) {
@@ -96,7 +96,7 @@ export function hasActionVerb(name: string): boolean {
 
 /** The English action-verb rule should not grade names written in another script. */
 export function shouldCheckActionVerb(name: string): boolean {
-  const first = name.trim().split(/\s+/)[0] ?? '';
+  const first = wordsFromText(name)[0] ?? '';
   return /[a-z]/i.test(first);
 }
 
@@ -104,7 +104,7 @@ export function isPlaceholderName(name: string, id?: string): boolean {
   const t = name.trim();
   if (!t) return true;
   if (id && t === id) return true;
-  const folded = t.toLowerCase().replace(/[\s-]+/g, '');
+  const folded = wordsFromText(t.toLowerCase()).join('').replaceAll('-', '');
   if (GENERIC.has(folded)) return true;
   return new RegExp(`^(?:bpmn:)?(?:${ID_KIND})(?:[_\\-][a-z0-9]+|[0-9]+)$`, 'i').test(folded);
 }
@@ -186,7 +186,7 @@ function suggestTask(ctx: NameContext, current: string, findings: Finding[]): Na
     if (proposed === current) return undefined;
     return { name: proposed, reason: 'Task names are object + action' };
   }
-  const words = current.split(/\s+/).filter(Boolean);
+  const words = wordsFromText(current);
   if (words.length < 2) {
     const proposed = asTask(current);
     if (proposed === current) return undefined;
@@ -225,7 +225,7 @@ function asTask(label: string): string {
   if (isPlaceholderName(base)) return 'Validate customer';
   const normalized = normalizeTaskName(base);
   if (normalized !== base) return normalized;
-  const words = base.split(/\s+/);
+  const words = wordsFromText(base);
   if (words.length === 1) {
     return hasActionVerb(words[0]) ? `${capitalize(words[0].toLowerCase())} request` : `Check ${words[0].toLowerCase()}`;
   }
@@ -241,7 +241,7 @@ function asStartState(taskName: string | undefined): string {
 
 function asEndState(taskName: string | undefined): string {
   if (!taskName) return 'Request completed';
-  const words = stripQuestion(taskName).split(/\s+/).filter(Boolean);
+  const words = wordsFromText(stripQuestion(taskName));
   if (words.length >= 2 && hasActionVerb(words[0])) {
     const verb = words[0].toLowerCase().replace(/[^a-z]/g, '');
     const object = words.slice(1).join(' ');
@@ -252,13 +252,13 @@ function asEndState(taskName: string | undefined): string {
 }
 
 function objectOf(label: string): string {
-  const words = stripQuestion(label).split(/\s+/).filter(Boolean);
+  const words = wordsFromText(stripQuestion(label));
   if (words.length >= 2 && hasActionVerb(words[0])) return words.slice(1).join(' ');
   return words.join(' ') || 'request';
 }
 
 function looksLikeState(name: string): boolean {
-  return /\b(received|completed|validated|approved|rejected|confirmed|failed|cancelled|canceled)\b/i.test(name);
+  return wordsFromText(name.toLowerCase()).some((word) => STATE_WORDS.has(word));
 }
 
 function looksYes(condition: string | undefined): boolean {
@@ -266,13 +266,38 @@ function looksYes(condition: string | undefined): boolean {
 }
 
 function stripQuestion(label: string | undefined): string {
-  return (label ?? '').replace(/\?+\s*$/g, '').trim();
+  let value = (label ?? '').trimEnd();
+  while (value.endsWith('?')) value = value.slice(0, -1).trimEnd();
+  return value.trim();
 }
 
 function sentenceCase(value: string): string {
-  const words = value.trim().split(/\s+/).filter(Boolean);
+  const words = wordsFromText(value);
   if (!words.length) return '';
   return [capitalize(words[0].toLowerCase()), ...words.slice(1).map((w) => w.toLowerCase())].join(' ');
+}
+
+const ARTICLES = new Set(['a', 'an', 'the']);
+const STATE_WORDS = new Set(['received', 'completed', 'validated', 'approved', 'rejected', 'confirmed', 'failed', 'cancelled', 'canceled']);
+
+function wordsFromText(value: string): string[] {
+  const words: string[] = [];
+  let start = -1;
+  for (let i = 0; i < value.length; i += 1) {
+    const character = value[i]!;
+    const whitespace =
+      character === ' ' || character === '\t' || character === '\n' || character === '\r' || character === '\f';
+    if (whitespace) {
+      if (start >= 0) {
+        words.push(value.slice(start, i));
+        start = -1;
+      }
+    } else if (start < 0) {
+      start = i;
+    }
+  }
+  if (start >= 0) words.push(value.slice(start));
+  return words;
 }
 
 function capitalize(word: string): string {

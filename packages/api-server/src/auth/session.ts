@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, lt } from 'drizzle-orm';
 import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/index.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
@@ -9,7 +9,7 @@ export function generateSessionToken(): string {
 
 export function hashSessionToken(token: string): string {
   const pepper = process.env.SESSION_SECRET?.trim() || 'dev-insecure-session-pepper';
-  return createHash('sha256').update(`${pepper}:${token}`).digest('hex');
+  return createHmac('sha256', pepper).update(token).digest('hex');
 }
 
 type SignedOAuthState = {
@@ -32,6 +32,10 @@ export function generateOAuthState(returnOrigin?: string): string {
   };
   const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   return `${encoded}.${signOAuthStatePayload(encoded)}`;
+}
+
+export function hashOAuthStateNonce(nonce: string): string {
+  return createHmac('sha256', oauthStateSecret()).update(`oauth-state:${nonce}`).digest('base64url');
 }
 
 export function parseOAuthState(state: string): SignedOAuthState | null {

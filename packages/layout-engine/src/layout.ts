@@ -1278,9 +1278,5 @@ function collectLabels(
 }
 
 function sortRecord<T>(placed: Map<string, T>): Record<string, T> {
-  const out: Record<string, T> = {};
-  for (const [id, bounds] of [...placed.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    out[id] = bounds;
-  }
-  return out;
+  return Object.fromEntries([...placed.entries()].sort(([a], [b]) => a.localeCompare(b)));
 }

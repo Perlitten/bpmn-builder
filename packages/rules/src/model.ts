@@ -5,6 +5,12 @@ import {
   type FlowNodeType,
   type Process,
   type SequenceFlow,
+  collectXmlElements,
+  parseXmlAttributes,
+  scanXmlTags,
+  stripXmlComments,
+  stripXmlElements,
+  xmlAttr,
 } from '../../semantic-core/src/index.js';
 
 export type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event' | 'subprocess';
@@ -180,9 +186,9 @@ export function normalizeEventDefinition(value?: string): string | undefined {
   if (!value) return undefined;
   const local = value.replace(/^bpmn:/i, '').trim();
   if (!local) return undefined;
-  const m = /^(.*?)(eventdefinition)$/i.exec(local);
-  if (!m) return local;
-  const head = m[1] ?? '';
+  const suffix = 'eventdefinition';
+  if (!local.toLowerCase().endsWith(suffix)) return local;
+  const head = local.slice(0, -suffix.length);
   if (!head) return 'EventDefinition';
   return `${head.charAt(0).toUpperCase()}${head.slice(1)}EventDefinition`;
 }
@@ -205,148 +211,97 @@ function localTag(name: string): string {
   return (i >= 0 ? name.slice(i + 1) : name).toLowerCase();
 }
 
-function attrs(raw: string): Record<string, string> {
-  const out: Record<string, string> = Object.create(null);
-  const re = /([:\w.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(raw))) {
-    const key = localTag(match[1]);
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    out[key] = decode(match[2] ?? match[3] ?? '');
-  }
-  return out;
-}
+type ParsedAttrs = Record<string, string>;
 
-function decode(value: string): string {
-  return value
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, '&');
+function parsedAttrs(raw: string): ParsedAttrs {
+  return Object.fromEntries([...parseXmlAttributes(raw)].map(([key, value]) => [`$${key}`, value]));
 }
 
 function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
-  const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
-  const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(xml))) {
-    const tag = localTag(match[1]);
-    const attr = attrs(match[2] ?? '');
-    const selfClosing = Boolean(match[3]) || /\/\s*$/.test(match[2] ?? '');
-    const inner = selfClosing ? '' : innerXml(xml, match.index + match[0].length, match[1] ?? tag);
-    found.push({ tag, attr, inner });
+  const allowed = new Set(tagAlt.split('|').map((tag) => tag.toLowerCase()));
+  const found: { tag: string; attr: ParsedAttrs; inner: string }[] = [];
+  for (const match of scanXmlTags(xml)) {
+    if (match.closing || !allowed.has(match.localName)) continue;
+    const inner = match.selfClosing ? '' : innerXml(xml, match.end, match.localName);
+    found.push({ tag: match.localName, attr: parsedAttrs(match.rawAttributes), inner });
   }
   return found;
 }
 
 function innerXml(xml: string, from: number, tag: string): string {
-  const open = new RegExp(`<(?:[\\w.-]+:)?${tag}\\b`, 'gi');
-  const close = new RegExp(`</(?:[\\w.-]+:)?${tag}\\s*>`, 'gi');
   let depth = 1;
-  let i = from;
-  while (depth > 0 && i < xml.length) {
-    open.lastIndex = i;
-    close.lastIndex = i;
-    const nextOpen = open.exec(xml);
-    const nextClose = close.exec(xml);
-    if (!nextClose) return xml.slice(from);
-    if (nextOpen && nextOpen.index < nextClose.index) {
-      depth += 1;
-      i = nextOpen.index + nextOpen[0].length;
-    } else {
+  for (const candidate of scanXmlTags(xml, from)) {
+    if (candidate.localName !== tag.toLowerCase()) continue;
+    if (candidate.closing) {
       depth -= 1;
-      if (depth === 0) return xml.slice(from, nextClose.index);
-      i = nextClose.index + nextClose[0].length;
+      if (depth === 0) return xml.slice(from, candidate.start);
+    } else if (!candidate.selfClosing) {
+      depth += 1;
     }
   }
   return xml.slice(from);
 }
 
 function eventDefinitionFromInner(inner: string): string | undefined {
-  const match = /<(?:[\w.-]+:)?([A-Za-z]+EventDefinition)\b/i.exec(inner);
-  return match ? normalizeEventDefinition(match[1]) : undefined;
+  for (const tag of scanXmlTags(inner)) {
+    if (!tag.closing && tag.localName.toLowerCase().endsWith('eventdefinition')) {
+      return normalizeEventDefinition(tag.localName);
+    }
+  }
+  return undefined;
 }
 
 function cancelActivityFrom(attr: Record<string, string>): boolean | undefined {
-  if (attr.cancelactivity === 'false' || attr.isinterrupting === 'false') return false;
-  if (attr.cancelactivity === 'true' || attr.isinterrupting === 'true') return true;
+  if (attr.$cancelactivity === 'false' || attr.$isinterrupting === 'false') return false;
+  if (attr.$cancelactivity === 'true' || attr.$isinterrupting === 'true') return true;
   return undefined;
 }
 
 function processBodies(xml: string): string[] {
-  const cleaned = xml.replace(/<!--[\s\S]*?-->/g, '').replace(/<(?:[\w.-]+:)?BPMNDiagram\b[\s\S]*?<\/(?:[\w.-]+:)?BPMNDiagram>/gi, '');
-  const bodies: string[] = [];
-  const openRe = /<(?:[\w.-]+:)?process\b([^>]*?)(\/)?>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = openRe.exec(cleaned))) {
-    if (match[2]) {
-      bodies.push('');
-      continue;
-    }
-    const innerStart = match.index + match[0].length;
-    const rest = cleaned.slice(innerStart);
-    const close = rest.search(/<\/(?:[\w.-]+:)?process>/i);
-    if (close < 0) {
-      bodies.push(rest);
-      break;
-    }
-    bodies.push(rest.slice(0, close));
-    openRe.lastIndex = innerStart + close;
-  }
-  return bodies;
+  const cleaned = stripXmlElements(stripXmlComments(xml), 'BPMNDiagram');
+  return collectXmlElements(cleaned, 'process').map((process) => process.inner);
 }
 
 function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; labels: Record<string, Bounds> } {
-  const bounds: Record<string, Bounds> = Object.create(null);
-  const labels: Record<string, Bounds> = Object.create(null);
+  const bounds = new Map<string, Bounds>();
+  const labels = new Map<string, Bounds>();
 
-  const shapeRe = /<(?:[\w.-]+:)?BPMNShape\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNShape>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = shapeRe.exec(xml))) {
-    const id = attrs(match[1] ?? '').bpmnelement;
-    if (!id || id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
-    const body = match[2] ?? '';
-    const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
-    if (labelMatch) {
-      const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(labelMatch[1] ?? '');
-      if (box) {
-        const b = parseBoxAttrs(box[1] ?? '');
-        if (b) labels[id] = b;
-      }
+  for (const shape of collectXmlElements(xml, 'BPMNShape')) {
+    const id = xmlAttr(parseXmlAttributes(shape.rawAttributes), 'bpmnelement');
+    if (!id) continue;
+    const label = collectXmlElements(shape.inner, 'BPMNLabel')[0];
+    const labelBox = label ? collectXmlElements(label.inner, 'Bounds')[0] : undefined;
+    if (labelBox) {
+      const b = parseBoxAttrs(labelBox.rawAttributes);
+      if (b) labels.set(id, b);
     }
-    const shapeBody = labelMatch ? body.slice(0, labelMatch.index) : body;
-    const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(shapeBody);
-    if (box) {
-      const b = parseBoxAttrs(box[1] ?? '');
-      if (b) bounds[id] = b;
+    const shapeBox = collectXmlElements(shape.inner, 'Bounds').find((candidate) => !label || candidate.start < label.start);
+    if (shapeBox) {
+      const b = parseBoxAttrs(shapeBox.rawAttributes);
+      if (b) bounds.set(id, b);
     }
   }
 
-  const edgeRe = /<(?:[\w.-]+:)?BPMNEdge\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNEdge>/gi;
-  while ((match = edgeRe.exec(xml))) {
-    const id = attrs(match[1] ?? '').bpmnelement;
-    if (!id || id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
-    const body = match[2] ?? '';
-    const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
-    if (labelMatch) {
-      const box = /<(?:[\w.-]+:)?Bounds\b([^>]*?)\/>/i.exec(labelMatch[1] ?? '');
-      if (box) {
-        const b = parseBoxAttrs(box[1] ?? '');
-        if (b) labels[id] = b;
-      }
+  for (const edge of collectXmlElements(xml, 'BPMNEdge')) {
+    const id = xmlAttr(parseXmlAttributes(edge.rawAttributes), 'bpmnelement');
+    if (!id) continue;
+    const label = collectXmlElements(edge.inner, 'BPMNLabel')[0];
+    const labelBox = label ? collectXmlElements(label.inner, 'Bounds')[0] : undefined;
+    if (labelBox) {
+      const b = parseBoxAttrs(labelBox.rawAttributes);
+      if (b) labels.set(id, b);
     }
   }
 
-  return { bounds, labels };
+  return { bounds: Object.fromEntries(bounds), labels: Object.fromEntries(labels) };
 }
 
 function parseBoxAttrs(raw: string): Bounds | null {
-  const a = attrs(raw);
-  const x = Number(a.x);
-  const y = Number(a.y);
-  const width = Number(a.width);
-  const height = Number(a.height);
+  const a = parseXmlAttributes(raw);
+  const x = Number(xmlAttr(a, 'x'));
+  const y = Number(xmlAttr(a, 'y'));
+  const width = Number(xmlAttr(a, 'width'));
+  const height = Number(xmlAttr(a, 'height'));
   if (![x, y, width, height].every(Number.isFinite)) return null;
   return { x, y, width, height };
 }
@@ -371,12 +326,12 @@ function fromXml(xml: string): LintModel {
   for (const body of bodies) {
     for (const hit of collect(body, NODE_ALT)) {
       const kind = NODE_KIND[hit.tag];
-      const id = hit.attr.id;
+      const id = hit.attr.$id;
       if (!kind || !id || seen.has(id)) continue;
       seen.add(id);
       if (hit.tag === 'adhocsubprocess') {
         for (const inner of collect(hit.inner, NODE_ALT)) {
-          if (inner.attr.id) adHocInnerIds.push(inner.attr.id);
+          if (inner.attr.$id) adHocInnerIds.push(inner.attr.$id);
         }
       }
       const coreType =
@@ -387,31 +342,31 @@ function fromXml(xml: string): LintModel {
       const cancelActivity = cancelActivityFrom(hit.attr);
       nodes.push({
         id,
-        name: hit.attr.name ?? '',
+        name: hit.attr.$name ?? '',
         kind,
         layoutType: hit.tag === 'startevent' ? 'start' : hit.tag === 'endevent' ? 'end' : CORE_TYPE[hit.tag] ?? hit.tag,
         coreType,
         bpmnType: bpmnTypeFromTag(hit.tag) ?? DEFAULT_BPMN_TYPE[coreType],
         ...(eventDefinition ? { eventDefinition } : {}),
-        ...(hit.attr.attachedtoref ? { attachedTo: hit.attr.attachedtoref } : {}),
-        ...(xmlTrue(hit.attr.triggeredbyevent) ? { triggeredByEvent: true } : {}),
+        ...(hit.attr.$attachedtoref ? { attachedTo: hit.attr.$attachedtoref } : {}),
+        ...(xmlTrue(hit.attr.$triggeredbyevent) ? { triggeredByEvent: true } : {}),
         ...(cancelActivity === false ? { cancelActivity: false } : {}),
-        ...(xmlTrue(hit.attr.isforcompensation) ? { isForCompensation: true } : {}),
+        ...(xmlTrue(hit.attr.$isforcompensation) ? { isForCompensation: true } : {}),
       });
     }
     for (const hit of collect(body, 'sequenceflow')) {
       flows.push({
-        id: hit.attr.id || `flow_${flows.length + 1}`,
-        source: hit.attr.sourceref || null,
-        target: hit.attr.targetref || null,
-        name: hit.attr.name ?? '',
+        id: hit.attr.$id || `flow_${flows.length + 1}`,
+        source: hit.attr.$sourceref || null,
+        target: hit.attr.$targetref || null,
+        name: hit.attr.$name ?? '',
       });
     }
     for (const hit of collect(body, 'association')) {
       associations.push({
-        id: hit.attr.id || `assoc_${associations.length + 1}`,
-        source: hit.attr.sourceref || null,
-        target: hit.attr.targetref || null,
+        id: hit.attr.$id || `assoc_${associations.length + 1}`,
+        source: hit.attr.$sourceref || null,
+        target: hit.attr.$targetref || null,
       });
     }
   }

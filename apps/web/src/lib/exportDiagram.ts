@@ -82,7 +82,8 @@ export function pdfPageSize(box: DiagramBox): { width: number; height: number } 
 }
 
 function svgRoot(svg: string): SVGSVGElement {
-  const markup = svg.replace(/^[\s\S]*?(?=<svg\b)/i, '');
+  const svgStart = svg.search(/<svg\b/i);
+  const markup = svgStart >= 0 ? svg.slice(svgStart) : svg;
   const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
   const root = parsed.documentElement;
   if (root.tagName.toLowerCase() !== 'svg' || parsed.querySelector('parsererror')) {

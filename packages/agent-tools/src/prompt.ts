@@ -21,11 +21,6 @@ const COLLAB_TOOLS = new Set<ToolName>(['addPool', 'addLane', 'addMessageInterac
 const COLLAB_REQUEST =
   /\b(pools?|lanes?|swimlanes?|participants?|collaboration|message\s+flows?|black\s*box)\b|пул(?:а|е|ом|ы|ов)?\b|дорожк|свимлейн|участник|коллаборац|партн[её]р|сообщен(?:ие|ия|ий)\s+межд/i;
 
-const CENSUS_LEAK =
-  /not in modeling profile yet|каталог собран|catalog (?:is )?(?:assembled|collected)|~\s*\d+\s*компонент|\d+\s*(?:of|\/|из)\s*~?\s*\d+|строю из того, что есть|building from what (?:there )?is/i;
-
-const UNSOLICITED_POOL = /начинаю с пул|start(?:ing)? with (?:a )?pool/i;
-
 /** Implemented constructions the agent may use. Never the full searchable catalog. */
 export function creatableConstructions(): { id: string; title: string }[] {
   return bpmnComponentRegistry.list().flatMap((def) => {
@@ -55,9 +50,55 @@ export function constrainToolPlan(message: string, tools: ToolCall[]): ToolCall[
 export function userFacingAssistantMessage(raw: string, opts?: { collaboration?: boolean }): string {
   const text = raw.trim();
   if (!text) return 'No semantic edits. Say what to add next.';
-  if (CENSUS_LEAK.test(text)) return 'Updated the process from your request.';
-  if (!opts?.collaboration && UNSOLICITED_POOL.test(text)) return 'Updated the process from your request.';
+  if (containsCensusLeak(text)) return 'Updated the process from your request.';
+  if (!opts?.collaboration && containsUnsolicitedPool(text)) return 'Updated the process from your request.';
   return text;
+}
+
+function containsCensusLeak(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('not in modeling profile yet') ||
+    lower.includes('каталог собран') ||
+    lower.includes('catalog assembled') ||
+    lower.includes('catalog is assembled') ||
+    lower.includes('catalog collected') ||
+    lower.includes('строю из того, что есть') ||
+    lower.includes('building from what there is') ||
+    lower.includes('building from what is') ||
+    lower.includes('компонента из') ||
+    lower.includes('компонент из') ||
+    lower.includes('components out of') ||
+    containsCatalogCountRatio(lower)
+  );
+}
+
+function containsCatalogCountRatio(text: string): boolean {
+  for (let index = 0; index < text.length; index += 1) {
+    if (text.charCodeAt(index) < 48 || text.charCodeAt(index) > 57) continue;
+    let end = index + 1;
+    while (end < text.length && text.charCodeAt(end) >= 48 && text.charCodeAt(end) <= 57) end += 1;
+    let cursor = end;
+    while (cursor < text.length && text[cursor] === ' ') cursor += 1;
+    if (text[cursor] === '/') cursor += 1;
+    else if (text.startsWith('of', cursor) || text.startsWith('из', cursor)) cursor += 2;
+    else continue;
+    while (cursor < text.length && text[cursor] === ' ') cursor += 1;
+    if (text[cursor] === '~') cursor += 1;
+    if (text.charCodeAt(cursor) >= 48 && text.charCodeAt(cursor) <= 57) return true;
+  }
+  return false;
+}
+
+function containsUnsolicitedPool(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('начинаю с пул') ||
+    lower.includes('starting with a pool') ||
+    lower.includes('starting with pool') ||
+    lower.includes('start with a pool') ||
+    lower.includes('start with pool')
+  );
 }
 
 function taskComponentIds(): string {

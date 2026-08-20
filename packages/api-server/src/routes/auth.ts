@@ -7,7 +7,7 @@ import {
 } from '../auth/cookies.js';
 import { googleCallbackUrl, publicOrigin, requestOrigin, readGoogleAuthConfig } from '../auth/env.js';
 import { exchangeGoogleCode, googleAuthorizeUrl } from '../auth/google.js';
-import { createSession, destroySession, equalSecret, generateOAuthState, parseOAuthState, readSession } from '../auth/session.js';
+import { createSession, destroySession, equalSecret, generateOAuthState, hashOAuthStateNonce, parseOAuthState, readSession } from '../auth/session.js';
 import { OAUTH_HANDOFF_TTL_MS, OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { issueTestSession } from '../auth/testSession.js';
 import { upsertGoogleUser } from '../auth/users.js';
@@ -75,12 +75,16 @@ export function registerAuthRoutes(app: Application): void {
 
     const state = suppliedState ?? generateOAuthState();
     const parsedState = parseOAuthState(state);
+    if (!parsedState) {
+      res.status(400).json({ error: 'Invalid OAuth state' });
+      return;
+    }
     if (parsedState?.returnOrigin && !isSafeRelayOrigin(parsedState.returnOrigin)) {
       res.status(400).json({ error: 'Invalid OAuth return origin' });
       return;
     }
 
-    setOAuthStateCookie(res, state);
+    setOAuthStateCookie(res, hashOAuthStateNonce(parsedState.nonce));
     res.redirect(
       googleAuthorizeUrl({
         clientId: config.value.clientId,
@@ -103,18 +107,22 @@ export function registerAuthRoutes(app: Application): void {
       return;
     }
 
+    const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
+    clearOAuthStateCookie(res);
+    if (!state || !parsedState?.nonce || !expected || !equalSecret(hashOAuthStateNonce(parsedState.nonce), expected)) {
+      redirectHome(res, targetOrigin, 'state');
+      return;
+    }
+
     const denied = typeof req.query.error === 'string' ? req.query.error : '';
-    if (denied) {
-      clearOAuthStateCookie(res);
+    if (denied.length > 0) {
       redirectHome(res, targetOrigin, denied === 'access_denied' ? 'denied' : 'oauth');
       return;
     }
 
     const code = typeof req.query.code === 'string' ? req.query.code : '';
-    const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
-    clearOAuthStateCookie(res);
-    if (!code || !state || !expected || !equalSecret(state, expected)) {
-      redirectHome(res, targetOrigin, 'state');
+    if (!code) {
+      redirectHome(res, targetOrigin, 'oauth');
       return;
     }
 

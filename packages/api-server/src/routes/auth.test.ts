@@ -109,7 +109,8 @@ describe('google auth and process isolation', () => {
     const state = new URL(location).searchParams.get('state');
     expect(state).toBeTruthy();
     const stateToken = cookieValue(start.headers, OAUTH_STATE_COOKIE);
-    expect(stateToken).toBe(state);
+    expect(stateToken).toBeTruthy();
+    expect(stateToken).not.toBe(state);
 
     const originalFetch = globalThis.fetch;
     vi.stubGlobal(

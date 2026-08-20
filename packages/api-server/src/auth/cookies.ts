@@ -10,9 +10,13 @@ export function parseCookieHeader(header: string | undefined): Record<string, st
     const key = part.slice(0, idx).trim();
     if (!key) continue;
     try {
-      out[key] = decodeURIComponent(part.slice(idx + 1).trim());
+      const value = decodeURIComponent(part.slice(idx + 1).trim());
+      if (key === SESSION_COOKIE) out.bpmn_session = value;
+      else if (key === OAUTH_STATE_COOKIE) out.bpmn_oauth_state = value;
     } catch {
-      out[key] = part.slice(idx + 1).trim();
+      const value = part.slice(idx + 1).trim();
+      if (key === SESSION_COOKIE) out.bpmn_session = value;
+      else if (key === OAUTH_STATE_COOKIE) out.bpmn_oauth_state = value;
     }
   }
   return out;
@@ -50,8 +54,8 @@ export function clearSessionCookie(res: Response): void {
   res.clearCookie(SESSION_COOKIE, clearOptions());
 }
 
-export function setOAuthStateCookie(res: Response, state: string): void {
-  res.cookie(OAUTH_STATE_COOKIE, state, cookieOptions(OAUTH_STATE_TTL_MS));
+export function setOAuthStateCookie(res: Response, nonce: string): void {
+  res.cookie(OAUTH_STATE_COOKIE, nonce, cookieOptions(OAUTH_STATE_TTL_MS));
 }
 
 export function clearOAuthStateCookie(res: Response): void {
