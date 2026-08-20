@@ -17,18 +17,15 @@ const XOR = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
   <process id="P" name="Approval">
     <startEvent id="S" />
-    <task id="T1" name="Submit" />
-    <exclusiveGateway id="G" />
-    <task id="T2" name="Approve" />
-    <task id="T3" name="Reject" />
+    <task id="T1" name="Submit request" />
+    <exclusiveGateway id="G" name="Approved?" />
+    <task id="T2" name="Order approval" />
     <endEvent id="E1" />
-    <endEvent id="E2" />
     <sequenceFlow id="F1" sourceRef="S" targetRef="T1" />
     <sequenceFlow id="F2" sourceRef="T1" targetRef="G" />
-    <sequenceFlow id="F3" sourceRef="G" targetRef="T2" />
-    <sequenceFlow id="F4" sourceRef="G" targetRef="T3" />
+    <sequenceFlow id="F3" sourceRef="G" targetRef="T2" name="Yes" />
+    <sequenceFlow id="F4" sourceRef="G" targetRef="E1" name="No" />
     <sequenceFlow id="F5" sourceRef="T2" targetRef="E1" />
-    <sequenceFlow id="F6" sourceRef="T3" targetRef="E2" />
   </process>
 </definitions>`;
 
