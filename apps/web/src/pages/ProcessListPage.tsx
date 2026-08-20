@@ -27,6 +27,7 @@ import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPrev
 import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
 import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
+import { getBuildVersionInfo } from '../lib/version';
 
 const PAGE_SIZE = 20;
 
@@ -250,6 +251,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
       <header className="sticky top-0 z-20 shrink-0 overflow-visible border-b border-border bg-canvas">
         <div className="flex min-h-12 items-center gap-3 overflow-visible px-4 py-1.5">
           <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
+          <span className="font-mono text-[11px] text-muted">{getBuildVersionInfo()}</span>
           <label className="ml-auto flex min-w-0 max-w-xs flex-1 items-center">
             <span className="sr-only">{kind === 'template' ? 'Search templates' : 'Search processes'}</span>
             <input

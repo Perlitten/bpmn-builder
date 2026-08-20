@@ -3,6 +3,7 @@ import { Button } from '../components/ui/Button';
 import { ShowcaseDemo } from '../components/showcase/ShowcaseDemo';
 import { fetchAuthStatus, type AuthStatus } from '../lib/auth';
 import { pageTitle } from '../lib/pageTitle';
+import { getBuildVersionInfo } from '../lib/version';
 
 function authErrorMessage(code: string | null): string | null {
   if (code === 'denied') return 'Google sign-in was cancelled.';
@@ -43,6 +44,7 @@ export function SignInPage() {
       <header className="flex h-11 items-center border-b border-border px-4 shrink-0">
         <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
         <span className="ml-3 font-mono text-[11px] text-muted">2.0 semantic editor</span>
+        <span className="ml-auto font-mono text-[11px] text-muted">{getBuildVersionInfo()}</span>
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-8">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
