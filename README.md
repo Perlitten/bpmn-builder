@@ -38,7 +38,7 @@ pnpm dev   # Opens http://localhost:5173
 | `pnpm test` | Runs the complete Vitest suite |\n| `pnpm test:coverage` | Runs Vitest with enforced line, function, statement, and branch thresholds |
 | `pnpm test:integration` | Vitest integration test run against disposable Postgres |
 | `pnpm test:e2e` | Playwright critical journeys on desktop and mobile Chromium, including accessibility, visual regression, and tenant isolation |
-| `pnpm quality:performance` | Runs Lighthouse against the production build and enforces performance, accessibility, and best-practice budgets |
+| `pnpm quality:performance` | Enforces production JavaScript and CSS bundle-size budgets without downloading a browser |
 | `pnpm build` | Production build across packages (`pnpm -r build`) |\n| `pnpm audit:deps` | Fails on high or critical production dependency vulnerabilities |
 
 ---

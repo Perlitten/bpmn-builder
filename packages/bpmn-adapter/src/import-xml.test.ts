@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { BpmnImportError, importBpmnXml, sniffBpmnXml } from './import-xml.js';
 import { xmlToProcess } from './semantic-xml.js';
@@ -109,6 +110,16 @@ describe('sniffBpmnXml', () => {
     expect(sniffMessage(BPMN_1X)).toMatch(/BPMN 1\.x|XPDL/);
     expect(sniffCode(DEFINITIONS_ONLY)).toBe('no_process');
     expect(sniffMessage(DEFINITIONS_ONLY)).toMatch(/no process/i);
+    expect(
+      sniffCode(
+        '<bpmn:definitions xmlns:bpmn="https://evil.example/http://www.omg.org/spec/BPMN/20100524/MODEL"><bpmn:process /></bpmn:definitions>',
+      ),
+    ).toBe('not_bpmn_20');
+    expect(
+      sniffCode(
+        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"><!-- <bpmn:process /> --></bpmn:definitions>',
+      ),
+    ).toBe('no_process');
   });
 
   it('rejects zip, xlsx, and binary', () => {
@@ -119,6 +130,16 @@ describe('sniffBpmnXml', () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
     expect(sniffCode(png)).toBe('binary');
     expect(sniffMessage(png)).toMatch(/binary/i);
+  });
+
+  it('never throws while sniffing arbitrary untrusted text', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 8_192 }), (source) => {
+        const result = sniffBpmnXml(source);
+        expect(typeof result.ok).toBe('boolean');
+      }),
+      { numRuns: 250 },
+    );
   });
 });
 

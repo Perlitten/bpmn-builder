@@ -104,12 +104,14 @@ describe('google auth and process isolation', () => {
 
     const start = await fetch(`${url}/api/auth/google`, { redirect: 'manual' });
     expect(start.status).toBe(302);
+    expect(start.headers.get('ratelimit')).toBeTruthy();
     const location = start.headers.get('location') ?? '';
     expect(location).toContain('accounts.google.com');
     const state = new URL(location).searchParams.get('state');
     expect(state).toBeTruthy();
     const stateToken = cookieValue(start.headers, OAUTH_STATE_COOKIE);
     expect(stateToken).toBe(state);
+    expect(start.headers.getSetCookie().join('; ').toLowerCase()).toContain('secure');
 
     const originalFetch = globalThis.fetch;
     vi.stubGlobal(
@@ -151,6 +153,7 @@ describe('google auth and process isolation', () => {
     const setCookie = callback.headers.getSetCookie().join('; ');
     expect(setCookie.toLowerCase()).toContain('httponly');
     expect(setCookie.toLowerCase()).toContain('samesite=lax');
+    expect(setCookie.toLowerCase()).toContain('secure');
 
     const me = await fetch(`${url}/api/auth/me`, { headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` } });
     expect(me.status).toBe(200);
@@ -177,6 +180,28 @@ describe('google auth and process isolation', () => {
     });
     expect(callback.status).toBe(302);
     expect(callback.headers.get('location')).toMatch(/error=state/);
+
+    const denied = await fetch(`${url}/api/auth/google/callback?error=access_denied&state=forged`, {
+      redirect: 'manual',
+      headers: { Cookie: `${OAUTH_STATE_COOKIE}=other-state` },
+    });
+    expect(denied.status).toBe(302);
+    expect(denied.headers.get('location')).toMatch(/error=state/);
+  });
+
+  it('honors a Google denial only when it carries the matching CSRF state', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const start = await fetch(`${url}/api/auth/google`, { redirect: 'manual' });
+    const state = new URL(start.headers.get('location') ?? '').searchParams.get('state') ?? '';
+    const stateToken = cookieValue(start.headers, OAUTH_STATE_COOKIE) ?? '';
+
+    const denied = await fetch(`${url}/api/auth/google/callback?error=access_denied&state=${state}`, {
+      redirect: 'manual',
+      headers: { Cookie: `${OAUTH_STATE_COOKIE}=${stateToken}` },
+    });
+    expect(denied.status).toBe(302);
+    expect(denied.headers.get('location')).toMatch(/error=denied/);
   });
 
   it('isolates processes between two users and hides orphan rows', async () => {

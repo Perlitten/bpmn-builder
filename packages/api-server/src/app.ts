@@ -33,6 +33,7 @@ function operationalHeaders(
 export function createApp(): express.Express {
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(operationalHeaders);
   app.use(express.json({ limit: '2mb' }));
   app.use(attachCookies);

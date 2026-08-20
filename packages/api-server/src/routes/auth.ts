@@ -1,4 +1,5 @@
 import type { Application, Request, Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import {
   clearOAuthStateCookie,
   clearSessionCookie,
@@ -31,7 +32,15 @@ function isSafeRelayOrigin(origin: string): boolean {
 }
 
 export function registerAuthRoutes(app: Application): void {
-  app.get('/api/auth/status', (req: Request, res: Response) => {
+  const authRateLimit = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 60,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many authentication requests. Try again later.' },
+  });
+
+  app.get('/api/auth/status', authRateLimit, (req: Request, res: Response) => {
     const origin = publicOrigin(req);
     const callbackUrl = googleCallbackUrl(origin);
     const config = readGoogleAuthConfig();
@@ -46,7 +55,7 @@ export function registerAuthRoutes(app: Application): void {
     res.json({ configured: true, callbackUrl });
   });
 
-  app.get('/api/auth/me', (req: Request, res: Response) => {
+  app.get('/api/auth/me', authRateLimit, (req: Request, res: Response) => {
     if (!req.user) {
       res.status(401).json({ error: 'Sign in required' });
       return;
@@ -54,7 +63,7 @@ export function registerAuthRoutes(app: Application): void {
     res.json({ user: req.user });
   });
 
-  app.get('/api/auth/google', (req: Request, res: Response) => {
+  app.get('/api/auth/google', authRateLimit, (req: Request, res: Response) => {
     const config = readGoogleAuthConfig();
     if (!config.ok) {
       res.status(503).json({ error: config.error });
@@ -90,9 +99,16 @@ export function registerAuthRoutes(app: Application): void {
     );
   });
 
-  app.get('/api/auth/google/callback', async (req: Request, res: Response) => {
+  app.get('/api/auth/google/callback', authRateLimit, async (req: Request, res: Response) => {
     const authOrigin = publicOrigin(req);
     const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
+    if (!state || !expected || !equalSecret(state, expected)) {
+      clearOAuthStateCookie(res);
+      redirectHome(res, authOrigin, 'state');
+      return;
+    }
+
     const parsedState = parseOAuthState(state);
     const returnOrigin = parsedState?.returnOrigin;
     const targetOrigin = returnOrigin && isSafeRelayOrigin(returnOrigin) ? returnOrigin : authOrigin;
@@ -103,18 +119,10 @@ export function registerAuthRoutes(app: Application): void {
       return;
     }
 
-    const denied = typeof req.query.error === 'string' ? req.query.error : '';
-    if (denied) {
-      clearOAuthStateCookie(res);
-      redirectHome(res, targetOrigin, denied === 'access_denied' ? 'denied' : 'oauth');
-      return;
-    }
-
     const code = typeof req.query.code === 'string' ? req.query.code : '';
-    const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
     clearOAuthStateCookie(res);
-    if (!code || !state || !expected || !equalSecret(state, expected)) {
-      redirectHome(res, targetOrigin, 'state');
+    if (!code) {
+      redirectHome(res, targetOrigin, req.query.error === 'access_denied' ? 'denied' : 'oauth');
       return;
     }
 
@@ -142,7 +150,7 @@ export function registerAuthRoutes(app: Application): void {
     }
   });
 
-  app.get('/api/auth/complete', async (req: Request, res: Response) => {
+  app.get('/api/auth/complete', authRateLimit, async (req: Request, res: Response) => {
     const origin = requestOrigin(req);
     const handoffToken = typeof req.query.token === 'string' ? req.query.token : '';
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -166,7 +174,7 @@ export function registerAuthRoutes(app: Application): void {
     }
   });
 
-  app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  app.post('/api/auth/logout', authRateLimit, async (req: Request, res: Response) => {
     await destroySession(req.cookies?.[SESSION_COOKIE]);
     clearSessionCookie(res);
     res.json({ ok: true });
@@ -178,7 +186,7 @@ export function registerAuthRoutes(app: Application): void {
 
   if (!isProduction && testAuthEnabled) {
     console.warn('[SECURITY WARNING] Test auth endpoint POST /api/auth/test-session is REGISTERED.');
-    app.post('/api/auth/test-session', async (req: Request, res: Response) => {
+    app.post('/api/auth/test-session', authRateLimit, async (req: Request, res: Response) => {
       const email = typeof req.body?.email === 'string' ? req.body.email : undefined;
       const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
       const { user, token } = await issueTestSession({ email, name });

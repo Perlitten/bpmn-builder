@@ -60,6 +60,23 @@ const HTML_ROOT = /^(?:<!DOCTYPE\s+html\b|<html\b|<head\b|<body\b|<script\b)/i;
 const PROCESS_OR_COLLAB = /<(?:[\w.-]+:)?(?:process|collaboration)\b/i;
 const CONVENTIONAL = new Set(['bpmn', 'bpmn2', 'semantic']);
 
+function stripXmlComments(xml: string): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf('<!--', cursor);
+    if (start < 0) {
+      parts.push(xml.slice(cursor));
+      break;
+    }
+    parts.push(xml.slice(cursor, start));
+    const end = xml.indexOf('-->', start + 4);
+    if (end < 0) break;
+    cursor = end + 3;
+  }
+  return parts.join('');
+}
+
 function fail(code: BpmnImportCode, message: string): BpmnSniffResult {
   return { ok: false, code, message };
 }
@@ -166,7 +183,7 @@ function isBpmn20Root(open: string): boolean {
   const declared = prefix ? ns[prefix] : ns[''];
   if (declared && (BPMN_1X_NS.test(declared) || XPDL_NS.test(declared))) return false;
   if (declared === BPMN_20_MODEL_NS) return true;
-  if (Object.values(ns).includes(BPMN_20_MODEL_NS)) return true;
+  if (Object.values(ns).some((value) => value === BPMN_20_MODEL_NS)) return true;
   return !declared && CONVENTIONAL.has(prefix);
 }
 
@@ -187,7 +204,7 @@ function sniffStructure(xml: string): BpmnSniffResult {
   if (BPMN_1X_NS.test(body) || XPDL_NS.test(body)) return fail('bpmn_1x', MSG.bpmn1);
   if (local !== 'definitions') return fail('no_definitions', MSG.noDefinitions);
   if (!isBpmn20Root(open)) return fail('not_bpmn_20', MSG.notBpmn20);
-  if (!PROCESS_OR_COLLAB.test(body.replace(/<!--[\s\S]*?-->/g, ''))) return fail('no_process', MSG.noProcess);
+  if (!PROCESS_OR_COLLAB.test(stripXmlComments(body))) return fail('no_process', MSG.noProcess);
   return { ok: true, xml };
 }
 

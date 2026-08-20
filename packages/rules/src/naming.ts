@@ -266,7 +266,10 @@ function looksYes(condition: string | undefined): boolean {
 }
 
 function stripQuestion(label: string | undefined): string {
-  return (label ?? '').replace(/\?+\s*$/g, '').trim();
+  const trimmed = (label ?? '').trim();
+  let end = trimmed.length;
+  while (end > 0 && trimmed.charCodeAt(end - 1) === 63) end -= 1;
+  return trimmed.slice(0, end).trimEnd();
 }
 
 function sentenceCase(value: string): string {

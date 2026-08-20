@@ -1,21 +1,21 @@
-import type { CookieOptions, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { OAUTH_STATE_COOKIE, OAUTH_STATE_TTL_MS, SESSION_COOKIE, SESSION_TTL_MS } from './types.js';
 
 export function parseCookieHeader(header: string | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!header) return out;
+  const cookies = new Map<string, string>();
+  if (!header) return {};
   for (const part of header.split(';')) {
     const idx = part.indexOf('=');
     if (idx < 0) continue;
     const key = part.slice(0, idx).trim();
     if (!key) continue;
     try {
-      out[key] = decodeURIComponent(part.slice(idx + 1).trim());
+      cookies.set(key, decodeURIComponent(part.slice(idx + 1).trim()));
     } catch {
-      out[key] = part.slice(idx + 1).trim();
+      cookies.set(key, part.slice(idx + 1).trim());
     }
   }
-  return out;
+  return Object.fromEntries(cookies);
 }
 
 export function attachCookies(req: Request, _res: Response, next: () => void): void {
@@ -23,37 +23,32 @@ export function attachCookies(req: Request, _res: Response, next: () => void): v
   next();
 }
 
-function cookieOptions(maxAgeMs: number): CookieOptions {
-  return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: maxAgeMs,
-  };
-}
-
-function clearOptions(): CookieOptions {
-  return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-  };
-}
-
 export function setSessionCookie(res: Response, token: string): void {
-  res.cookie(SESSION_COOKIE, token, cookieOptions(SESSION_TTL_MS));
+  res.cookie(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+    path: '/',
+    maxAge: SESSION_TTL_MS,
+  });
 }
 
 export function clearSessionCookie(res: Response): void {
-  res.clearCookie(SESSION_COOKIE, clearOptions());
+  res.clearCookie(SESSION_COOKIE, { httpOnly: true, sameSite: 'lax', secure: true, path: '/' });
 }
 
 export function setOAuthStateCookie(res: Response, state: string): void {
-  res.cookie(OAUTH_STATE_COOKIE, state, cookieOptions(OAUTH_STATE_TTL_MS));
+  // OAuth state contains only a random nonce, an optional return origin, and an HMAC signature; it is not a credential.
+  // codeql[js/clear-text-storage-of-sensitive-data]
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+    path: '/',
+    maxAge: OAUTH_STATE_TTL_MS,
+  });
 }
 
 export function clearOAuthStateCookie(res: Response): void {
-  res.clearCookie(OAUTH_STATE_COOKIE, clearOptions());
+  res.clearCookie(OAUTH_STATE_COOKIE, { httpOnly: true, sameSite: 'lax', secure: true, path: '/' });
 }

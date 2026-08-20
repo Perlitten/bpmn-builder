@@ -21,8 +21,19 @@ const COLLAB_TOOLS = new Set<ToolName>(['addPool', 'addLane', 'addMessageInterac
 const COLLAB_REQUEST =
   /\b(pools?|lanes?|swimlanes?|participants?|collaboration|message\s+flows?|black\s*box)\b|пул(?:а|е|ом|ы|ов)?\b|дорожк|свимлейн|участник|коллаборац|партн[её]р|сообщен(?:ие|ия|ий)\s+межд/i;
 
-const CENSUS_LEAK =
-  /not in modeling profile yet|каталог собран|catalog (?:is )?(?:assembled|collected)|~\s*\d+\s*компонент|\d+\s*(?:of|\/|из)\s*~?\s*\d+|строю из того, что есть|building from what (?:there )?is/i;
+const CENSUS_PHRASES = [
+  'not in modeling profile yet',
+  'каталог собран',
+  'catalog is assembled',
+  'catalog assembled',
+  'catalog is collected',
+  'catalog collected',
+  'строю из того, что есть',
+  'building from what there is',
+  'building from what is',
+];
+const CENSUS_COUNT =
+  /(?:~\s{0,8})?\d{1,6}\s{0,8}компонент|\d{1,6}\s{0,8}(?:of|\/|из)\s{0,8}~?\s{0,8}\d{1,6}/i;
 
 const UNSOLICITED_POOL = /начинаю с пул|start(?:ing)? with (?:a )?pool/i;
 
@@ -51,11 +62,16 @@ export function constrainToolPlan(message: string, tools: ToolCall[]): ToolCall[
   return tools.filter((tool) => !isCollabTool(tool));
 }
 
+function leaksCatalogCensus(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return CENSUS_PHRASES.some((phrase) => normalized.includes(phrase)) || CENSUS_COUNT.test(text);
+}
+
 /** Strip catalog-census chatter from the user-visible Architect reply. */
 export function userFacingAssistantMessage(raw: string, opts?: { collaboration?: boolean }): string {
   const text = raw.trim();
   if (!text) return 'No semantic edits. Say what to add next.';
-  if (CENSUS_LEAK.test(text)) return 'Updated the process from your request.';
+  if (leaksCatalogCensus(text)) return 'Updated the process from your request.';
   if (!opts?.collaboration && UNSOLICITED_POOL.test(text)) return 'Updated the process from your request.';
   return text;
 }
