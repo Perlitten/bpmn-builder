@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getProcessesTable, getQueryDb, migrate, resetDbForTests } from '@bpmn/db';
 import { createApp } from '../app.js';
 import { issueTestSession } from '../auth/testSession.js';
+import { hashOAuthState } from '../auth/session.js';
 import { OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
 
@@ -110,7 +111,8 @@ describe('google auth and process isolation', () => {
     const state = new URL(location).searchParams.get('state');
     expect(state).toBeTruthy();
     const stateToken = cookieValue(start.headers, OAUTH_STATE_COOKIE);
-    expect(stateToken).toBe(state);
+    expect(stateToken).toBe(hashOAuthState(state ?? ''));
+    expect(stateToken).not.toBe(state);
     expect(start.headers.getSetCookie().join('; ').toLowerCase()).toContain('secure');
 
     const originalFetch = globalThis.fetch;

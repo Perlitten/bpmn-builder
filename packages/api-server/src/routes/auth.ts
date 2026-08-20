@@ -8,7 +8,15 @@ import {
 } from '../auth/cookies.js';
 import { googleCallbackUrl, publicOrigin, requestOrigin, readGoogleAuthConfig } from '../auth/env.js';
 import { exchangeGoogleCode, googleAuthorizeUrl } from '../auth/google.js';
-import { createSession, destroySession, equalSecret, generateOAuthState, parseOAuthState, readSession } from '../auth/session.js';
+import {
+  createSession,
+  destroySession,
+  equalSecret,
+  generateOAuthState,
+  hashOAuthState,
+  parseOAuthState,
+  readSession,
+} from '../auth/session.js';
 import { OAUTH_HANDOFF_TTL_MS, OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { issueTestSession } from '../auth/testSession.js';
 import { upsertGoogleUser } from '../auth/users.js';
@@ -89,7 +97,7 @@ export function registerAuthRoutes(app: Application): void {
       return;
     }
 
-    setOAuthStateCookie(res, state);
+    setOAuthStateCookie(res, hashOAuthState(state));
     res.redirect(
       googleAuthorizeUrl({
         clientId: config.value.clientId,
@@ -103,7 +111,7 @@ export function registerAuthRoutes(app: Application): void {
     const authOrigin = publicOrigin(req);
     const state = typeof req.query.state === 'string' ? req.query.state : '';
     const expected = req.cookies?.[OAUTH_STATE_COOKIE] ?? '';
-    if (!state || !expected || !equalSecret(state, expected)) {
+    if (!state || !expected || !equalSecret(hashOAuthState(state), expected)) {
       clearOAuthStateCookie(res);
       redirectHome(res, authOrigin, 'state');
       return;

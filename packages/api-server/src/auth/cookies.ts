@@ -38,8 +38,6 @@ export function clearSessionCookie(res: Response): void {
 }
 
 export function setOAuthStateCookie(res: Response, state: string): void {
-  // OAuth state contains only a random nonce, an optional return origin, and an HMAC signature; it is not a credential.
-  // codeql[js/clear-text-storage-of-sensitive-data]
   res.cookie(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     sameSite: 'lax',

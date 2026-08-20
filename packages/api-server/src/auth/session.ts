@@ -36,6 +36,10 @@ export function generateOAuthState(returnOrigin?: string): string {
   return `${encoded}.${signOAuthStatePayload(encoded)}`;
 }
 
+export function hashOAuthState(state: string): string {
+  return createHash('sha256').update(state).digest('base64url');
+}
+
 export function parseOAuthState(state: string): SignedOAuthState | null {
   const [encoded, signature] = state.split('.');
   if (!encoded || !signature || !timingSafeEqualSafe(signature, signOAuthStatePayload(encoded))) {
