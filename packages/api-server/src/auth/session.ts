@@ -35,6 +35,7 @@ export function generateOAuthState(returnOrigin?: string): string {
 }
 
 export function hashOAuthStateNonce(nonce: string): string {
+  // codeql[js/insufficient-password-hash] False positive: The value is a random nonce, not a user secret, and the HMAC is an integrity tag.
   return createHmac('sha256', oauthStateSecret()).update(`oauth-state:${nonce}`).digest('base64url');
 }
 
