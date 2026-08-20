@@ -68,19 +68,22 @@ function layoutGraph(
   placeLooseEventSubprocesses(input.regions ?? [], placed, ctx);
   placeRemainder(input, placed, ctx);
   placeArtifacts(input.artifacts ?? [], placed);
-  /* Lane membership moves nodes vertically only; the canonical chain owns X. */
-  const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx) : new Map<string, LaneBand>();
 
   const edges: LayoutResult['edges'] = {
     ...associationEdges(input.artifacts ?? [], placed),
     ...routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? [], ctx),
   };
   const shapes = sortRecord(placed);
+  const labels = collectLabels(input, input.sequenceFlows, shapes, edges);
+
+  /* Lane membership moves nodes vertically only; the canonical chain owns X. */
+  const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx, labels) : new Map<string, LaneBand>();
+
   return {
     result: {
       shapes,
       edges,
-      labels: collectLabels(input, input.sequenceFlows, shapes, edges),
+      labels,
     },
     bands,
   };
@@ -223,9 +226,9 @@ function applyLaneBands(
   lanes: LayoutLane[],
   placed: Map<string, Bounds>,
   ctx: Ctx,
+  labels: Record<string, Bounds> = {},
 ): Map<string, LaneBand> {
   const pad = TOKENS.poolPad;
-  const labels = collectLabels(input, [], sortRecord(placed), {});
   const laneOf = laneIndexByShape(input, lanes, placed, ctx);
   const members = lanes.map<string[]>(() => []);
   for (const id of [...placed.keys()].sort((a, b) => a.localeCompare(b))) {
@@ -781,14 +784,50 @@ function walkUnplacedChain(startId: string, placed: Map<string, Bounds>, ctx: Ct
   return items;
 }
 
+function reachableUnplacedNodes(startId: string, placed: Map<string, Bounds>, ctx: Ctx): string[] {
+  const path: string[] = [];
+  let id: string | undefined = startId;
+  const seen = new Set<string>();
+  while (id && !seen.has(id) && !placed.has(id) && ctx.nodes.has(id)) {
+    seen.add(id);
+    path.push(id);
+    const region = ctx.regionBySplit.get(id);
+    if (region && !isEventContainer(region, ctx)) {
+      if (region.join && !placed.has(region.join) && !seen.has(region.join)) {
+        seen.add(region.join);
+        path.push(region.join);
+        id = ctx.outgoing.get(region.join)?.[0]?.target;
+        continue;
+      }
+    }
+    const outs = ctx.outgoing.get(id) ?? [];
+    if (outs.length > 1) break;
+    id = outs[0]?.target;
+  }
+  return path;
+}
+
+function findCommonSuccessor(splitId: string, placed: Map<string, Bounds>, ctx: Ctx): string | null {
+  const outs = (ctx.outgoing.get(splitId) ?? []).filter((f) => f.target && !placed.has(f.target));
+  if (outs.length < 2) return null;
+  const branchPaths = outs.map((f) => reachableUnplacedNodes(f.target, placed, ctx));
+  const firstPath = branchPaths[0] ?? [];
+  for (const nodeId of firstPath) {
+    if (branchPaths.slice(1).every((p) => p.includes(nodeId))) {
+      return nodeId;
+    }
+  }
+  return null;
+}
+
 function placeOpenBranches(
   splitId: string,
   chains: ChainItem[][],
   placed: Map<string, Bounds>,
   ctx: Ctx,
-): void {
+): number {
   const splitBox = placed.get(splitId);
-  if (!splitBox) return;
+  if (!splitBox) return 0;
   const extents = chains.map((items) => measureChain(items, ctx));
   const { total, bandCys } = stackMetrics(extents);
   let cy: number;
@@ -796,12 +835,24 @@ function placeOpenBranches(
     .map((flow) => placed.get(flow.target))
     .filter((box): box is Bounds => box != null);
 
+  const splitNode = ctx.nodes.get(splitId);
+  const splitName = splitNode ? visibleNodeName(splitNode.type, splitNode.name) : undefined;
+  const splitLabelBottom = splitName
+    ? splitBox.y + splitBox.height + TOKENS.label.gap + TOKENS.label.height
+    : splitBox.y + splitBox.height;
+
   if (placedTargets.length > 0) {
-    let belowY = splitBox.y + splitBox.height;
+    let belowY = splitLabelBottom;
     for (const box of placedTargets) {
       belowY = Math.max(belowY, box.y + box.height);
     }
     cy = belowY + TOKENS.branchGap + total / 2;
+  } else if (extents.length > 0) {
+    /* Ensure lower branch band stays below gateway external label if present */
+    const lastExt = extents[extents.length - 1]!;
+    const lastHeight = lastExt.above + lastExt.below;
+    const minCenterY = splitLabelBottom + TOKENS.branchGap + lastHeight / 2;
+    cy = Math.max(splitBox.y + splitBox.height / 2, minCenterY - total / 2 + bandCys[bandCys.length - 1]!);
   } else {
     cy = splitBox.y + splitBox.height / 2;
   }
@@ -811,6 +862,9 @@ function placeOpenBranches(
     if (!chains[i]!.length) continue;
     placeChain(chains[i]!, innerLeft, cy - total / 2 + bandCys[i]!, placed, ctx);
   }
+
+  const maxBranchW = Math.max(0, ...extents.map((e) => e.width));
+  return innerLeft + (maxBranchW > 0 ? maxBranchW : 0);
 }
 
 function fanUnplaced(placed: Map<string, Bounds>, ctx: Ctx): boolean {
@@ -820,6 +874,23 @@ function fanUnplaced(placed: Map<string, Bounds>, ctx: Ctx): boolean {
       .filter((f) => f.target && !placed.has(f.target) && ctx.nodes.has(f.target))
       .sort((a, b) => a.id.localeCompare(b.id));
     if (!missing.length) continue;
+
+    const common = findCommonSuccessor(id, placed, ctx);
+    if (common) {
+      const branchPaths = missing.map((f) => reachableUnplacedNodes(f.target, placed, ctx));
+      const chains = branchPaths.map((path) => {
+        const nodeIds = path.slice(0, path.indexOf(common));
+        return nodeIds.map((nodeId) => ({ kind: 'node' as const, id: nodeId, type: typeOf(ctx, nodeId) }));
+      });
+      const endX = placeOpenBranches(id, chains, placed, ctx);
+      const splitBox = placed.get(id)!;
+      const suffixLeft = endX > splitBox.x + splitBox.width + ctx.flowGap ? endX + ctx.flowGap : splitBox.x + splitBox.width + ctx.flowGap;
+      const suffixChain = walkUnplacedChain(common, placed, ctx);
+      placeChain(suffixChain, suffixLeft, splitBox.y + splitBox.height / 2, placed, ctx);
+      grew = true;
+      continue;
+    }
+
     const chains = missing.map((f) => walkUnplacedChain(f.target, placed, ctx)).filter((c) => c.length);
     if (!chains.length) continue;
     placeOpenBranches(id, chains, placed, ctx);
@@ -990,9 +1061,7 @@ function placeRegion(
 }
 
 function measureChain(items: ChainItem[], ctx: Ctx): Extent {
-  if (!items.length) {
-    return { width: 0, above: TOKENS.gateway.height / 2, below: TOKENS.gateway.height / 2 };
-  }
+  if (!items.length) return { width: 0, above: 0, below: 0 };
   let width = 0;
   let above = 0;
   let below = 0;
@@ -1011,7 +1080,13 @@ function measureRegion(region: StructuredRegion, ctx: Ctx): Extent {
   if (isContainerRegion(region, ctx)) return measureSubprocess(region, ctx);
   const split = nodeExtent(typeOf(ctx, region.split));
   const join = nodeExtent(typeOf(ctx, region.join));
-  const branches = region.branches.map((b) => measureChain(branchItems(b, ctx), ctx));
+  const branches = region.branches.map((b) => {
+    const ext = measureChain(branchItems(b, ctx), ctx);
+    if (!ext.width && !ext.above && !ext.below) {
+      return { width: 0, above: TOKENS.gateway.height / 2, below: TOKENS.gateway.height / 2 };
+    }
+    return ext;
+  });
   const innerW = Math.max(0, ...branches.map((e) => e.width));
   const { total } = stackMetrics(branches);
   const half = total / 2;
@@ -1176,16 +1251,19 @@ function collectLabels(
     .map(([, box]) => box);
 
   const labels = new Map<string, Bounds>();
+  const obstacles = [...nodeObstacles];
   const nodes = input.nodes ?? [];
   for (const node of nodes) {
     if (!isExternalLabelType(node.type)) continue;
     const name = visibleNodeName(node.type, node.name);
     if (!name) continue;
     const box = shapes[node.id];
-    if (box) labels.set(node.id, externalLabelBox(box, name));
+    if (!box) continue;
+    const initialLabelBox = externalLabelBox(box, name);
+    const clearedLabelBox = clearOfObstacles(initialLabelBox, obstacles);
+    labels.set(node.id, clearedLabelBox);
+    obstacles.push(clearedLabelBox);
   }
-
-  const obstacles = [...nodeObstacles, ...labels.values()];
 
   for (const edge of [...namedEdges].sort((a, b) => a.id.localeCompare(b.id))) {
     const name = edge.name?.trim();

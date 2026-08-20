@@ -902,5 +902,105 @@ describe('layout', () => {
       assertNoLabelNodeIntersections(result, input);
       assertNoLabelLabelIntersections(result);
     });
+
+    it('Item 1 regression: reconverging unstructured split places shared suffix once after the longest branch', () => {
+      const input: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway' },
+          { id: 'a1', type: 'task', name: 'A1' },
+          { id: 'a2', type: 'task', name: 'A2' },
+          { id: 'b1', type: 'task', name: 'B1' },
+          { id: 'join', type: 'task', name: 'Join Task' },
+          { id: 'end', type: 'endEvent' },
+        ],
+        sequenceFlows: [
+          { id: 'f0', source: 'start', target: 'split' },
+          { id: 'fa1', source: 'split', target: 'a1' },
+          { id: 'fa2', source: 'a1', target: 'a2' },
+          { id: 'fa_join', source: 'a2', target: 'join' },
+          { id: 'fb1', source: 'split', target: 'b1' },
+          { id: 'fb_join', source: 'b1', target: 'join' },
+          { id: 'f_end', source: 'join', target: 'end' },
+        ],
+      };
+      const result = layout(input);
+
+      for (const flow of input.sequenceFlows) {
+        const src = result.shapes[flow.source]!;
+        const tgt = result.shapes[flow.target]!;
+        expect(src.x + src.width, `Flow ${flow.id} from ${flow.source} to ${flow.target}`).toBeLessThanOrEqual(tgt.x);
+      }
+
+      expect(result.shapes.join!.x).toBeGreaterThan(result.shapes.a2!.x + result.shapes.a2!.width);
+      expect(result.shapes.join!.x).toBeGreaterThan(result.shapes.b1!.x + result.shapes.b1!.width);
+      allOrthogonal(result);
+    });
+
+    it('Item 2 regression: empty expanded subprocess retains canonical minimum 120px height', () => {
+      let p = createProcess();
+      p = addTask(p, { name: 'A' }).process;
+      p = wrapInSubprocess(p, [p.nodes.find((n) => n.name === 'A')!.id], { name: 'Empty Sub' }).process;
+      const task = p.nodes.find((n) => n.name === 'A')!;
+      p.nodes = p.nodes.filter((n) => n.id !== task.id);
+      p.flows = [];
+      p.regions[0]!.branches[0]!.nodeIds = [];
+
+      const result = layoutProcess(p);
+      const sub = p.nodes.find((n) => n.type === 'subProcess')!;
+      const subBox = result.shapes[sub.id]!;
+
+      expect(subBox.height).toBeGreaterThanOrEqual(120);
+    });
+
+    it('Item 3 regression: long gateway label does not collide with lower branch task', () => {
+      const input: LayoutInput = {
+        nodes: [
+          { id: 'start', type: 'startEvent' },
+          { id: 'split', type: 'exclusiveGateway', name: 'Very long gateway question label that occupies substantial horizontal width' },
+          { id: 'task1', type: 'task', name: 'Upper task' },
+          { id: 'task2', type: 'task', name: 'Lower task' },
+        ],
+        sequenceFlows: [
+          { id: 'f0', source: 'start', target: 'split' },
+          { id: 'f1', source: 'split', target: 'task1' },
+          { id: 'f2', source: 'split', target: 'task2' },
+        ],
+      };
+      const result = layout(input);
+      const gatewayLabel = result.labels.split!;
+      const lowerTask = result.shapes.task2!;
+
+      expect(overlaps(gatewayLabel, lowerTask), 'Gateway label overlaps lower task').toBe(false);
+      expect(lowerTask.y).toBeGreaterThanOrEqual(gatewayLabel.y + gatewayLabel.height);
+      assertNoLabelNodeIntersections(result, input);
+    });
+
+    it('Item 4 regression: displaced edge flow label is contained inside lane and pool bounds', () => {
+      let p = createProcess();
+      p = addPool(p, { name: 'Pool' }).process;
+      p = addLane(p, { name: 'Lane 1' }).process;
+      for (const name of ['Step 1', 'Step 2']) {
+        const after = p.nodes.filter((n) => n.type === 'task').at(-1)?.id;
+        p = addTask(p, { name, ...(after ? { after } : {}) }).process;
+      }
+      p = splitExclusive(p, {
+        after: p.nodes.find((n) => n.name === 'Step 2')!.id,
+        name: 'Check',
+      }).process;
+
+      const flow = p.flows.find((f) => f.name === 'Yes')!;
+      flow.name = 'This is an exceptionally long branch label designed to trigger multi-directional collision displacement in the layout engine';
+
+      const result = layoutProcess(p);
+      const pool = result.shapes[p.participants[0]!.id]!;
+      const lane = result.shapes[p.lanes[0]!.id]!;
+      const label = result.labels[flow.id]!;
+
+      expect(label.y, 'Label top above lane top').toBeGreaterThanOrEqual(lane.y);
+      expect(label.y + label.height, 'Label bottom below lane bottom').toBeLessThanOrEqual(lane.y + lane.height);
+      expect(label.y, 'Label top above pool top').toBeGreaterThanOrEqual(pool.y);
+      expect(label.y + label.height, 'Label bottom below pool bottom').toBeLessThanOrEqual(pool.y + pool.height);
+    });
   });
 });
