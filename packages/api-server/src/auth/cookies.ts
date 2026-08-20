@@ -38,8 +38,7 @@ export function clearSessionCookie(res: Response): void {
 }
 
 export function setOAuthStateCookie(res: Response, state: string): void {
-  // The value is a keyed fingerprint of the high-entropy OAuth state, not the state or a credential.
-  res.cookie(OAUTH_STATE_COOKIE, state, { // codeql[js/clear-text-storage-of-sensitive-data]
+  res.cookie(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     sameSite: 'lax',
     secure: true,

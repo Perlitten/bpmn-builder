@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { and, eq, lt } from 'drizzle-orm';
 import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/index.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
@@ -23,7 +23,8 @@ function oauthStateSecret(): string {
 
 function signOAuthStatePayload(encoded: string): string {
   // HMAC-SHA-256 authenticates a high-entropy OAuth state payload; this is not password hashing.
-  return createHmac('sha256', oauthStateSecret()).update(encoded).digest('base64url'); // codeql[js/insufficient-password-hash]
+  // codeql[js/insufficient-password-hash]
+  return createHmac('sha256', oauthStateSecret()).update(encoded).digest('base64url');
 }
 
 export function generateOAuthState(returnOrigin?: string): string {
@@ -36,8 +37,7 @@ export function generateOAuthState(returnOrigin?: string): string {
 }
 
 export function hashOAuthState(state: string): string {
-  // HMAC-SHA-256 fingerprints a high-entropy OAuth state token; this is not password hashing.
-  return createHmac('sha256', oauthStateSecret()).update(state).digest('base64url'); // codeql[js/insufficient-password-hash]
+  return scryptSync(oauthStateSecret(), state, 32).toString('base64url');
 }
 
 export function parseOAuthState(state: string): SignedOAuthState | null {
