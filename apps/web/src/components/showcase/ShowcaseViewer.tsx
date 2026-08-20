@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import Viewer from 'bpmn-js/lib/Viewer';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
@@ -8,14 +8,31 @@ type ShowcaseViewerProps = {
   xml: string;
 };
 
+type CanvasService = {
+  zoom: (value: string) => void;
+  resized: () => void;
+};
+
+function fitViewer(viewer: Viewer): void {
+  const canvas = viewer.get('canvas') as CanvasService;
+  try {
+    canvas.resized();
+    canvas.zoom('fit-viewport');
+  } catch {
+    /* The canvas can be temporarily empty while XML is being replaced. */
+  }
+}
+
 export function ShowcaseViewer({ xml }: ShowcaseViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<NavigatedViewer | null>(null);
+  const viewerRef = useRef<Viewer | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const viewer = new NavigatedViewer({
-      container: containerRef.current,
+    const container = containerRef.current;
+    if (!container) return;
+
+    const viewer = new Viewer({
+      container,
       textRenderer: {
         defaultStyle: { fontFamily: 'Arial, sans-serif', fontSize: 12 },
         externalStyle: { fontSize: 12 },
@@ -23,7 +40,11 @@ export function ShowcaseViewer({ xml }: ShowcaseViewerProps) {
     });
     viewerRef.current = viewer;
 
+    const observer = new ResizeObserver(() => fitViewer(viewer));
+    observer.observe(container);
+
     return () => {
+      observer.disconnect();
       viewer.destroy();
       viewerRef.current = null;
     };
@@ -37,17 +58,7 @@ export function ShowcaseViewer({ xml }: ShowcaseViewerProps) {
     viewer
       .importXML(xml)
       .then(() => {
-        if (!active) return;
-        const canvas = viewer.get('canvas') as {
-          zoom: (val: string, center?: string) => void;
-          resized: () => void;
-        };
-        try {
-          canvas.resized();
-          canvas.zoom('fit-viewport');
-        } catch {
-          /* ignore canvas fit errors */
-        }
+        if (active) fitViewer(viewer);
       })
       .catch((err: unknown) => {
         console.error('Failed to import BPMN XML in showcase viewer', err);

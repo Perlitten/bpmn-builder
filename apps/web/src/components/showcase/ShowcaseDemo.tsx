@@ -36,6 +36,7 @@ export function ShowcaseDemo() {
           <button
             key={ex.id}
             type="button"
+            aria-pressed={selectedId === ex.id}
             className={`rounded border px-2.5 py-1 text-xs font-medium transition-colors ${
               selectedId === ex.id
                 ? 'border-ink bg-ink text-canvas'
