@@ -17,6 +17,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
 
     await expect(page.locator('#showcase-description')).toBeVisible();
     await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(0);
 
     const decisionBtn = page.getByRole('button', { name: 'Decision flow' });
     await expect(decisionBtn).toBeVisible();
@@ -25,8 +26,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     const textareaValue = await page.locator('#showcase-description').inputValue();
     expect(textareaValue).toContain('If the candidate is qualified');
 
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
-    expect(await page.locator('.djs-shape').count()).toBeGreaterThan(0);
+    await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(2);
 
     expect(processApiRequests).toEqual([]);
 

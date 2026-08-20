@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { absoluteTime, relativeTime } from './relativeTime';
+import { absoluteTime, formatSaveTime, relativeTime } from './relativeTime';
 
 const NOW = Date.parse('2026-08-14T12:00:00.000Z');
 
@@ -19,5 +19,16 @@ describe('relativeTime', () => {
     expect(relativeTime('invalid', NOW)).toBe('Unknown time');
     expect(absoluteTime('invalid')).toBe('Invalid timestamp');
     expect(absoluteTime('2026-08-14T12:00:00.000Z')).toContain('2026');
+  });
+
+  it('includes the date when formatting save time if not from today', () => {
+    const todaySave = formatSaveTime('2026-08-14T11:51:00.000Z', NOW);
+    const yesterdaySave = formatSaveTime('2026-08-13T17:51:00.000Z', NOW);
+    const priorYearSave = formatSaveTime('2025-08-13T17:51:00.000Z', NOW);
+    expect(todaySave).not.toMatch(/Aug|13|14/);
+    expect(yesterdaySave).toContain('Aug');
+    expect(yesterdaySave).toContain('13');
+    expect(yesterdaySave).not.toContain('2026');
+    expect(priorYearSave).toContain('2025');
   });
 });

@@ -1,5 +1,6 @@
 import { getNode } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
+import { DESCRIPTION_PLACEHOLDER } from '../pages/ProcessListPage';
 import {
   describeBpmnXml,
   describeSemanticProcess,
@@ -92,6 +93,165 @@ describe('detectExclusiveDecision', () => {
   });
 });
 
+describe('multilingual conditional descriptions', () => {
+  const multilingualCases = [
+    {
+      lang: 'English',
+      input:
+        'Customer submits a request. Manager checks the data. If the data is valid then create a contract, otherwise send it back.',
+      decisionName: 'Data is valid?',
+      branchLabels: ['Data is valid', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'Russian',
+      input:
+        'Клиент оставляет заявку. Менеджер проверяет данные. Если данные верны, оформить договор, иначе вернуть на доработку.',
+      decisionName: 'Данные верны?',
+      branchLabels: ['Данные верны', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'German',
+      input:
+        'Kunde reicht Antrag ein. Manager prüft Daten. Wenn die Daten gültig sind, Vertrag erstellen, ansonsten zurückschicken.',
+      decisionName: 'Die Daten gültig sind?',
+      branchLabels: ['Die Daten gültig sind', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'French',
+      input:
+        'Le client soumet une demande. Le responsable vérifie. Si les données sont valides, créer un contrat, sinon renvoyer.',
+      decisionName: 'Les données sont valides?',
+      branchLabels: ['Les données sont valides', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'Chinese',
+      input: '客户提交申请。经理检查数据。如果数据有效，创建合同，否则退回。',
+      decisionName: '数据有效?',
+      branchLabels: ['数据有效', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+  ];
+
+  it.each(multilingualCases)(
+    'parses conditional process structure for $lang',
+    ({ input, decisionName, branchLabels }) => {
+      const process = describeSemanticProcess('Multilingual Process', input);
+
+      // Asserts process structure
+      expect(process.regions).toHaveLength(1);
+      expect(process.nodes.filter((n) => n.type === 'exclusiveGateway')).toHaveLength(2);
+
+      const region = process.regions[0]!;
+      expect(region.type).toBe('exclusive');
+      const splitNode = getNode(process, region.split);
+      expect(splitNode.name).toBe(decisionName);
+
+      expect(region.branches.map((b) => b.name)).toEqual(branchLabels);
+    },
+  );
+
+  it('negative case: description with no condition yields regions: 0', () => {
+    const process = describeSemanticProcess(
+      'Linear Process',
+      'Клиент оставляет заявку. Менеджер проверяет данные. Оформить договор.',
+    );
+    expect(process.regions).toHaveLength(0);
+    expect(process.nodes.filter((n) => n.type === 'exclusiveGateway')).toHaveLength(0);
+  });
+
+  it('recognizes Russian pairKind keywords (прошла/не прошла, успешно/неуспешно, да/нет)', () => {
+    expect(
+      detectExclusiveDecision('Запустить проверку KYC. Если прошла, открыть счет. Если не прошла, отклонить заявку.'),
+    ).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['открыть счет'] },
+        { name: 'Failed', tasks: ['отклонить заявку'] },
+      ],
+    });
+
+    expect(
+      detectExclusiveDecision('Проверить заявку. Если успешно, одобрить. Если неуспешно, отклонить.'),
+    ).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['одобрить'] },
+        { name: 'Failed', tasks: ['отклонить'] },
+      ],
+    });
+
+    expect(
+      detectExclusiveDecision('Запросить согласие. Если да, продолжить. Если нет, завершить.'),
+    ).toMatchObject({
+      name: 'Yes?',
+      branches: [
+        { name: 'Yes', tasks: ['продолжить'] },
+        { name: 'No', tasks: ['завершить'] },
+      ],
+    });
+  });
+
+  it('preserves Cyrillic in shortName and questionName without mid-word truncation mangling', () => {
+    expect(
+      detectExclusiveDecision(
+        'Если данные клиента полностью проверены и являются совершенно корректными, оформить договор, иначе вернуть на доработку.',
+      ),
+    ).toMatchObject({
+      name: 'Данные клиента полностью…?',
+      branches: [
+        { name: 'Данные клиента полностью…', tasks: ['оформить договор'] },
+        { name: 'Otherwise', tasks: ['вернуть на доработку'] },
+      ],
+    });
+  });
+});
+
+  it('parses localized labels, elided French conditions, and localized then tokens', () => {
+    expect(detectExclusiveDecision('Проверить заявку. Прошла: открыть счет. Не прошла: отклонить.')).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['открыть счет'] },
+        { name: 'Failed', tasks: ['отклонить'] },
+      ],
+    });
+
+    expect(detectExclusiveDecision("S'il est valide, approuver, sinon rejeter")).toMatchObject({
+      name: 'Est valide?',
+      branches: [{ tasks: ['approuver'] }, { tasks: ['rejeter'] }],
+    });
+
+    expect(detectExclusiveDecision('Если данные верны, тогда оформить договор, иначе вернуть')).toMatchObject({
+      branches: [{ tasks: ['оформить договор'] }, { tasks: ['вернуть'] }],
+    });
+    expect(detectExclusiveDecision('Si les données sont valides, alors créer un contrat, sinon renvoyer')).toMatchObject({
+      branches: [{ tasks: ['créer un contrat'] }, { tasks: ['renvoyer'] }],
+    });
+  });
+
+  it('keeps hyphenated conditions intact and splits unspaced Chinese sentences', () => {
+    expect(
+      detectExclusiveDecision('If the request is pre-approved, create a contract, otherwise reject'),
+    ).toMatchObject({
+      name: 'Request is pre-approved?',
+      branches: [{ tasks: ['create a contract'] }, { tasks: ['reject'] }],
+    });
+
+    const process = describeSemanticProcess(
+      'Chinese process',
+      '客户提交申请。经理检查数据。如果数据有效，创建合同，否则退回',
+    );
+    expect(process.nodes.filter((node) => node.type === 'task').map((node) => node.name)).toEqual([
+      '客户提交申请',
+      '经理检查数据',
+      '创建合同',
+      '退回',
+    ]);
+  });
+
 describe('parallel descriptions', () => {
   it('builds explicit parallel branches for meanwhile / at the same time', () => {
     expect(
@@ -143,6 +303,19 @@ describe('describeSemanticProcess', () => {
     expect(descriptionInputIssue(text)).toMatch(/Loops are not generated/);
     expect(() => describeSemanticProcess('Loop', text)).toThrow(/Loops are not generated/);
   });
+  it('correctly parses the description placeholder constant into a decision diagram', () => {
+    const process = describeSemanticProcess('Invoice Process', DESCRIPTION_PLACEHOLDER);
+    expect(process.regions).toHaveLength(1);
+    const region = process.regions[0]!;
+    expect(region.type).toBe('exclusive');
+    expect(getNode(process, region.split).name).toBe('Approved?');
+    expect(region.branches.map((b) => b.name)).toEqual(['Approved', 'Otherwise']);
+    expect(region.branches.map((b) => b.nodeIds.map((id) => getNode(process, id).name))).toEqual([
+      ['pay the supplier'],
+      ['request a revision'],
+    ]);
+  });
+
 });
 
 describe('describeBpmnXml', () => {

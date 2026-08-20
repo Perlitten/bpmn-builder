@@ -139,6 +139,7 @@ Rules:
 - Timeout while a task is active: attachBoundaryTimer. Failure on a task: attachBoundaryError. Not an event-based gateway.
 - A new process already has Start and End. Insert tasks on that sequence. start.message / start.timer change the existing start.
 - Do not call inspect* unless the process view is missing an id you need. inspect* is the process graph, not the component catalog.
+- Task names must be in verb-object form starting with an action verb (e.g. 'Submit request', 'Check data', NOT 'Customer submits a request').
 - lint reports @bpmn/rules findings. Do not invent quality scores.${
     scopePromptLines(input?.process, input?.scope)
       .map((line) => `\n- ${line}`)

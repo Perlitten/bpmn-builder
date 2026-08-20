@@ -64,3 +64,26 @@ export function absoluteTime(iso: string): string {
     year: 'numeric',
   }).format(timestamp);
 }
+
+export function formatSaveTime(iso: string, now = Date.now()): string {
+  const timestamp = Date.parse(iso);
+  if (!Number.isFinite(timestamp)) return 'Invalid timestamp';
+  const date = new Date(timestamp);
+  const nowDate = new Date(now);
+  const isToday =
+    date.getFullYear() === nowDate.getFullYear() &&
+    date.getMonth() === nowDate.getMonth() &&
+    date.getDate() === nowDate.getDate();
+
+  const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (isToday) {
+    return timeStr;
+  }
+  const sameYear = date.getFullYear() === nowDate.getFullYear();
+  const dateStr = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+  return `${dateStr}, ${timeStr}`;
+}

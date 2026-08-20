@@ -44,7 +44,7 @@ export function cleanTaskName(text: string): string {
   return text
     .replace(/^\s*(?:\d+[.)]|[-*•])\s+/, '')
     .replace(/^\s*(?:(?:and\s+)?then|next|afterwards|затем|потом|далее|dann|danach|puis|ensuite|luego)\s+/iu, '')
-    .replace(/[.!?。！？;,；]+$/gu, '')
+    .replace(/[.!?。！？;,；，：]+$/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -52,7 +52,7 @@ export function cleanTaskName(text: string): string {
 function splitSentenceBoundaries(text: string): string[] {
   const parts: string[] = [];
   let start = 0;
-  const boundary = /[.!?。！？]+\s+/gu;
+  const boundary = /(?:[.!?]+\s+|[。！？]+\s*)/gu;
   let match: RegExpExecArray | null;
   while ((match = boundary.exec(text))) {
     const before = text.slice(start, match.index + match[0].trimEnd().length);
