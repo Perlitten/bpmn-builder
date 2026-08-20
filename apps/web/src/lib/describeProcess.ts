@@ -33,10 +33,21 @@ const LOOP_PATTERN =
 const PARALLEL_PATTERN =
   /(?:,\s*|\s+)(?:meanwhile|at\s+the\s+same\s+time|in\s+parallel|одновременно|параллельно|gleichzeitig|parallel\s+dazu)(?:,\s*|\s+)|(?:与此同时|同时)/iu;
 
+const CONDITIONAL_IF_PATTERN = /(?:(?:if|если|wenn|falls|si)(?=[^\p{L}\p{N}_]|$)|如果)/iu;
+const CONDITIONAL_THEN_PATTERN = /(?:then|тогда|dann|alors)/iu;
+const CONDITIONAL_OTHERWISE_PATTERN =
+  /(?:(?:otherwise|else|иначе|в\s+противном\s+случае|sonst|ansonsten|sinon)(?=[^\p{L}\p{N}_]|$)|否则)/iu;
+
 function shortName(condition: string): string {
   const core = condition.replace(/^(?:the|a|an)\s+/i, '').replace(/\s+/g, ' ').trim();
   if (!core) return 'Yes';
-  const clipped = core.length > 32 ? `${core.slice(0, 29)}…` : core;
+  let clipped = core;
+  if (core.length > 32) {
+    const sliced = core.slice(0, 29);
+    const wordBoundary = sliced.replace(/\s+\S*$/u, '').trim();
+    const base = wordBoundary || sliced.trim();
+    clipped = `${base.replace(/[.,;:!?—-]+$/u, '')}…`;
+  }
   return clipped.charAt(0).toUpperCase() + clipped.slice(1);
 }
 
@@ -49,15 +60,37 @@ function pairKind(condition: string): 'passed' | 'failed' | 'yes' | 'no' | null 
   let value = condition.trim().toLowerCase().replace(/\s+/g, ' ');
   value = value.replace(/^(?:the|a|an|it)\s+/, '');
   value = value.replace(/^(?:check|kyc|screening|verification)\s+/, '');
-  if (value === 'passed' || value.endsWith(' passed')) return 'passed';
-  if (value === 'failed' || value.endsWith(' failed')) return 'failed';
-  if (value === 'yes') return 'yes';
-  if (value === 'no') return 'no';
+  if (
+    value === 'failed' ||
+    value.endsWith(' failed') ||
+    value.includes('не прошла') ||
+    value.includes('не пройдена') ||
+    value.includes('неуспешно')
+  ) {
+    return 'failed';
+  }
+  if (
+    value === 'passed' ||
+    value.endsWith(' passed') ||
+    value === 'прошла' ||
+    value === 'пройдена' ||
+    value === 'успешно' ||
+    value.endsWith(' прошла') ||
+    value.endsWith(' пройдена') ||
+    value.endsWith(' успешно')
+  ) {
+    return 'passed';
+  }
+  if (value === 'yes' || value === 'да') return 'yes';
+  if (value === 'no' || value === 'нет') return 'no';
   return null;
 }
 
 function clauseOffsets(text: string, needle: RegExp): number[] {
-  const re = new RegExp(`(?:^|[.!?;,\\n]\\s*)(${needle.source})`, needle.flags.includes('i') ? 'giu' : 'gu');
+  const re = new RegExp(
+    `(?:^|[.!?;,\\n\\u3002\\uFF0C\\uFF01\\uFF1F\\uFF1B]\\s*)(${needle.source})`,
+    needle.flags.includes('i') ? 'giu' : 'gu',
+  );
   const offsets: number[] = [];
   let match: RegExpExecArray | null;
   while ((match = re.exec(text))) {
@@ -117,7 +150,17 @@ function fromPair(c1: string, t1: string, c2: string, t2: string): Omit<Exclusiv
 type IfClause = { condition: string; body: string };
 
 function splitIfClause(text: string): IfClause | null {
-  const match = text.match(/^if\s+(.+?)(?:\s+then\s+|\s*[:,]\s*)([\s\S]+)$/iu);
+  const splitRegex = new RegExp(
+    '^(?:' +
+      CONDITIONAL_IF_PATTERN.source +
+      ')(?:\\s+|(?:(?<=[如果])|(?=[如果])))' +
+      '(.+?)' +
+      '(?:\\s+' +
+      CONDITIONAL_THEN_PATTERN.source +
+      '\\s+|\\s*[:,—\\-,\\uFF0C\\uFF1A]\\s*)([\\s\\S]+)$',
+    'iu',
+  );
+  const match = text.match(splitRegex);
   if (!match) return null;
   const condition = cleanTaskName(match[1] ?? '');
   const body = (match[2] ?? '').trim();
@@ -125,7 +168,7 @@ function splitIfClause(text: string): IfClause | null {
 }
 
 function otherwiseOffsets(text: string): number[] {
-  return clauseOffsets(text, /(?:otherwise|else)\b/iu);
+  return clauseOffsets(text, CONDITIONAL_OTHERWISE_PATTERN);
 }
 
 function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null {
@@ -140,9 +183,19 @@ function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null
   }
   if (otherwise.length === 1) {
     const at = otherwise[0]!;
-    const falseBody = first.body.slice(at).replace(/^(?:otherwise|else)\b\s*(?:then\s+)?/iu, '');
+    const falseBody = first.body.slice(at).replace(
+      new RegExp(
+        '^(?:' +
+          CONDITIONAL_OTHERWISE_PATTERN.source +
+          ')\\s*(?:(?:' +
+          CONDITIONAL_THEN_PATTERN.source +
+          ')\\s+)?',
+        'iu',
+      ),
+      '',
+    );
     const trueBody = first.body.slice(0, at).replace(/[.!?;,\s]+$/u, '');
-    if (/^if\b/iu.test(falseBody.trim())) {
+    if (new RegExp('^(?:' + CONDITIONAL_IF_PATTERN.source + ')', 'iu').test(falseBody.trim())) {
       throw new DescriptionParseError(
         'Nested conditions are not generated automatically yet. Describe one decision at a time.',
       );
@@ -150,7 +203,7 @@ function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null
     return fromCondition(first.condition, trueBody, falseBody, true);
   }
 
-  const nestedIf = clauseOffsets(first.body, /if\b/iu);
+  const nestedIf = clauseOffsets(first.body, CONDITIONAL_IF_PATTERN);
   if (nestedIf.length) {
     const at = nestedIf[0]!;
     const second = splitIfClause(first.body.slice(at));
@@ -168,9 +221,9 @@ function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null
 }
 
 function parseLabelDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null {
-  const passed = rest.match(/^passed\s*:\s*(.+?)(?:\s*[.!?;]\s*)failed\s*:\s*(.+?)\s*$/isu);
+  const passed = rest.match(/^(?:passed|прошла|пройдена|успешно)\s*:\s*(.+?)(?:\s*[.!?;]\s*)(?:failed|не прошла|не пройдена|неуспешно)\s*:\s*(.+?)\s*$/isu);
   if (passed) return twoBranches('Passed?', 'Passed', passed[1]!, 'Failed', passed[2]!);
-  const yesNo = rest.match(/^yes\s*:\s*(.+?)(?:\s*[.!?;]\s*)no\s*:\s*(.+?)\s*$/isu);
+  const yesNo = rest.match(/^(?:yes|да)\s*:\s*(.+?)(?:\s*[.!?;]\s*)(?:no|нет)\s*:\s*(.+?)\s*$/isu);
   if (!yesNo) return null;
   return twoBranches('Yes?', 'Yes', yesNo[1]!, 'No', yesNo[2]!);
 }
@@ -178,7 +231,7 @@ function parseLabelDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | n
 /** Sentence-level if/otherwise, passed/failed, or yes/no — not “or” in prose. */
 export function detectExclusiveDecision(text: string): ExclusiveDecision | null {
   const trimmed = validateDescriptionText(text);
-  const ifOffsets = clauseOffsets(trimmed, /if\b/iu);
+  const ifOffsets = clauseOffsets(trimmed, CONDITIONAL_IF_PATTERN);
   if (ifOffsets.length > 2) {
     throw new DescriptionParseError(
       'Multiple decisions are not generated automatically yet. Describe one decision at a time.',

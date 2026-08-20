@@ -92,6 +92,123 @@ describe('detectExclusiveDecision', () => {
   });
 });
 
+describe('multilingual conditional descriptions', () => {
+  const multilingualCases = [
+    {
+      lang: 'English',
+      input:
+        'Customer submits a request. Manager checks the data. If the data is valid then create a contract, otherwise send it back.',
+      decisionName: 'Data is valid?',
+      branchLabels: ['Data is valid', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'Russian',
+      input:
+        'Клиент оставляет заявку. Менеджер проверяет данные. Если данные верны, оформить договор, иначе вернуть на доработку.',
+      decisionName: 'Данные верны?',
+      branchLabels: ['Данные верны', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'German',
+      input:
+        'Kunde reicht Antrag ein. Manager prüft Daten. Wenn die Daten gültig sind, Vertrag erstellen, ansonsten zurückschicken.',
+      decisionName: 'Die Daten gültig sind?',
+      branchLabels: ['Die Daten gültig sind', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'French',
+      input:
+        'Le client soumet une demande. Le responsable vérifie. Si les données sont valides, créer un contrat, sinon renvoyer.',
+      decisionName: 'Les données sont valides?',
+      branchLabels: ['Les données sont valides', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+    {
+      lang: 'Chinese',
+      input: '客户提交申请。经理检查数据。如果数据有效，创建合同，否则退回。',
+      decisionName: '数据有效?',
+      branchLabels: ['数据有效', 'Otherwise'],
+      taskCounts: [1, 1],
+    },
+  ];
+
+  it.each(multilingualCases)(
+    'parses conditional process structure for $lang',
+    ({ input, decisionName, branchLabels }) => {
+      const process = describeSemanticProcess('Multilingual Process', input);
+
+      // Asserts process structure
+      expect(process.regions).toHaveLength(1);
+      expect(process.nodes.filter((n) => n.type === 'exclusiveGateway')).toHaveLength(2);
+
+      const region = process.regions[0]!;
+      expect(region.type).toBe('exclusive');
+      const splitNode = getNode(process, region.split);
+      expect(splitNode.name).toBe(decisionName);
+
+      expect(region.branches.map((b) => b.name)).toEqual(branchLabels);
+    },
+  );
+
+  it('negative case: description with no condition yields regions: 0', () => {
+    const process = describeSemanticProcess(
+      'Linear Process',
+      'Клиент оставляет заявку. Менеджер проверяет данные. Оформить договор.',
+    );
+    expect(process.regions).toHaveLength(0);
+    expect(process.nodes.filter((n) => n.type === 'exclusiveGateway')).toHaveLength(0);
+  });
+
+  it('recognizes Russian pairKind keywords (прошла/не прошла, успешно/неуспешно, да/нет)', () => {
+    expect(
+      detectExclusiveDecision('Запустить проверку KYC. Если прошла, открыть счет. Если не прошла, отклонить заявку.'),
+    ).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['открыть счет'] },
+        { name: 'Failed', tasks: ['отклонить заявку'] },
+      ],
+    });
+
+    expect(
+      detectExclusiveDecision('Проверить заявку. Если успешно, одобрить. Если неуспешно, отклонить.'),
+    ).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['одобрить'] },
+        { name: 'Failed', tasks: ['отклонить'] },
+      ],
+    });
+
+    expect(
+      detectExclusiveDecision('Запросить согласие. Если да, продолжить. Если нет, завершить.'),
+    ).toMatchObject({
+      name: 'Yes?',
+      branches: [
+        { name: 'Yes', tasks: ['продолжить'] },
+        { name: 'No', tasks: ['завершить'] },
+      ],
+    });
+  });
+
+  it('preserves Cyrillic in shortName and questionName without mid-word truncation mangling', () => {
+    expect(
+      detectExclusiveDecision(
+        'Если данные клиента полностью проверены и являются совершенно корректными, оформить договор, иначе вернуть на доработку.',
+      ),
+    ).toMatchObject({
+      name: 'Данные клиента полностью…?',
+      branches: [
+        { name: 'Данные клиента полностью…', tasks: ['оформить договор'] },
+        { name: 'Otherwise', tasks: ['вернуть на доработку'] },
+      ],
+    });
+  });
+});
+
 describe('parallel descriptions', () => {
   it('builds explicit parallel branches for meanwhile / at the same time', () => {
     expect(
