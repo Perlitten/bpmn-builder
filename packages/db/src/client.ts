@@ -1,17 +1,34 @@
 import { neon } from '@neondatabase/serverless';
 import Database from 'better-sqlite3';
+import pg from 'pg';
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { getDbProvider, resolveSqlitePath } from './config.js';
 import * as pgSchema from './schema/postgres.js';
 import * as sqliteSchema from './schema/sqlite.js';
 
+export function isNeonUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    return (
+      parsed.hostname.endsWith('.neon.tech') ||
+      parsed.hostname.endsWith('.neon.build') ||
+      parsed.hostname.includes('.neon.')
+    );
+  } catch {
+    return urlString.includes('.neon.tech') || urlString.includes('.neon.build');
+  }
+}
+
 export type AppDb =
   | ReturnType<typeof drizzleSqlite<typeof sqliteSchema>>
-  | ReturnType<typeof drizzleNeon<typeof pgSchema>>;
+  | ReturnType<typeof drizzleNeon<typeof pgSchema>>
+  | ReturnType<typeof drizzlePg<typeof pgSchema>>;
 
 let db: AppDb | null = null;
 let sqlite: Database.Database | null = null;
+let pgPool: pg.Pool | null = null;
 
 export function getDb(): AppDb {
   if (db) return db;
@@ -49,17 +66,26 @@ export function getDbDriver(): 'sqlite' | 'postgres' {
   return getDbProvider();
 }
 
-export function resetDbForTests(): void {
+export async function resetDbForTests(): Promise<void> {
   sqlite?.close();
   sqlite = null;
+  if (pgPool) {
+    const poolToClose = pgPool;
+    pgPool = null;
+    await poolToClose.end();
+  }
   db = null;
 }
 
 function createDb(): AppDb {
   if (getDbProvider() === 'postgres') {
-    const url = process.env.DATABASE_URL?.trim();
+    const url = process.env.DATABASE_URL?.trim() || process.env.DATABASE_URL_UNPOOLED?.trim();
     if (!url) throw new Error('DATABASE_URL is required for postgres provider');
-    return drizzleNeon(neon(url), { schema: pgSchema });
+    if (isNeonUrl(url)) {
+      return drizzleNeon(neon(url), { schema: pgSchema });
+    }
+    pgPool = new pg.Pool({ connectionString: url });
+    return drizzlePg(pgPool, { schema: pgSchema });
   }
   const file = resolveSqlitePath();
   sqlite = new Database(file);

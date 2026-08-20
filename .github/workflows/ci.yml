@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   quality:
     name: quality
@@ -100,6 +103,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build monorepo
+        run: pnpm build
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
@@ -107,6 +113,9 @@ jobs:
         env:
           ENABLE_TEST_AUTH: 'true'
           NODE_ENV: 'test'
+          DB_PROVIDER: 'sqlite'
+          DATABASE_URL: 'file:./data/e2e.db'
+          SESSION_SECRET: 'e2e-test-session-secret-at-least-16-chars'
         run: pnpm test:e2e
 
       - name: Upload Playwright artifacts on failure

@@ -1,11 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { neon } from '@neondatabase/serverless';
+import pg from 'pg';
 import { sql } from 'drizzle-orm';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
 import { migrate as migrateNeon } from 'drizzle-orm/neon-http/migrator';
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
+import { migrate as migratePg } from 'drizzle-orm/node-postgres/migrator';
 import { migrate as migrateSqlite } from 'drizzle-orm/better-sqlite3/migrator';
-import { getDb, getDbDriver } from './client.js';
+import { getDb, getDbDriver, isNeonUrl } from './client.js';
 import * as pgSchema from './schema/postgres.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,17 +50,33 @@ export async function migrate(): Promise<void> {
       );
     }
 
-    // Connect directly using DATABASE_URL_UNPOOLED (or DATABASE_URL as fallback) for DDL migrations
-    const migrationDb = drizzleNeon(neon(url), { schema: pgSchema });
+    if (isNeonUrl(url)) {
+      // Connect directly using DATABASE_URL_UNPOOLED (or DATABASE_URL as fallback) for DDL migrations
+      const migrationDb = drizzleNeon(neon(url), { schema: pgSchema });
 
-    // Legacy schema migration safety for postgres
-    await migrationDb.execute(
-      sql.raw('ALTER TABLE IF EXISTS processes ADD COLUMN IF NOT EXISTS user_id TEXT'),
-    );
+      // Legacy schema migration safety for postgres
+      await migrationDb.execute(
+        sql.raw('ALTER TABLE IF EXISTS processes ADD COLUMN IF NOT EXISTS user_id TEXT'),
+      );
 
-    await migrateNeon(migrationDb, {
-      migrationsFolder: migrationsPgFolder,
-    });
+      await migrateNeon(migrationDb, {
+        migrationsFolder: migrationsPgFolder,
+      });
+      return;
+    }
+
+    const pool = new pg.Pool({ connectionString: url });
+    try {
+      const migrationDb = drizzlePg(pool, { schema: pgSchema });
+      await migrationDb.execute(
+        sql.raw('ALTER TABLE IF EXISTS processes ADD COLUMN IF NOT EXISTS user_id TEXT'),
+      );
+      await migratePg(migrationDb, {
+        migrationsFolder: migrationsPgFolder,
+      });
+    } finally {
+      await pool.end();
+    }
     return;
   }
 
