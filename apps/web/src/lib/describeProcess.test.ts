@@ -209,6 +209,48 @@ describe('multilingual conditional descriptions', () => {
   });
 });
 
+  it('parses localized labels, elided French conditions, and localized then tokens', () => {
+    expect(detectExclusiveDecision('Проверить заявку. Прошла: открыть счет. Не прошла: отклонить.')).toMatchObject({
+      name: 'Passed?',
+      branches: [
+        { name: 'Passed', tasks: ['открыть счет'] },
+        { name: 'Failed', tasks: ['отклонить'] },
+      ],
+    });
+
+    expect(detectExclusiveDecision("S'il est valide, approuver, sinon rejeter")).toMatchObject({
+      name: 'Est valide?',
+      branches: [{ tasks: ['approuver'] }, { tasks: ['rejeter'] }],
+    });
+
+    expect(detectExclusiveDecision('Если данные верны, тогда оформить договор, иначе вернуть')).toMatchObject({
+      branches: [{ tasks: ['оформить договор'] }, { tasks: ['вернуть'] }],
+    });
+    expect(detectExclusiveDecision('Si les données sont valides, alors créer un contrat, sinon renvoyer')).toMatchObject({
+      branches: [{ tasks: ['créer un contrat'] }, { tasks: ['renvoyer'] }],
+    });
+  });
+
+  it('keeps hyphenated conditions intact and splits unspaced Chinese sentences', () => {
+    expect(
+      detectExclusiveDecision('If the request is pre-approved, create a contract, otherwise reject'),
+    ).toMatchObject({
+      name: 'Request is pre-approved?',
+      branches: [{ tasks: ['create a contract'] }, { tasks: ['reject'] }],
+    });
+
+    const process = describeSemanticProcess(
+      'Chinese process',
+      '客户提交申请。经理检查数据。如果数据有效，创建合同，否则退回',
+    );
+    expect(process.nodes.filter((node) => node.type === 'task').map((node) => node.name)).toEqual([
+      '客户提交申请',
+      '经理检查数据',
+      '创建合同',
+      '退回',
+    ]);
+  });
+
 describe('parallel descriptions', () => {
   it('builds explicit parallel branches for meanwhile / at the same time', () => {
     expect(

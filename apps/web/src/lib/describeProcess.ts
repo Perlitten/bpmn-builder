@@ -33,10 +33,12 @@ const LOOP_PATTERN =
 const PARALLEL_PATTERN =
   /(?:,\s*|\s+)(?:meanwhile|at\s+the\s+same\s+time|in\s+parallel|одновременно|параллельно|gleichzeitig|parallel\s+dazu)(?:,\s*|\s+)|(?:与此同时|同时)/iu;
 
-const CONDITIONAL_IF_PATTERN = /(?:(?:if|если|wenn|falls|si)(?=[^\p{L}\p{N}_]|$)|如果)/iu;
+const CONDITIONAL_IF_PATTERN =
+  /(?:(?:if|если|wenn|falls|si)(?=[^\p{L}\p{N}_]|$)|s['’]ils?(?=[^\p{L}\p{N}_]|$)|如果)/iu;
 const CONDITIONAL_THEN_PATTERN = /(?:then|тогда|dann|alors)/iu;
 const CONDITIONAL_OTHERWISE_PATTERN =
   /(?:(?:otherwise|else|иначе|в\s+противном\s+случае|sonst|ansonsten|sinon)(?=[^\p{L}\p{N}_]|$)|否则)/iu;
+const CONDITIONAL_LABEL_PATTERN = /(?:passed|прошла|пройдена|успешно|yes|да)\s*:/iu;
 
 function shortName(condition: string): string {
   const core = condition.replace(/^(?:the|a|an)\s+/i, '').replace(/\s+/g, ' ').trim();
@@ -150,14 +152,24 @@ function fromPair(c1: string, t1: string, c2: string, t2: string): Omit<Exclusiv
 type IfClause = { condition: string; body: string };
 
 function splitIfClause(text: string): IfClause | null {
+  const thenPattern = CONDITIONAL_THEN_PATTERN.source;
   const splitRegex = new RegExp(
     '^(?:' +
       CONDITIONAL_IF_PATTERN.source +
       ')(?:\\s+|(?:(?<=[如果])|(?=[如果])))' +
       '(.+?)' +
-      '(?:\\s+' +
-      CONDITIONAL_THEN_PATTERN.source +
-      '\\s+|\\s*[:,—\\-,\\uFF0C\\uFF1A]\\s*)([\\s\\S]+)$',
+      '(?:' +
+      '\\s+' +
+      thenPattern +
+      '\\s+|' +
+      '\\s*[:,—,\\uFF0C\\uFF1A]\\s*(?:' +
+      thenPattern +
+      '\\s+)?|' +
+      '\\s+-\\s+(?:' +
+      thenPattern +
+      '\\s+)?' +
+      ')' +
+      '([\\s\\S]+)$',
     'iu',
   );
   const match = text.match(splitRegex);
@@ -194,7 +206,9 @@ function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null
       ),
       '',
     );
-    const trueBody = first.body.slice(0, at).replace(/[.!?;,\s]+$/u, '');
+    const trueBody = first.body
+      .slice(0, at)
+      .replace(/[.!?;,\s\u3002\uFF0C\uFF01\uFF1F\uFF1B]+$/u, '');
     if (new RegExp('^(?:' + CONDITIONAL_IF_PATTERN.source + ')', 'iu').test(falseBody.trim())) {
       throw new DescriptionParseError(
         'Nested conditions are not generated automatically yet. Describe one decision at a time.',
@@ -241,7 +255,7 @@ export function detectExclusiveDecision(text: string): ExclusiveDecision | null 
     const parsed = parseIfDecision(trimmed.slice(at));
     if (parsed) return { prefix: trimmed.slice(0, at), ...parsed };
   }
-  for (const at of clauseOffsets(trimmed, /(?:passed|yes)\s*:/iu)) {
+  for (const at of clauseOffsets(trimmed, CONDITIONAL_LABEL_PATTERN)) {
     const parsed = parseLabelDecision(trimmed.slice(at));
     if (parsed) return { prefix: trimmed.slice(0, at), ...parsed };
   }
