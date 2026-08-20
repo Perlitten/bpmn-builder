@@ -1,8 +1,10 @@
 import {
   bpmnComponentRegistry,
+  collectXmlElements,
   DEFAULT_BPMN_TYPE,
   type FlowNode,
   type FlowNodeType,
+  parseXmlAttributes,
   type Process,
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
@@ -227,40 +229,20 @@ function decode(value: string): string {
 }
 
 function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
-  const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
+  const parts = tagAlt.split('|');
   const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(xml))) {
-    const tag = localTag(match[1]);
-    const attr = attrs(match[2] ?? '');
-    const selfClosing = Boolean(match[3]) || /\/\s*$/.test(match[2] ?? '');
-    const inner = selfClosing ? '' : innerXml(xml, match.index + match[0].length, match[1] ?? tag);
-    found.push({ tag, attr, inner });
-  }
-  return found;
-}
-
-function innerXml(xml: string, from: number, tag: string): string {
-  const open = new RegExp(`<(?:[\\w.-]+:)?${tag}\\b`, 'gi');
-  const close = new RegExp(`</(?:[\\w.-]+:)?${tag}\\s*>`, 'gi');
-  let depth = 1;
-  let i = from;
-  while (depth > 0 && i < xml.length) {
-    open.lastIndex = i;
-    close.lastIndex = i;
-    const nextOpen = open.exec(xml);
-    const nextClose = close.exec(xml);
-    if (!nextClose) return xml.slice(from);
-    if (nextOpen && nextOpen.index < nextClose.index) {
-      depth += 1;
-      i = nextOpen.index + nextOpen[0].length;
-    } else {
-      depth -= 1;
-      if (depth === 0) return xml.slice(from, nextClose.index);
-      i = nextClose.index + nextClose[0].length;
+  for (const part of parts) {
+    const elements = collectXmlElements(xml, part);
+    for (const el of elements) {
+      const attrs = Object.fromEntries(parseXmlAttributes(el.rawAttributes));
+      found.push({
+        tag: el.localName,
+        attr: attrs,
+        inner: el.inner,
+      });
     }
   }
-  return xml.slice(from);
+  return found;
 }
 
 function eventDefinitionFromInner(inner: string): string | undefined {

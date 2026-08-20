@@ -62,7 +62,15 @@ export function* scanXmlTags(xml: string, from = 0): Generator<XmlTag> {
       nameStart += 1;
     }
     if (xml[nameStart] === '!' || xml[nameStart] === '?' || !isNameCharacter(xml[nameStart] ?? '')) {
-      cursor = end + 1;
+      if (xml.startsWith('<!--', start)) {
+        const commentEnd = xml.indexOf('-->', start + 4);
+        cursor = commentEnd >= 0 ? commentEnd + 3 : xml.length;
+      } else if (xml.startsWith('<![CDATA[', start)) {
+        const cdataEnd = xml.indexOf(']]>', start + 9);
+        cursor = cdataEnd >= 0 ? cdataEnd + 3 : xml.length;
+      } else {
+        cursor = end + 1;
+      }
       continue;
     }
 
@@ -91,7 +99,13 @@ function decodeXmlEntities(value: string): string {
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')
     .replaceAll('&apos;', "'")
-    .replaceAll('&amp;', '&');
+    .replaceAll('&amp;', '&')
+    .replace(/&#([0-9]+);/g, (_, dec) => {
+      try { return String.fromCodePoint(parseInt(dec, 10)); } catch { return _; }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try { return String.fromCodePoint(parseInt(hex, 16)); } catch { return _; }
+    });
 }
 
 export function parseXmlAttributes(raw: string): Map<string, string> {
