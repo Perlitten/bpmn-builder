@@ -11,8 +11,11 @@
 - [ ] `quality`
 - [ ] `database`
 - [ ] `e2e`
+- [ ] `performance`
 - [ ] `dependency-review`
 - [ ] `codeql`
+- [ ] `secret-scan`
+- [ ] `scorecard`
 
 ## Operational impact
 
