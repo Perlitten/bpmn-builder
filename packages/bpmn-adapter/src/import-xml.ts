@@ -1,4 +1,4 @@
-import type { Process } from '../../semantic-core/src/index.js';
+import { stripXmlComments, type Process } from '../../semantic-core/src/index.js';
 import { xmlToProcess } from './semantic-xml.js';
 
 /** OMG BPMN 2.0.2 semantic namespace. */
@@ -59,23 +59,6 @@ const XPDL_NS = /wfmc\.org\/[^"'<>]*xpdl/i;
 const HTML_ROOT = /^(?:<!DOCTYPE\s+html\b|<html\b|<head\b|<body\b|<script\b)/i;
 const PROCESS_OR_COLLAB = /<(?:[\w.-]+:)?(?:process|collaboration)\b/i;
 const CONVENTIONAL = new Set(['bpmn', 'bpmn2', 'semantic']);
-
-function stripXmlComments(xml: string): string {
-  const parts: string[] = [];
-  let cursor = 0;
-  while (cursor < xml.length) {
-    const start = xml.indexOf('<!--', cursor);
-    if (start < 0) {
-      parts.push(xml.slice(cursor));
-      break;
-    }
-    parts.push(xml.slice(cursor, start));
-    const end = xml.indexOf('-->', start + 4);
-    if (end < 0) break;
-    cursor = end + 3;
-  }
-  return parts.join('');
-}
 
 function fail(code: BpmnImportCode, message: string): BpmnSniffResult {
   return { ok: false, code, message };
@@ -167,12 +150,12 @@ function tagName(open: string): { prefix: string; local: string } {
   return { prefix: raw.slice(0, colon).toLowerCase(), local: raw.slice(colon + 1).toLowerCase() };
 }
 
-function xmlnsMap(open: string): Record<string, string> {
-  const out: Record<string, string> = {};
+function xmlnsMap(open: string): Map<string, string> {
+  const out = new Map<string, string>();
   const re = /xmlns(?::([\w.-]+))?\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(open))) {
-    out[(match[1] ?? '').toLowerCase()] = match[2] ?? match[3] ?? '';
+    out.set((match[1] ?? '').toLowerCase(), match[2] ?? match[3] ?? '');
   }
   return out;
 }
@@ -180,10 +163,10 @@ function xmlnsMap(open: string): Record<string, string> {
 function isBpmn20Root(open: string): boolean {
   const { prefix } = tagName(open);
   const ns = xmlnsMap(open);
-  const declared = prefix ? ns[prefix] : ns[''];
+  const declared = ns.get(prefix);
   if (declared && (BPMN_1X_NS.test(declared) || XPDL_NS.test(declared))) return false;
   if (declared === BPMN_20_MODEL_NS) return true;
-  if (Object.values(ns).some((value) => value === BPMN_20_MODEL_NS)) return true;
+  if ([...ns.values()].some((namespace) => namespace === BPMN_20_MODEL_NS)) return true;
   return !declared && CONVENTIONAL.has(prefix);
 }
 

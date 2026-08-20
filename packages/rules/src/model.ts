@@ -1,8 +1,10 @@
 import {
   bpmnComponentRegistry,
+  collectXmlElements,
   DEFAULT_BPMN_TYPE,
   type FlowNode,
   type FlowNodeType,
+  parseXmlAttributes,
   type Process,
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
@@ -262,41 +264,20 @@ function decode(value: string): string {
 }
 
 function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
-  const re = new RegExp(`<(?:[\\w.-]+:)?(${tagAlt})\\b([^>]*?)(\\/)?>`, 'gi');
+  const parts = tagAlt.split('|');
   const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(xml))) {
-    const tag = localTag(match[1]);
-    const attr = attrs(match[2] ?? '');
-    const selfClosing = Boolean(match[3]) || /\/\s*$/.test(match[2] ?? '');
-    const inner = selfClosing ? '' : innerXml(xml, match.index + match[0].length, match[1] ?? tag);
-    found.push({ tag, attr, inner });
-  }
-  return found;
-}
-
-function isSelfClosingTag(raw: string): boolean {
-  let cursor = raw.length - 2;
-  while (cursor >= 0 && isXmlSpace(raw.charCodeAt(cursor))) cursor -= 1;
-  return raw.charCodeAt(cursor) === 47;
-}
-
-function innerXml(xml: string, from: number, tag: string): string {
-  const target = localTag(tag);
-  const element = /<(\/)?(?:[\w.-]+:)?([\w.-]+)(?:\s[^>]*)?>/g;
-  let depth = 1;
-  element.lastIndex = from;
-  let match: RegExpExecArray | null;
-  while ((match = element.exec(xml))) {
-    if (localTag(match[2]) !== target) continue;
-    if (match[1]) {
-      depth -= 1;
-      if (depth === 0) return xml.slice(from, match.index);
-    } else if (!isSelfClosingTag(match[0])) {
-      depth += 1;
+  for (const part of parts) {
+    const elements = collectXmlElements(xml, part);
+    for (const el of elements) {
+      const attrs = Object.fromEntries(parseXmlAttributes(el.rawAttributes));
+      found.push({
+        tag: el.localName,
+        attr: attrs,
+        inner: el.inner,
+      });
     }
   }
-  return xml.slice(from);
+  return found;
 }
 
 function stripXmlComments(xml: string): string {
