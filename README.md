@@ -32,13 +32,14 @@ pnpm dev   # Opens http://localhost:5173
 
 | Command | Purpose |
 |---------|---------|
-| `pnpm check` | Runs workspace lint (`eslint . --max-warnings=0`), typecheck (`tsc --noEmit`), unit tests (`vitest run`), and build in sequence |
+| `pnpm check` | Runs lint, typecheck, the coverage-gated Vitest suite, and the production build |
 | `pnpm lint` | ESLint across workspace with flat config (`eslint.config.js`) |
 | `pnpm typecheck` | TypeScript check across all packages (`tsc --noEmit`) |
-| `pnpm test` | Vitest unit test run (94 test files, 582 tests) |
+| `pnpm test` | Runs the complete Vitest suite |\n| `pnpm test:coverage` | Runs Vitest with enforced line, function, statement, and branch thresholds |
 | `pnpm test:integration` | Vitest integration test run against disposable Postgres |
-| `pnpm test:e2e` | Playwright E2E smoke tests |
-| `pnpm build` | Production build across packages (`pnpm -r build`) |
+| `pnpm test:e2e` | Playwright critical journeys on desktop and mobile Chromium, including accessibility, visual regression, and tenant isolation |
+| `pnpm quality:performance` | Runs Lighthouse against the production build and enforces performance, accessibility, and best-practice budgets |
+| `pnpm build` | Production build across packages (`pnpm -r build`) |\n| `pnpm audit:deps` | Fails on high or critical production dependency vulnerabilities |
 
 ---
 
@@ -86,7 +87,7 @@ External Users Stage:
 - *Assumption*: Ensure the Neon project region is created in `fra1` (Frankfurt) so compute sits co-located next to the database.
 
 ### Build & Migration Configuration
-- `vercel.json` configures the build command: `pnpm db:migrate && pnpm --filter @bpmn/web build`.
+- `vercel.json` builds the web workspace with `pnpm --filter @bpmn/web build`; the API function performs idempotent migrations before serving traffic.
 - **Hard Prerequisite**: Before enabling preview builds in Vercel, Preview environment variables (`DATABASE_URL` and `DATABASE_URL_UNPOOLED`) must be explicitly scoped to an isolated preview database branch in Vercel Project Settings. If Preview inherits production credentials, preview builds will migrate the production database!
 
 ---
@@ -141,5 +142,19 @@ Playwright E2E smoke tests require authenticating without exposing production Go
    - Create Web Application OAuth 2.0 Credentials for Production (`https://<prod-domain>/api/auth/google/callback`).
    - Create Web Application OAuth 2.0 Credentials for Staging / Preview.
 4. **GitHub Repository Rules**:
-   - Set branch protection on `main`: require Pull Request, require `quality`, `database`, and `e2e` status checks, enforce conversation resolution, block force pushes, block branch deletion.
+   - Set branch protection on `main`: require Pull Request; require `quality`, `database`, `e2e`, `performance`, `dependency-review`, `codeql`, `secret-scan`, and `scorecard`; enforce conversation resolution; block force pushes and branch deletion.
    - Do NOT require pull request approvals (single-maintainer repository).
+
+---
+
+## Cloud quality gates
+
+GitHub Actions is the authoritative verification environment. Every pull request runs:
+
+- lint, strict TypeScript, production dependency audit, coverage thresholds, and build;
+- PostgreSQL migration/integration tests;
+- Playwright desktop and mobile critical journeys with WCAG and screenshot regression checks;
+- Lighthouse performance budgets against the production build;
+- an independent production dependency audit, CodeQL, Gitleaks, and OpenSSF Scorecard analysis.
+
+Dependabot opens grouped weekly updates for pnpm and GitHub Actions. Coverage, Playwright failures, Lighthouse reports, and Scorecard results are retained as bounded GitHub Actions artifacts. All added services and tools are free for this public repository.
