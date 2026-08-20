@@ -27,6 +27,9 @@ export default defineConfig({
     env: {
       ENABLE_TEST_AUTH: 'true',
       NODE_ENV: 'test',
+      DB_PROVIDER: process.env.DB_PROVIDER || 'sqlite',
+      DATABASE_URL: process.env.DATABASE_URL || 'file:./data/e2e.db',
+      SESSION_SECRET: process.env.SESSION_SECRET || 'e2e-test-session-secret-at-least-16-chars',
     },
   },
 });
