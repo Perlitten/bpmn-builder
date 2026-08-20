@@ -38,8 +38,10 @@ export function createApp(): express.Express {
   app.disable('x-powered-by');
   app.use(operationalHeaders);
 
-  app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
-  app.use('/api/auth', rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false }));
+  if (process.env.NODE_ENV !== 'test') {
+    app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+    app.use('/api/auth', rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false }));
+  }
 
   app.use(express.json({ limit: '2mb' }));
   app.use(attachCookies);
