@@ -19,9 +19,9 @@ describe('editor onboarding', () => {
     writeEditorOnboardingSeen(storage);
     expect(store[EDITOR_ONBOARDING_KEY]).toBe('1');
     expect(readEditorOnboardingSeen(storage)).toBe(true);
-    expect(EDITOR_ONBOARDING_COPY).toMatch(/Double-click/);
-    expect(EDITOR_ONBOARDING_COPY).toMatch(/Continue\+/);
-    expect(EDITOR_ONBOARDING_COPY).toMatch(/Fit accounts/);
-    expect(EDITOR_ONBOARDING_COPY).not.toMatch(/board|process vibes|flow buddy/i);
+    expect(EDITOR_ONBOARDING_COPY).toMatch(/Double-click a shape to rename it/);
+    expect(EDITOR_ONBOARDING_COPY).toMatch(/Select a shape to append steps/);
+    expect(EDITOR_ONBOARDING_COPY).toMatch(/Drag the canvas to move around/);
+    expect(EDITOR_ONBOARDING_COPY).not.toMatch(/board|process vibes|flow buddy|Continue\+|Fit accounts/i);
   });
 });

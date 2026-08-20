@@ -59,6 +59,7 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
     <div className="relative border-b border-border">
       <button
         type="button"
+        aria-label={`Open ${process.name}`}
         className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-surface ${actions ? 'pr-16' : ''}`}
         onClick={() => onOpen(process.id)}
       >
