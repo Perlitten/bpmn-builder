@@ -37,7 +37,8 @@ pnpm dev   # Opens http://localhost:5173
 | `pnpm typecheck` | TypeScript check across all packages (`tsc --noEmit`) |
 | `pnpm test` | Runs the complete Vitest suite |\n| `pnpm test:coverage` | Runs Vitest with enforced line, function, statement, and branch thresholds |
 | `pnpm test:integration` | Vitest integration test run against disposable Postgres |
-| `pnpm test:e2e` | Playwright critical journeys on desktop and mobile Chromium, including accessibility and tenant isolation |
+| `pnpm test:e2e` | Playwright critical journeys on desktop and mobile Chromium, including accessibility, visual regression, and tenant isolation |
+| `pnpm quality:performance` | Runs Lighthouse against the production build and enforces performance, accessibility, and best-practice budgets |
 | `pnpm build` | Production build across packages (`pnpm -r build`) |\n| `pnpm audit:deps` | Fails on high or critical production dependency vulnerabilities |
 
 ---
@@ -141,7 +142,7 @@ Playwright E2E smoke tests require authenticating without exposing production Go
    - Create Web Application OAuth 2.0 Credentials for Production (`https://<prod-domain>/api/auth/google/callback`).
    - Create Web Application OAuth 2.0 Credentials for Staging / Preview.
 4. **GitHub Repository Rules**:
-   - Set branch protection on `main`: require Pull Request; require `quality`, `database`, `e2e`, `dependency-review`, and `codeql`; enforce conversation resolution; block force pushes and branch deletion.
+   - Set branch protection on `main`: require Pull Request; require `quality`, `database`, `e2e`, `performance`, `dependency-review`, `codeql`, `secret-scan`, and `scorecard`; enforce conversation resolution; block force pushes and branch deletion.
    - Do NOT require pull request approvals (single-maintainer repository).
 
 ---
@@ -152,7 +153,8 @@ GitHub Actions is the authoritative verification environment. Every pull request
 
 - lint, strict TypeScript, production dependency audit, coverage thresholds, and build;
 - PostgreSQL migration/integration tests;
-- Playwright desktop and mobile critical journeys with WCAG checks;
-- an independent production dependency audit and CodeQL security analysis.
+- Playwright desktop and mobile critical journeys with WCAG and screenshot regression checks;
+- Lighthouse performance budgets against the production build;
+- an independent production dependency audit, CodeQL, Gitleaks, and OpenSSF Scorecard analysis.
 
-Dependabot opens grouped weekly updates for pnpm and GitHub Actions. Coverage and Playwright failure artifacts are retained for 14 days.
+Dependabot opens grouped weekly updates for pnpm and GitHub Actions. Coverage, Playwright failures, Lighthouse reports, and Scorecard results are retained as bounded GitHub Actions artifacts. All added services and tools are free for this public repository.
