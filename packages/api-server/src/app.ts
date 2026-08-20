@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { attachCookies } from './auth/cookies.js';
 import { attachSession, requireAuth } from './auth/middleware.js';
 import './auth/types.js';
@@ -32,8 +33,14 @@ function operationalHeaders(
 
 export function createApp(): express.Express {
   const app = express();
+
+  app.set('trust proxy', 1);
   app.disable('x-powered-by');
   app.use(operationalHeaders);
+
+  app.use(rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+  app.use('/api/auth', rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false }));
+
   app.use(express.json({ limit: '2mb' }));
   app.use(attachCookies);
   app.use(attachSession);
