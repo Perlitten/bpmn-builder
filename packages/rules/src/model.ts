@@ -206,11 +206,12 @@ function localTag(name: string): string {
 }
 
 function attrs(raw: string): Record<string, string> {
-  const out: Record<string, string> = {};
+  const out: Record<string, string> = Object.create(null);
   const re = /([:\w.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(raw))) {
     const key = localTag(match[1]);
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     out[key] = decode(match[2] ?? match[3] ?? '');
   }
   return out;
@@ -297,14 +298,14 @@ function processBodies(xml: string): string[] {
 }
 
 function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; labels: Record<string, Bounds> } {
-  const bounds: Record<string, Bounds> = {};
-  const labels: Record<string, Bounds> = {};
+  const bounds: Record<string, Bounds> = Object.create(null);
+  const labels: Record<string, Bounds> = Object.create(null);
 
   const shapeRe = /<(?:[\w.-]+:)?BPMNShape\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNShape>/gi;
   let match: RegExpExecArray | null;
   while ((match = shapeRe.exec(xml))) {
     const id = attrs(match[1] ?? '').bpmnelement;
-    if (!id) continue;
+    if (!id || id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
     const body = match[2] ?? '';
     const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
     if (labelMatch) {
@@ -325,7 +326,7 @@ function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; la
   const edgeRe = /<(?:[\w.-]+:)?BPMNEdge\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNEdge>/gi;
   while ((match = edgeRe.exec(xml))) {
     const id = attrs(match[1] ?? '').bpmnelement;
-    if (!id) continue;
+    if (!id || id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
     const body = match[2] ?? '';
     const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
     if (labelMatch) {

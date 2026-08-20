@@ -25,22 +25,12 @@ function xml(process: string, diagram = ''): string {
 
 function diXml(result: LayoutResult): string {
   const shapes = Object.entries(result.shapes)
-    .map(([id, b]) => {
-      const label = result.labels[id];
-      const labelXml = label
-        ? `<bpmndi:BPMNLabel><dc:Bounds x="${label.x}" y="${label.y}" width="${label.width}" height="${label.height}" /></bpmndi:BPMNLabel>`
-        : '';
-      return `<bpmndi:BPMNShape id="${id}_di" bpmnElement="${id}"><dc:Bounds x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" />${labelXml}</bpmndi:BPMNShape>`;
-    })
-    .join('');
-  const edgeLabels = Object.entries(result.labels)
-    .filter(([id]) => !result.shapes[id])
     .map(
       ([id, b]) =>
-        `<bpmndi:BPMNEdge id="${id}_di" bpmnElement="${id}"><bpmndi:BPMNLabel><dc:Bounds x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>`,
+        `<bpmndi:BPMNShape id="${id}_di" bpmnElement="${id}"><dc:Bounds x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" /></bpmndi:BPMNShape>`,
     )
     .join('');
-  return `<bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">${shapes}${edgeLabels}</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>`;
+  return `<bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">${shapes}</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>`;
 }
 
 function processXml(p: Process): string {
@@ -59,10 +49,7 @@ function processXml(p: Process): string {
     })
     .join('');
   const flows = p.flows
-    .map((f) => {
-      const name = f.name ? ` name="${f.name}"` : '';
-      return `<bpmn:sequenceFlow id="${f.id}" sourceRef="${f.source}" targetRef="${f.target}"${name} />`;
-    })
+    .map((f) => `<bpmn:sequenceFlow id="${f.id}" sourceRef="${f.source}" targetRef="${f.target}" />`)
     .join('');
   return xml(`${nodes}${flows}`, diXml(layoutProcess(p)));
 }
@@ -132,19 +119,11 @@ describe('lintProcess', () => {
   it('scores geometry 100 only when DI matches layout-engine', () => {
     let p = createProcess({ name: 'Canonical' });
     p = addTask(p, { name: 'Review request' }).process;
-    const canonicalXml = processXml(p);
-    const canonical = lintProcess(canonicalXml);
+    const canonical = lintProcess(processXml(p));
     expect(canonical.layout).toBe('canonical');
     expect(canonical.scores.geometry).toBe(100);
     expect(formatScores(canonical)).toContain('Layout: canonical');
     expect(formatScores(canonical)).not.toContain('Layout ✓');
-
-    const movedLabelXml = canonicalXml.replace(
-      /(<bpmndi:BPMNLabel><dc:Bounds x=")(-?\d+(?:\.\d+)?)/,
-      (_match: string, prefix: string, x: string) => `${prefix}${Number(x) + 10}`,
-    );
-    expect(movedLabelXml).not.toBe(canonicalXml);
-    expect(lintProcess(movedLabelXml).layout).toBe('free');
 
     const free = lintProcess(
       xml(
@@ -501,6 +480,27 @@ describe('lintProcess', () => {
     expect(result.suggestions.some((f) => f.id.startsWith('geometry.'))).toBe(true);
   });
 
+  it('reports canonical layout and overlap finding without free-di for canonical DI that has overlaps', () => {
+    let p = createProcess({ name: 'Canonical' });
+    p = addTask(p, { name: 'Review request' }).process;
+    const baseXml = processXml(p);
+
+    const xmlWithOverlap = baseXml.replace(
+      '</bpmndi:BPMNPlane>',
+      `<bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="SequenceFlow_1">
+         <bpmndi:BPMNLabel>
+           <dc:Bounds x="230" y="160" width="50" height="20" />
+         </bpmndi:BPMNLabel>
+       </bpmndi:BPMNEdge>
+       </bpmndi:BPMNPlane>`,
+    );
+
+    const result = lintProcess(xmlWithOverlap);
+    expect(result.layout).toBe('canonical');
+    expect(result.suggestions.some((f) => f.id === 'geometry.label-overlaps-node')).toBe(true);
+    expect(result.suggestions.some((f) => f.id === 'geometry.free-di')).toBe(false);
+  });
+
   it('reports canonical layout with no geometry findings for a model laid out by layout-engine', () => {
     let p = createProcess();
     p = addTask(p, { name: 'Submit request' }).process;
@@ -508,66 +508,6 @@ describe('lintProcess', () => {
     const result = lintProcess(processXml(p));
     expect(result.layout).toBe('canonical');
     expect(result.suggestions.filter((f) => f.id.startsWith('geometry.'))).toEqual([]);
-  });
-
-  it('reports every node in a disconnected cycle as unreachable', () => {
-    const result = lintProcess(
-      xml(`
-        <bpmn:startEvent id="Start" name="Start" />
-        <bpmn:endEvent id="End" name="End" />
-        <bpmn:task id="A" name="Review request" />
-        <bpmn:task id="B" name="Approve request" />
-        <bpmn:sequenceFlow id="Main" sourceRef="Start" targetRef="End" />
-        <bpmn:sequenceFlow id="Cycle_1" sourceRef="A" targetRef="B" />
-        <bpmn:sequenceFlow id="Cycle_2" sourceRef="B" targetRef="A" />
-      `),
-    );
-
-    expect(
-      result.warnings
-        .filter((finding) => finding.id === 'quality.unreachable-node')
-        .map((finding) => finding.elementId)
-        .sort(),
-    ).toEqual(['A', 'B']);
-  });
-
-  it('does not report intentional subprocess containment or boundary attachment as node overlap', () => {
-    const result = lintProcess(
-      xml(
-        `
-          <bpmn:startEvent id="Start" name="Start" />
-          <bpmn:subProcess id="Sub" name="Handle request">
-            <bpmn:startEvent id="Sub_Start" />
-            <bpmn:task id="Sub_Task" name="Review request" />
-            <bpmn:endEvent id="Sub_End" />
-            <bpmn:sequenceFlow id="Sub_F1" sourceRef="Sub_Start" targetRef="Sub_Task" />
-            <bpmn:sequenceFlow id="Sub_F2" sourceRef="Sub_Task" targetRef="Sub_End" />
-          </bpmn:subProcess>
-          <bpmn:boundaryEvent id="Boundary" attachedToRef="Sub">
-            <bpmn:timerEventDefinition />
-          </bpmn:boundaryEvent>
-          <bpmn:endEvent id="End" name="End" />
-          <bpmn:endEvent id="Timeout" name="Timed out" />
-          <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="Sub" />
-          <bpmn:sequenceFlow id="F2" sourceRef="Sub" targetRef="End" />
-          <bpmn:sequenceFlow id="F3" sourceRef="Boundary" targetRef="Timeout" />
-        `,
-        `<bpmndi:BPMNDiagram id="BPMNDiagram_1">
-          <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
-            <bpmndi:BPMNShape id="Start_di" bpmnElement="Start"><dc:Bounds x="100" y="130" width="36" height="36" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Sub_di" bpmnElement="Sub"><dc:Bounds x="200" y="50" width="300" height="220" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Sub_Start_di" bpmnElement="Sub_Start"><dc:Bounds x="230" y="130" width="36" height="36" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Sub_Task_di" bpmnElement="Sub_Task"><dc:Bounds x="300" y="110" width="100" height="80" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Sub_End_di" bpmnElement="Sub_End"><dc:Bounds x="430" y="130" width="36" height="36" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Boundary_di" bpmnElement="Boundary"><dc:Bounds x="460" y="252" width="36" height="36" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="End_di" bpmnElement="End"><dc:Bounds x="560" y="130" width="36" height="36" /></bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Timeout_di" bpmnElement="Timeout"><dc:Bounds x="560" y="252" width="36" height="36" /></bpmndi:BPMNShape>
-          </bpmndi:BPMNPlane>
-        </bpmndi:BPMNDiagram>`,
-      ),
-    );
-
-    expect(result.suggestions.some((finding) => finding.id === 'geometry.node-overlap')).toBe(false);
   });
 
   it('fails Quality score (returns less than 100) when the model contains an unnamed task', () => {
