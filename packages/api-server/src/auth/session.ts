@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, lt } from 'drizzle-orm';
 import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/index.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
@@ -12,8 +12,47 @@ export function hashSessionToken(token: string): string {
   return createHash('sha256').update(`${pepper}:${token}`).digest('hex');
 }
 
-export function generateOAuthState(): string {
-  return randomBytes(24).toString('base64url');
+type SignedOAuthState = {
+  nonce: string;
+  returnOrigin?: string;
+};
+
+function oauthStateSecret(): string {
+  return process.env.SESSION_SECRET?.trim() || 'dev-insecure-session-pepper';
+}
+
+function signOAuthStatePayload(encoded: string): string {
+  return createHmac('sha256', oauthStateSecret()).update(encoded).digest('base64url');
+}
+
+export function generateOAuthState(returnOrigin?: string): string {
+  const payload: SignedOAuthState = {
+    nonce: randomBytes(24).toString('base64url'),
+    ...(returnOrigin ? { returnOrigin } : {}),
+  };
+  const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+  return `${encoded}.${signOAuthStatePayload(encoded)}`;
+}
+
+export function parseOAuthState(state: string): SignedOAuthState | null {
+  const [encoded, signature] = state.split('.');
+  if (!encoded || !signature || !timingSafeEqualSafe(signature, signOAuthStatePayload(encoded))) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as SignedOAuthState;
+    if (!payload.nonce || typeof payload.nonce !== 'string') return null;
+    if (payload.returnOrigin !== undefined && typeof payload.returnOrigin !== 'string') return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function timingSafeEqualSafe(actual: string, expected: string): boolean {
+  const left = Buffer.from(actual);
+  const right = Buffer.from(expected);
+  return left.length === right.length && timingSafeEqual(left, right);
 }
 
 export function equalSecret(actual: string, expected: string): boolean {
@@ -42,12 +81,12 @@ function toAuthUser(row: UserRow): AuthUser {
   };
 }
 
-export async function createSession(userId: string): Promise<{ token: string; expiresAt: string }> {
+export async function createSession(userId: string, ttlMs = SESSION_TTL_MS): Promise<{ token: string; expiresAt: string }> {
   const db = getQueryDb();
   const table = getSessionsTable();
   const token = generateSessionToken();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + SESSION_TTL_MS).toISOString();
+  const expiresAt = new Date(now.getTime() + ttlMs).toISOString();
   await db.insert(table).values({
     id: hashSessionToken(token),
     userId,
@@ -64,7 +103,10 @@ export async function destroySession(token: string | undefined): Promise<void> {
   await db.delete(table).where(eq(table.id, hashSessionToken(token)));
 }
 
-export async function readSession(token: string | undefined): Promise<AuthUser | null> {
+export async function readSession(
+  token: string | undefined,
+  options?: { refresh?: boolean },
+): Promise<AuthUser | null> {
   if (!token) return null;
   const db = getQueryDb();
   const sessions = getSessionsTable();
@@ -84,7 +126,7 @@ export async function readSession(token: string | undefined): Promise<AuthUser |
     return null;
   }
   const remaining = Date.parse(session.expiresAt) - Date.now();
-  if (remaining < SESSION_TTL_MS / 2) {
+  if (options?.refresh !== false && remaining < SESSION_TTL_MS / 2) {
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
     await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
   }
