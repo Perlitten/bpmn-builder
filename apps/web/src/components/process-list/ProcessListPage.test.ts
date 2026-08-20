@@ -99,7 +99,7 @@ describe('list pagination footer', () => {
     expect(listRange(0, 1, 20)).toEqual({ from: 0, to: 0 });
     expect(lastListPage(12, 20)).toBe(1);
     expect(listRange(12, 3, 20)).toEqual({ from: 1, to: 12 });
-    const html = renderToStaticMarkup(
+    const singlePageHtml = renderToStaticMarkup(
       createElement(ListPaginationFooter, {
         from: 1,
         to: 7,
@@ -110,11 +110,25 @@ describe('list pagination footer', () => {
         onNext: () => undefined,
       }),
     );
-    expect(html).toMatch(/^<footer\b/);
-    expect(html).toContain('shrink-0');
-    expect(html).toContain('Showing 1–7 of 7');
-    expect(html).toContain('Prev');
-    expect(html).toContain('Next');
+    expect(singlePageHtml).toMatch(/^<footer\b/);
+    expect(singlePageHtml).toContain('shrink-0');
+    expect(singlePageHtml).toContain('Showing 1–7 of 7');
+    expect(singlePageHtml).not.toContain('Prev');
+    expect(singlePageHtml).not.toContain('Next');
+
+    const multiPageHtml = renderToStaticMarkup(
+      createElement(ListPaginationFooter, {
+        from: 1,
+        to: 20,
+        total: 25,
+        page: 1,
+        pageSize: 20,
+        onPrev: () => undefined,
+        onNext: () => undefined,
+      }),
+    );
+    expect(multiPageHtml).toContain('Prev');
+    expect(multiPageHtml).toContain('Next');
   });
 });
 
@@ -157,8 +171,6 @@ describe('ProcessListPage', () => {
     expect(html).not.toMatch(/<h2[^>]*>Templates</);
     expect(html).toMatch(/overflow-y-auto[\s\S]*<footer\b/);
     expect(html).toContain('Showing 0–0 of 0');
-    expect(html).toContain('Prev');
-    expect(html).toContain('Next');
     expect(html).toContain('flex h-full min-h-0 flex-col');
   });
 
@@ -174,7 +186,7 @@ describe('ProcessListPage', () => {
     expect(header).toContain('Describe the process');
     expect(header).toContain('Create process');
     expect(header).toContain('maxLength="20000"');
-    expect(header).toContain('0/20,000');
+    expect(header).not.toContain('0/20,000');
     expect(header).toContain('New blank');
     expect(header).not.toContain('+ New');
   });

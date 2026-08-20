@@ -29,6 +29,9 @@ import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
 
+export const DESCRIPTION_PLACEHOLDER =
+  'Receive invoice. Review details. If approved, pay the supplier, otherwise request a revision.';
+
 const PAGE_SIZE = 20;
 
 type ProcessListPageProps = {
@@ -269,7 +272,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             onError={handleImportFileError}
           />
           <Button
-            variant="accent"
+            variant="outline"
             size="sm"
             disabled={creating}
             onClick={() => void createAndOpen({ name: 'Untitled process' })}
@@ -283,7 +286,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             <input
               value={prompt}
               maxLength={MAX_DESCRIPTION_CHARS}
-              placeholder="Describe the process. Text is saved as the description."
+              placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Describe the process. Text is saved as the description."
               className="min-w-0 flex-1 rounded border border-border bg-canvas px-2.5 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
               onChange={(event) => setPrompt(event.target.value)}
@@ -302,9 +305,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           </div>
           <div className="mt-1.5 flex justify-between gap-3 text-[11px] text-muted">
             <span className={promptIssue ? 'text-danger' : ''}>
-              {promptIssue ?? 'Newlines and sequence words become tasks; one decision or parallel group is supported.'}
+              {promptIssue ?? ''}
             </span>
-            <span className="shrink-0 tabular-nums">{prompt.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
+            {prompt.length > MAX_DESCRIPTION_CHARS * 0.7 ? (
+              <span className="shrink-0 tabular-nums">{prompt.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
+            ) : null}
           </div>
         </div>
       </header>
