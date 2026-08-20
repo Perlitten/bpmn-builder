@@ -1,3 +1,4 @@
+# One-time cloud-only visual baseline generation.
 name: Generate visual baselines
 
 on:
