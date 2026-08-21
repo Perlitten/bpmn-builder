@@ -14,10 +14,11 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
 
     await page.goto('/');
 
-    await expect(page.locator('h1')).toContainText('Turn plain-language processes into clean BPMN 2.0.');
+    await expect(page.locator('h1')).toContainText('Describe processes in plain words');
     await expect(page.locator('#showcase-description')).toBeVisible();
     await expect(page.locator('.djs-shape').first()).toBeVisible();
     await expect(page.locator('h2')).toContainText('Sign in to save processes');
+    await expect(page.locator('[aria-busy="false"]')).toBeVisible();
 
     // Scan only after authentication state and the showcase viewer have settled.
     const result = await new AxeBuilder({ page })
@@ -43,15 +44,14 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     expect(processApiRequests).toEqual([]);
   });
 
-  test('Keyboard test: activate each example and focus the textarea via Try the live demo', async ({ page }) => {
+  test('Keyboard test: activate the primary action and each example', async ({ page }) => {
     await page.goto('/');
 
-    // Focus "Try the live demo" button
-    await page.getByRole('button', { name: 'Try the live demo' }).focus();
+    const primaryAction = page.getByRole('link', { name: 'PRESS START' });
+    await primaryAction.focus();
     await page.keyboard.press('Enter');
-
-    // Check if textarea is focused
-    await expect(page.locator('#showcase-description')).toBeFocused();
+    await expect(page).toHaveURL(/#signin$/);
+    await expect(page.locator('#signin')).toBeInViewport();
 
     // Tab through examples
     await page.getByRole('button', { name: 'Linear process' }).focus();
@@ -87,8 +87,27 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     const fullscreenBtn = page.getByRole('button', { name: 'View fullscreen' });
     await expect(fullscreenBtn).toBeVisible();
 
-    // Click it and check if it switches to 'Close'
+    // The fullscreen surface behaves as a modal and survives a responsive resize.
     await fullscreenBtn.click();
-    await expect(page.getByRole('button', { name: 'Exit fullscreen' })).toBeVisible();
+    const dialog = page.getByRole('dialog', { name: 'Fullscreen process preview' });
+    const closeBtn = page.getByRole('button', { name: 'Exit fullscreen' });
+    await expect(dialog).toBeVisible();
+    await expect(closeBtn).toBeFocused();
+    await expect(page.locator('main')).toHaveCSS('overflow', 'hidden');
+    await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(dialog.locator(':focus')).toBeVisible();
+
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+    await expect(dialog).toBeHidden();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fullscreenBtn.click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(fullscreenBtn).toBeFocused();
   });
 });

@@ -1,10 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('landing page visual regression', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/auth/status', async (route) => {
+      await route.fulfill({
+        json: {
+          configured: false,
+          error: 'Google OAuth is not configured for this visual test.',
+          callbackUrl: 'http://localhost:5173/api/auth/google/callback',
+        },
+      });
+    });
+  });
+
   test('landing page at desktop (1440x1000)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/');
-    await expect(page.locator('header')).toContainText('BPMN Builder');
+    await expect(page.locator('header')).toContainText('BPMN');
+    await expect(page.locator('[aria-busy="false"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     // Wait for the showcase viewer to render
     await expect(page.locator('.djs-shape').first()).toBeVisible();
@@ -19,7 +32,8 @@ test.describe('landing page visual regression', () => {
   test('landing page at mobile (390x844)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await expect(page.locator('header')).toContainText('BPMN Builder');
+    await expect(page.locator('header')).toContainText('BPMN');
+    await expect(page.locator('[aria-busy="false"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator('.djs-shape').first()).toBeVisible();
     await expect(page).toHaveScreenshot('landing-mobile.png', {
