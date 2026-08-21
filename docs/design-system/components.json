@@ -1,0 +1,1171 @@
+[
+  {
+    "name": "Button",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "variant",
+      "size",
+      "disabled",
+      "onClick",
+      "type",
+      "className",
+      "aria-label"
+    ],
+    "sites": [
+      "apps/web/src/components/process-list/DuplicateProcessDialog.tsx:78",
+      "apps/web/src/components/process-list/DuplicateProcessDialog.tsx:81",
+      "apps/web/src/components/process-list/ImportBpmnButton.tsx:22",
+      "apps/web/src/components/process-list/NewProcessDialog.tsx:115",
+      "apps/web/src/components/process-list/NewProcessDialog.tsx:152",
+      "apps/web/src/components/process-list/RenameProcessDialog.tsx:76",
+      "apps/web/src/components/process-list/TemplatesSection.tsx:29",
+      "apps/web/src/components/process-list/TemplatesSection.tsx:33",
+      "apps/web/src/components/shell/EditorChrome.tsx:77",
+      "apps/web/src/components/ui/ConfirmDialog.tsx:50",
+      "apps/web/src/components/ui/ConfirmDialog.tsx:53",
+      "apps/web/src/pages/ProcessListPage.tsx:366",
+      "apps/web/src/pages/SignInPage.tsx:94"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "ChromeMenuItem",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "onSelect",
+      "icon",
+      "disabled",
+      "size",
+      "strokeWidth"
+    ],
+    "sites": [
+      "apps/web/src/components/process-list/ProcessRow.tsx:92",
+      "apps/web/src/components/process-list/ProcessRow.tsx:93",
+      "apps/web/src/components/process-list/ProcessRow.tsx:94",
+      "apps/web/src/components/shell/EditorChrome.tsx:143",
+      "apps/web/src/components/shell/EditorChrome.tsx:147",
+      "apps/web/src/components/shell/EditorChrome.tsx:150",
+      "apps/web/src/components/shell/EditorChrome.tsx:154",
+      "apps/web/src/components/shell/EditorChrome.tsx:158",
+      "apps/web/src/components/shell/EditorChrome.tsx:161",
+      "apps/web/src/components/shell/UserMenu.tsx:27"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "ProcessSummary",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:45",
+      "apps/web/src/pages/ProcessListPage.tsx:59",
+      "apps/web/src/pages/ProcessListPage.tsx:60",
+      "apps/web/src/pages/ProcessListPage.tsx:61"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "HTMLElement",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:134",
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:150",
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:162"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "Icon",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size",
+      "strokeWidth"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:166",
+      "apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:65",
+      "apps/web/src/components/shell/EditorChrome.tsx:18"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "HTMLInputElement",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/process-list/ImportBpmnButton.tsx:17",
+      "apps/web/src/components/process-list/NewProcessDialog.tsx:31",
+      "apps/web/src/components/ui/TextField.tsx:3"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "HTMLButtonElement",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/process-list/ListKindTabs.tsx:23",
+      "apps/web/src/components/ui/Button.tsx:3",
+      "apps/web/src/components/ui/ChromeMenu.tsx:42"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "Skeleton",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "className"
+    ],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:356",
+      "apps/web/src/pages/ProcessListPage.tsx:357",
+      "apps/web/src/pages/ProcessListPage.tsx:358"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "BpmnEditorHandle",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:146",
+      "apps/web/src/pages/ProcessEditorPage.tsx:17"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "InspectorLintFooter",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "lint",
+      "elementId"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:894",
+      "apps/web/src/components/bpmn-editor/inspector/ElementInspector.tsx:428"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "Plus",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size",
+      "strokeWidth"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx:37",
+      "apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:80"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "AbortController",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:42",
+      "apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx:28"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "ArchitectMascot",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "mood",
+      "collapsed"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:225",
+      "apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx:167"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "ArrowLeft",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:122",
+      "apps/web/src/components/shell/EditorChrome.tsx:78"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "Diamond",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "className",
+      "size",
+      "strokeWidth"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:192",
+      "apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:96"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "ImportBpmnButtonHandle",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/process-list/ImportBpmnButton.tsx:15",
+      "apps/web/src/pages/ProcessListPage.tsx:64"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "UserMenu",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/ProcessEditorPage.tsx:196",
+      "apps/web/src/pages/ProcessListPage.tsx:282"
+    ],
+    "duplicateOf": null,
+    "notes": ""
+  },
+  {
+    "name": "AppRoute",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/App.tsx:10"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AuthGate",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/App.tsx:32"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AppShell",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "route",
+      "onNavigate"
+    ],
+    "sites": [
+      "apps/web/src/App.tsx:33"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ProcessListPage",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "onOpenProcess"
+    ],
+    "sites": [
+      "apps/web/src/App.tsx:35"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AuthContextValue",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/auth/AuthGate.tsx:10"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AuthContext",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "value"
+    ],
+    "sites": [
+      "apps/web/src/components/auth/AuthGate.tsx:28"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "SessionUser",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/auth/AuthGate.tsx:35"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "SignInPage",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/auth/AuthGate.tsx:70"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "BpmnModeler",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:152"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "SemanticEditor",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:153"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "TokenSimulation",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:154"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "TokenView",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:155"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "PaletteCatalogView",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:164"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "DiagramElement",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:166"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "BpmnCanvas",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "ref"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:754"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "BpmnZoomControls",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "scale",
+      "onZoomIn",
+      "onZoomOut",
+      "onFit",
+      "onReset"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:755"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "EditorOnboarding",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "onDismiss"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnEditor.tsx:772"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Minus",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx:21"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Maximize2",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx:45"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AssistantApplyResult",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:31"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "HTMLTextAreaElement",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:41"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ChatTurn",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:51"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AgentScopeKind",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:52"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ArchitectShell",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default",
+      "error"
+    ],
+    "props": [
+      "surface",
+      "busy",
+      "error",
+      "success"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:139"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "DragState",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:71"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Point",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:77"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ListArchitectPanelBox",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx:26"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "PreservedBpmnFields",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "process",
+      "element",
+      "onChange"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/inspector/ElementInspector.tsx:206"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "LaneNameField",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "laneId",
+      "name",
+      "onRename"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/inspector/ElementInspector.tsx:242"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ScoreChips",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "lint"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/inspector/ElementInspector.tsx:442"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "PreservedField",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/inspector/PreservedBpmnFields.tsx:12"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "FieldInput",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "key",
+      "field",
+      "hideLabel",
+      "onChange"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/inspector/PreservedBpmnFields.tsx:105"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "PaletteCategoryId",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:44"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Search",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size",
+      "strokeWidth"
+    ],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:132"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "BpmnComponentDefinition",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/bpmn-editor/palette/ContinueWith.tsx:44"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "AsciiFallback",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "preview"
+    ],
+    "sites": [
+      "apps/web/src/components/process-list/BpmnSchematic.tsx:74"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ChromeMenu",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "label",
+      "ariaLabel"
+    ],
+    "sites": [
+      "apps/web/src/components/process-list/ProcessRow.tsx:91"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "SaveStatus",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "saving",
+      "savedAt"
+    ],
+    "sites": [
+      "apps/web/src/components/shell/EditorChrome.tsx:94"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "PlayCircle",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size"
+    ],
+    "sites": [
+      "apps/web/src/components/shell/EditorChrome.tsx:129"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Ellipsis",
+    "kind": "local",
+    "variants": [
+      "size-provided"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "size"
+    ],
+    "sites": [
+      "apps/web/src/components/shell/EditorChrome.tsx:137"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ShowcaseViewer",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "xml"
+    ],
+    "sites": [
+      "apps/web/src/components/showcase/ShowcaseDemo.tsx:78"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Viewer",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/showcase/ShowcaseViewer.tsx:28"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "CloseMenu",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "value"
+    ],
+    "sites": [
+      "apps/web/src/components/ui/ChromeMenu.tsx:70"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ButtonHTMLAttributes",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/components/ui/PressedToggle.tsx:6"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "App",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/main.tsx:8"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "Process",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/ProcessEditorPage.tsx:18"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ListTab",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:48"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ProcessListSort",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:49"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ListArchitect",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default",
+      "error"
+    ],
+    "props": [
+      "busy",
+      "error",
+      "onDescribe"
+    ],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:267"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ListKindTabs",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "kind",
+      "onChange"
+    ],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:325"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ImportBpmnButton",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "disabled",
+      "onImport",
+      "onError"
+    ],
+    "sites": [
+      "apps/web/src/pages/ProcessListPage.tsx:379"
+    ],
+    "duplicateOf": "Button",
+    "notes": "Near duplicate of Button, likely differs only in padding or icon."
+  },
+  {
+    "name": "AuthStatus",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/SignInPage.tsx:28"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "ShowcaseDemo",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/SignInPage.tsx:60"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  },
+  {
+    "name": "GoogleMark",
+    "kind": "local",
+    "variants": [],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      "apps/web/src/pages/SignInPage.tsx:90"
+    ],
+    "duplicateOf": null,
+    "notes": "One-off component, low reuse value."
+  }
+]
