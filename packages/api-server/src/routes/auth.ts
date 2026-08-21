@@ -48,7 +48,7 @@ function matchesConfiguredRelay(origin: string, pattern: string): boolean {
   if (!pattern.includes('*')) return canonicalOrigin(pattern.replace(/\/$/, '')) === origin;
   if ((pattern.match(/\*/g) ?? []).length !== 1) return false;
   if (!/^https:\/\/[a-z0-9.-]*\*[a-z0-9.-]+$/i.test(pattern)) return false;
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace('*', '[a-z0-9-]+');
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '[a-z0-9-]+');
   return new RegExp(`^${escaped}$`, 'i').test(origin);
 }
 
