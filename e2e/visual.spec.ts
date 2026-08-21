@@ -1,6 +1,39 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('visual regression', () => {
+test.describe('landing page visual regression', () => {
+  test('landing page at desktop (1440x1000)', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'Run only in desktop project');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/');
+    await expect(page.locator('header')).toContainText('BPMN Builder');
+    await page.evaluate(() => document.fonts.ready);
+    // Wait for the showcase viewer to render
+    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page).toHaveScreenshot('landing-desktop.png', {
+      animations: 'disabled',
+      caret: 'hide',
+      fullPage: true,
+      maxDiffPixelRatio: 0.005,
+    });
+  });
+
+  test('landing page at mobile (390x844)', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-chromium', 'Run only in mobile project');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await expect(page.locator('header')).toContainText('BPMN Builder');
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page).toHaveScreenshot('landing-mobile.png', {
+      animations: 'disabled',
+      caret: 'hide',
+      fullPage: true,
+      maxDiffPixelRatio: 0.005,
+    });
+  });
+});
+
+test.describe('authenticated visual regression', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     const response = await page.request.post('/api/auth/test-session', {
       data: {

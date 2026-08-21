@@ -1,0 +1,8 @@
+feat: redesign landing page to focus on outcome-led copy and interactive diagram demo
+
+- Update header copy to "BPMN Builder" and move raw version hash to footer.
+- Change hero headline to "Turn plain-language processes into clean BPMN 2.0."
+- Refactor \`ShowcaseDemo\` into a balanced \`grid-cols-5\` layout on desktop, removing empty canvas space.
+- Introduce a full-screen toggle for \`ShowcaseViewer\` on mobile to prevent unreadable horizontal strips.
+- Apply robust responsive constraints and update all control touch targets to \`min-h-[44px]\`.
+- Constrain visual tests to specific viewports and regenerate correct snapshots.
