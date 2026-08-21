@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.3.0...bpmn-builder-v0.4.0) (2026-08-21)
+
+
+### Features
+
+* **web:** adopt product design system components ([fa8d93e](https://github.com/Perlitten/bpmn-builder/commit/fa8d93eca45eabcb246cd79b0f7056f7813ef1c0))
+* **web:** adopt product design system components ([288600e](https://github.com/Perlitten/bpmn-builder/commit/288600ee8b333d0ff57c9f1918ca921a416d869c))
+
 ## [0.3.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.2.0...bpmn-builder-v0.3.0) (2026-08-21)
 
 
