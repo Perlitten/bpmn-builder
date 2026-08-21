@@ -1,0 +1,955 @@
+[
+  {
+    "name": "ShowcaseDemo",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ShowcaseViewer",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "xml"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseViewer.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "NewProcessDialog",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "open",
+      "busy",
+      "error",
+      "onClose",
+      "onDescribe",
+      "onBlank",
+      "onImport",
+      "onRetryImport"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "TemplatesSection",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "templates",
+      "busy",
+      "onUse",
+      "onOpen"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "BpmnSchematic",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "xml",
+      "preview"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ListKindTabs",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "kind",
+      "onChange"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ListPaginationFooter",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "from",
+      "to",
+      "total",
+      "page",
+      "pageSize",
+      "onPrev",
+      "onNext"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ProcessRow",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "process",
+      "onOpen",
+      "onRename",
+      "onDuplicate",
+      "onDelete"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ImportBpmnButton",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "disabled",
+      "label",
+      "variant",
+      "onImport",
+      "onError"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ImportBpmnButton.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "RenameProcessDialog",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "process",
+      "busy",
+      "error",
+      "onRename",
+      "onClose"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "DuplicateProcessDialog",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "process",
+      "busy",
+      "error",
+      "onConfirm",
+      "onClose"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "BpmnZoomControls",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "scale",
+      "onZoomIn",
+      "onZoomOut",
+      "onFit",
+      "onReset"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ContinueWith",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "source",
+      "hasParticipant",
+      "anchor"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/ContinueWith.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "glyphs",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/glyphs.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "CatalogFlyout",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "view",
+      "query",
+      "selection",
+      "hasParticipant",
+      "onQueryChange",
+      "onViewChange",
+      "onPick",
+      "onClose"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "PaletteRail",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "tool",
+      "catalogView",
+      "query",
+      "selection",
+      "hasParticipant",
+      "onTool",
+      "onOpenCatalog",
+      "onQueryChange",
+      "onPick",
+      "onCloseCatalog"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "BpmnEditor",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "processId",
+      "xml",
+      "simulating",
+      "onChange",
+      "onSimStatus"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnEditor.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "EditorOnboarding",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "onDismiss"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/EditorOnboarding.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "BpmnCanvas",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnCanvas.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ElementInspector",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "element",
+      "canDelete",
+      "lint",
+      "framed",
+      "replaceWorks",
+      "onRename",
+      "onRenameLane",
+      "onChangeTo",
+      "onDelete",
+      "onFlowKind",
+      "onCondition",
+      "onDefaultOutgoing",
+      "onCalledElement",
+      "onAttach",
+      "onCreate",
+      "process",
+      "onPreservedChange",
+      "poolLanes",
+      "nodeLanes",
+      "currentLaneId",
+      "onAssignLane"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/ElementInspector.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "PreservedBpmnFields",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "process",
+      "element",
+      "onChange"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/PreservedBpmnFields.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ListArchitect",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "busy",
+      "error",
+      "onDescribe"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ArchitectPanel",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "disabled",
+      "configured",
+      "context",
+      "onProtectBranch",
+      "onApply",
+      "message",
+      "history",
+      "scope",
+      "signal",
+      ") => Promise<AssistantApplyResult>;"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ArchitectShell",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "surface",
+      "persistOpen",
+      "busy",
+      "error",
+      "success",
+      "children"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ArchitectMascot",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "mood",
+      "collapsed"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/ArchitectMascot.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "ScoreChips",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "lint"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/lint/ScoreChips.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "Skeleton",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Skeleton.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "Button",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "variant",
+      "size"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "ChromeMenu",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "label",
+      "ariaLabel",
+      "disabled",
+      "align",
+      "children"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "TextField",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "variant"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "ConfirmDialog",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "open",
+      "title",
+      "body",
+      "confirmLabel",
+      "role",
+      "busy",
+      "onConfirm",
+      "onCancel"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "PressedToggle",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "pressed",
+      "children"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "SaveStatus",
+    "kind": "Primitive",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "saving",
+      "savedAt"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Reusable UI component."
+  },
+  {
+    "name": "EditorChrome",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "disabled"
+    ],
+    "props": [
+      "name",
+      "saving",
+      "savedAt",
+      "busy",
+      "notice",
+      "simulating",
+      "simStatus",
+      "compact",
+      "onBack",
+      "onNameChange",
+      "onNameCommit",
+      "onExport",
+      "onExportSvg",
+      "onExportPdf",
+      "onSaveTemplate",
+      "onClear",
+      "onToggleSimulate",
+      "onResetSimulation",
+      "account"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "UserMenu",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "AppShell",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default"
+    ],
+    "props": [
+      "route",
+      "onNavigate",
+      "children"
+    ],
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  },
+  {
+    "name": "AuthGate",
+    "kind": "Composition",
+    "variants": [
+      "default"
+    ],
+    "states": [
+      "default",
+      "loading"
+    ],
+    "props": [],
+    "sites": [
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 1,
+        "form": "definition"
+      }
+    ],
+    "duplicateOf": null,
+    "notes": "Page-specific composition."
+  }
+]

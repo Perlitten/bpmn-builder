@@ -1,0 +1,3488 @@
+[
+  {
+    "category": "Color",
+    "value": "ink",
+    "count": 50,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 42,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 42,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 59,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 112,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 124,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 69,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 56,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 58,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 11,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.test.ts",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 103,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 45,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 256,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "muted",
+    "count": 43,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 34,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 80,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 90,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 113,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 125,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 38,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 60,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architectRequest.test.ts",
+        "line": 126,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 11,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 11,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 152,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 156,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 65,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 47,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 55,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 64,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 75,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 84,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 162,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 170,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 257,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 306,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 364,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "2",
+    "count": 41,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 96,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 151,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 39,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 42,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 75,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.test.ts",
+        "line": 44,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 55,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 64,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 284,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 285,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 318,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 370,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "border",
+    "count": 36,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 32,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 76,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 108,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 120,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Skeleton.tsx",
+        "line": 2,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 81,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 44,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 254,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 284,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 323,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 355,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "sm",
+    "count": 34,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 112,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 124,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 146,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 69,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 65,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 45,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 55,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 64,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 84,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 162,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 170,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 256,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 318,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 364,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "3",
+    "count": 32,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 90,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 110,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 122,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 146,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.test.ts",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 255,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 306,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 323,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 355,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 355,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 366,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 370,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "4",
+    "count": 31,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 32,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 80,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 59,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 108,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 110,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 120,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 122,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 151,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 59,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 65,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 44,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 162,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 255,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 284,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 318,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 323,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 355,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 363,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "canvas",
+    "count": 30,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 32,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 42,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseViewer.tsx",
+        "line": 72,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 9,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 23,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 253,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 254,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "full",
+    "count": 24,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 32,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 80,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseViewer.tsx",
+        "line": 72,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseViewer.tsx",
+        "line": 72,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessListPage.test.ts",
+        "line": 174,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 50,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 94,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 174,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 253,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "0",
+    "count": 20,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 38,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 39,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessListPage.test.ts",
+        "line": 174,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 69,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 115,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 103,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 29,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 30,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 174,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 198,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 253,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 258,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 350,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "surface",
+    "count": 19,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 76,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 11,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 22,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "1.5",
+    "count": 17,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 90,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 30,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 109,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 255,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 306,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "medium",
+    "count": 16,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 34,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 69,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 60,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 30,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 74,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "xs",
+    "count": 15,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 34,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 80,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 113,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 125,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 60,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 11,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 100,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 103,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "danger",
+    "count": 14,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 91,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 146,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/compactChrome.test.ts",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/compactChrome.test.ts",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 161,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 307,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 318,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "1",
+    "count": 13,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 27,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 39,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 29,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 68,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 75,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "semibold",
+    "count": 9,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 56,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 58,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 45,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 256,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "mono",
+    "count": 9,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 38,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 103,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 46,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 47,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 257,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "5",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 75,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 77,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "2.5",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "tight",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 45,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 256,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "base",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 56,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 58,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 55,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 63,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "auto",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 109,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 47,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 50,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 258,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "6",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 65,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 84,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 94,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 160,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 170,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Border Radius",
+    "value": "sm",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Skeleton.tsx",
+        "line": 2,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 356,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 357,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 358,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "accent",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 12,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 100,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "5",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 111,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 16,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 18,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "7",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 42,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "transparent",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 54,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.test.ts",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "dvh",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 22,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/AppShell.tsx",
+        "line": 23,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 61,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 43,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "px",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 108,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 120,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 81,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "sm",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Border Radius",
+    "value": "lg",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 17,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 33,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Opacity",
+    "value": "60",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 30,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 396,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "11",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 44,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "8",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 49,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 50,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 363,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "3",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 356,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 357,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 358,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "lg",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 87,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "wide",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/process-list/BpmnSchematic.tsx",
+        "line": 41,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "8",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Z-Index",
+    "value": "10",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 14,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "12",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 255,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#cbd5e1",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 582,
+        "form": "Raw CSS"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 648,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Z-Index",
+    "value": "index",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/paletteA11y.test.ts",
+        "line": 66,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architectRequest.test.ts",
+        "line": 135,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Z-Index",
+    "value": "20",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 254,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "normal",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 152,
+        "form": "Tailwind scale class"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 156,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Shadow",
+    "value": "sm",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 32,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Z-Index",
+    "value": "50",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 59,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "x-4",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "y-1",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "16",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 66,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Spacing",
+    "value": "0.5",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 73,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "annotation",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/catalogPresentation.ts",
+        "line": 117,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "size",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/eventLabelCss.test.ts",
+        "line": 12,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "right",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/compactChrome.test.ts",
+        "line": 37,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "white",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Z-Index",
+    "value": "30",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "3.5",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 111,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Border Width",
+    "value": "0",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 10,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "4",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 81,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#0f172a",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 4,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#64748b",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 5,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#e2e8f0",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 6,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#f8fafc",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 7,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#ffffff",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 8,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#0f766e",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 9,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#fb7185",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 10,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Color",
+    "value": "#fff",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 163,
+        "form": "Raw CSS"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "4xl",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 50,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "xl",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "bold",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "2xl",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "md",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 62,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Typography",
+    "value": "5",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 64,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "9",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "xs",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 258,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "40",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 356,
+        "form": "Tailwind scale class"
+      }
+    ]
+  },
+  {
+    "category": "Sizing",
+    "value": "16",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 358,
+        "form": "Tailwind scale class"
+      }
+    ]
+  }
+]
