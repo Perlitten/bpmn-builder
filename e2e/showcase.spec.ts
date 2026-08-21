@@ -16,7 +16,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
 
     await expect(page.locator('h1')).toContainText('Describe processes in plain words');
     await expect(page.locator('#showcase-description')).toBeVisible();
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.getByTestId('showcase-preview')).toBeVisible();
     await expect(page.locator('h2')).toContainText('Sign in to save processes');
     await expect(page.locator('[aria-busy="false"]')).toBeVisible();
 
@@ -29,7 +29,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     );
     expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
 
-    await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(0);
+    await expect(page.getByTestId('showcase-preview').locator('polygon')).toHaveCount(0);
 
     const decisionBtn = page.getByRole('button', { name: 'Decision flow' });
     await expect(decisionBtn).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     // Adjusted check to match the new string
     expect(textareaValue).toContain('If the candidate is qualified');
 
-    await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(2);
+    await expect(page.getByTestId('showcase-preview').locator('polygon')).toHaveCount(2);
 
     expect(processApiRequests).toEqual([]);
   });
@@ -76,7 +76,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await page.goto('/');
 
     // Wait for the diagram to render
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.getByTestId('showcase-preview')).toBeVisible();
 
     // Assert no horizontal document overflow
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

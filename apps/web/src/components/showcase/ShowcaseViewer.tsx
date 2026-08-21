@@ -61,6 +61,7 @@ export function ShowcaseViewer({ xml }: ShowcaseViewerProps) {
       </div>
       {svg ? (
         <div
+          data-testid="showcase-preview"
           className="pointer-events-none min-h-[220px] flex-1 p-4 text-ink [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
           role="img"
           aria-label="Generated BPMN process preview"
