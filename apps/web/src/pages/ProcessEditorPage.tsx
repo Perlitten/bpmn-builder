@@ -11,6 +11,7 @@ import { svgToPdfBlob } from '../lib/exportDiagram';
 import { pageTitle } from '../lib/pageTitle';
 import {
   createProcessSaveQueue,
+  guardDirtyProcessLeave,
   processSaveStorageKey,
   readProcessSaveJournal,
   type ProcessSaveQueue,
@@ -92,9 +93,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   useEffect(() => {
     const onOnline = () => saveQueueRef.current?.retry();
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!saveQueueRef.current?.isDirty()) return;
-      event.preventDefault();
-      event.returnValue = '';
+      guardDirtyProcessLeave(saveQueueRef.current, event);
     };
     window.addEventListener('online', onOnline);
     window.addEventListener('beforeunload', onBeforeUnload);

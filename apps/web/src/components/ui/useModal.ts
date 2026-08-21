@@ -43,6 +43,19 @@ export function trapTabKey(root: HTMLElement, event: KeyboardEvent): void {
   nodes[wrapFocusIndex(nodes.length, current, event.shiftKey)]?.focus();
 }
 
+function outsideModalElements(root: HTMLElement): HTMLElement[] {
+  const outside = new Set<HTMLElement>();
+  let current: HTMLElement | null = root;
+  while (current?.parentElement) {
+    for (const sibling of current.parentElement.children) {
+      if (sibling !== current && sibling instanceof HTMLElement) outside.add(sibling);
+    }
+    current = current.parentElement;
+    if (current === document.body) break;
+  }
+  return [...outside];
+}
+
 type UseModalOptions = {
   open: boolean;
   onClose: () => void;
@@ -58,6 +71,15 @@ export function useModal({ open, onClose }: UseModalOptions): { ref: RefObject<H
     const root = ref.current;
     if (!root) return;
     const restore = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const outside = outsideModalElements(root).map((element) => ({
+      element,
+      hadInert: element.hasAttribute('inert'),
+    }));
+    for (const { element } of outside) element.setAttribute('inert', '');
+    const scrollLocks = [...new Set([document.documentElement, document.body, root.closest<HTMLElement>('main')])]
+      .filter((element): element is HTMLElement => Boolean(element))
+      .map((element) => ({ element, overflow: element.style.overflow }));
+    for (const { element } of scrollLocks) element.style.overflow = 'hidden';
     const focusInitial = () => {
       const marked = root.querySelector<HTMLElement>('[data-modal-initial-focus]');
       (marked ?? focusableIn(root)[0] ?? root).focus();
@@ -77,6 +99,10 @@ export function useModal({ open, onClose }: UseModalOptions): { ref: RefObject<H
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('keydown', onKey, true);
+      for (const { element, hadInert } of outside) {
+        if (!hadInert) element.removeAttribute('inert');
+      }
+      for (const { element, overflow } of scrollLocks) element.style.overflow = overflow;
       restore?.focus();
     };
   }, [open]);

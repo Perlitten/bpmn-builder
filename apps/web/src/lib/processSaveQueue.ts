@@ -89,6 +89,16 @@ export function readProcessSaveJournal(
   }
 }
 
+export function guardDirtyProcessLeave(
+  queue: Pick<ProcessSaveQueue, 'isDirty'> | null,
+  event: Pick<BeforeUnloadEvent, 'preventDefault' | 'returnValue'>,
+): boolean {
+  if (!queue?.isDirty()) return false;
+  event.preventDefault();
+  event.returnValue = '';
+  return true;
+}
+
 export function createProcessSaveQueue(options: QueueOptions) {
   const storage = options.storage ?? window.localStorage;
   const isOnline = options.isOnline ?? (() => navigator.onLine);

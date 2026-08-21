@@ -6,7 +6,6 @@ import {
   ARCHITECT_COMPANION_WIDTH,
   ARCHITECT_PANEL_ESTIMATE_HEIGHT,
   ARCHITECT_PANEL_WIDTH,
-  ARCHITECT_Z_INDEX,
   architectStorage,
   clampArchitectPosition,
   companionMode,
@@ -203,7 +202,7 @@ export function ArchitectShell({
       role="group"
       aria-label="Architect"
       aria-busy={busy}
-      style={mode === 'dock' ? undefined : { left: pos.x, top: pos.y, zIndex: ARCHITECT_Z_INDEX }}
+      style={mode === 'dock' ? undefined : { left: pos.x, top: pos.y }}
     >
       <div className="architect-perch">
         <div

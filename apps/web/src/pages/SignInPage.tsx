@@ -17,13 +17,17 @@ function authErrorMessage(code: string | null): string | null {
   return null;
 }
 
-export function SignInPage() {
-  const [status, setStatus] = useState<AuthStatus | null>(null);
+export function SignInPage({ initialStatus = null }: { initialStatus?: AuthStatus | null }) {
+  const [status, setStatus] = useState<AuthStatus | null>(initialStatus);
   const errorCode = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('error');
   const oauthError = authErrorMessage(errorCode);
 
   useEffect(() => {
     document.title = pageTitle('list');
+    if (initialStatus) {
+      setStatus(initialStatus);
+      return;
+    }
     const ac = new AbortController();
     void fetchAuthStatus(ac.signal)
       .then(setStatus)
@@ -35,7 +39,7 @@ export function SignInPage() {
         });
       });
     return () => ac.abort();
-  }, []);
+  }, [initialStatus]);
 
   const configured = status === null ? null : status.configured;
   const setupError = status && !status.configured ? status.error ?? 'Google OAuth is unavailable.' : null;

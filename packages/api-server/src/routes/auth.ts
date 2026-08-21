@@ -100,10 +100,11 @@ export function registerAuthRoutes(app: Application): void {
         configured: false,
         error: config.error.replaceAll('{origin}', origin),
         callbackUrl,
+        user: req.user ?? null,
       });
       return;
     }
-    res.json({ configured: true, callbackUrl });
+    res.json({ configured: true, callbackUrl, user: req.user ?? null });
   });
 
   app.get('/api/auth/me', authRateLimit, (req: Request, res: Response) => {

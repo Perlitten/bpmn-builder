@@ -1,5 +1,11 @@
 import { createContext, lazy, Suspense, useContext, useEffect, useState, type ReactNode } from 'react';
-import { completeOAuthHandoff, fetchSessionUser, signOut as postSignOut, type SessionUser } from '../../lib/auth';
+import {
+  completeOAuthHandoff,
+  fetchAuthBootstrap,
+  signOut as postSignOut,
+  type AuthStatus,
+  type SessionUser,
+} from '../../lib/auth';
 import { Button } from '../ui';
 
 const SignInPage = lazy(() =>
@@ -37,6 +43,7 @@ export function AuthProvider({
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -46,9 +53,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     void completeOAuthHandoff(ac.signal)
-      .then(() => fetchSessionUser(ac.signal))
+      .then(() => fetchAuthBootstrap(ac.signal))
       .then((next) => {
-        setUser(next);
+        const { user: nextUser, ...status } = next;
+        setAuthStatus(status);
+        setUser(nextUser);
         setLoading(false);
       })
       .catch((reason: unknown) => {
@@ -95,7 +104,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <Suspense fallback={<p className="p-6 text-sm text-muted" role="status">Loading sign-in…</p>}>
-        <SignInPage />
+        <SignInPage initialStatus={authStatus} />
       </Suspense>
     );
   }

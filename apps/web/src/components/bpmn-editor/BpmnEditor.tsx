@@ -1,7 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { AgentScope } from '@bpmn/agent-tools';
 import { replaceBpmnType, type BpmnComponentDefinition } from '@bpmn/semantic-core';
-import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '@bpmn/rules';
 import {
   createTokenSimulation,
   describeSimulation,
@@ -34,6 +33,7 @@ import { gfxAnchor } from './palette/modelerServices';
 import { continueTarget, isSequenceFlowElement, resolveInsert, type InsertTarget } from './palette/insertTarget';
 import { editorNoticeText, visibleEditorChrome } from './editorNotice';
 import { useLiveBpmnXml } from './useLiveBpmnXml';
+import { lintLiveBpmnXml } from './liveBpmnLint';
 import { PaletteRail } from './palette/PaletteRail';
 import { isSequenceFlowSource } from './palette/contextFilter';
 import type { PaletteCatalogView } from './palette/catalogPresentation';
@@ -686,7 +686,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   );
 
   const lint = useMemo(
-    () => lintProcess(currentXml, { executionProfile: DEFAULT_EXECUTION_PROFILE }),
+    () => lintLiveBpmnXml(currentXml),
     [currentXml, graphRev],
   );
 
@@ -764,7 +764,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
             {hint}
           </div>
         ) : chrome === 'onboarding' ? (
-          <EditorOnboarding onDismiss={() => setOnboarding(false)} />
+          <EditorOnboarding compact={compact} onDismiss={() => setOnboarding(false)} />
         ) : null}
       </div>
       <aside className="element-inspector" aria-label="Process inspector">

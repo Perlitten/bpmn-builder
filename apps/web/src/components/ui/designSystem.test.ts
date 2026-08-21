@@ -1,19 +1,38 @@
-import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const uiDir = dirname(fileURLToPath(import.meta.url));
 const srcDir = resolve(uiDir, '../..');
+const tokenCss = join(srcDir, 'styles/tokens.css');
+
+function filesUnder(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name);
+    return entry.isDirectory() ? filesUnder(path) : [path];
+  });
+}
+
+const authoredStyles = filesUnder(srcDir).filter((file) => file.endsWith('.css') && file !== tokenCss);
+const componentSources = [join(srcDir, 'components'), join(srcDir, 'pages')]
+  .flatMap(filesUnder)
+  .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file));
+
+function sourceLabel(file: string): string {
+  return relative(srcDir, file).replaceAll('\\', '/');
+}
 
 describe('product design-system contract', () => {
   it('defines the semantic tokens consumed by product components', () => {
-    const css = readFileSync(join(srcDir, 'styles/tokens.css'), 'utf8');
+    const css = readFileSync(tokenCss, 'utf8');
     for (const token of [
       '--color-border-interactive',
       '--color-border-disabled',
       '--color-ink-disabled',
+      '--color-google-blue',
+      '--mask-opaque',
       '--space-1',
       '--space-9',
       '--radius-0',
@@ -22,9 +41,11 @@ describe('product design-system contract', () => {
       '--fs-14',
       '--dur-instant',
       '--dur-overlay',
+      '--z-import-hold',
       '--z-inspector',
       '--z-menu',
       '--z-rail-open',
+      '--z-landing-overlay',
       '--control-hit',
       '--control-visual',
     ]) {
@@ -50,21 +71,46 @@ describe('product design-system contract', () => {
     for (const weight of [400, 500, 600, 700]) expect(fonts).toContain(`inter/latin-${weight}.css`);
   });
 
-  it('keeps raw product colors in the token source only', () => {
-    const productStyles = [
-      join(uiDir, 'ui.css'),
-      join(srcDir, 'components/bpmn-editor/palette/palette.css'),
-      join(srcDir, 'components/bpmn-editor/inspector/inspector.css'),
-      join(srcDir, 'components/bpmn-editor/zoomControls.css'),
-    ];
-
-    for (const file of productStyles) {
-      expect(readFileSync(file, 'utf8'), file).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+  it('keeps raw colors in the generated token layer across every authored surface', () => {
+    const rawColor = /#[0-9a-f]{3,8}\b|(?:rgb|hsl)a?\(/i;
+    for (const file of [...authoredStyles, ...componentSources]) {
+      expect(readFileSync(file, 'utf8'), sourceLabel(file)).not.toMatch(rawColor);
     }
   });
 
-  it('keeps product geometry square or at the two-pixel exception', () => {
-    const css = readFileSync(join(uiDir, 'ui.css'), 'utf8');
-    expect(css).not.toMatch(/border-radius:\s*(?:[3-9]|[1-9]\d)px/);
+  it('keeps every authored component radius on the zero/two-pixel token contract', () => {
+    for (const file of authoredStyles) {
+      const css = readFileSync(file, 'utf8');
+      for (const match of css.matchAll(/border-radius:\s*([^;]+);/gi)) {
+        expect(match[1]?.trim(), `${sourceLabel(file)}: ${match[0]}`).toMatch(
+          /^var\(--radius-(?:0|2)\)$/,
+        );
+      }
+    }
+
+    for (const file of componentSources) {
+      expect(readFileSync(file, 'utf8'), sourceLabel(file)).not.toMatch(/\brounded(?:-|\b)/);
+    }
+  });
+
+  it('uses named global layers and prevents visual token bypasses in components', () => {
+    for (const file of authoredStyles) {
+      const css = readFileSync(file, 'utf8');
+      for (const match of css.matchAll(/z-index:\s*([^;]+);/gi)) {
+        expect(match[1]?.trim(), `${sourceLabel(file)}: ${match[0]}`).toMatch(
+          /^(?:var\(--z-[a-z0-9-]+\)|-1|0|1|auto)$/,
+        );
+      }
+    }
+
+    const rawTailwindPalette =
+      /\b(?:bg|text|border|outline|ring|fill|stroke)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/;
+    const inlineVisualBypass =
+      /\b(?:backgroundColor|borderColor|borderRadius|boxShadow|outlineColor|zIndex)\s*:|\b[A-Z0-9_]*Z_INDEX\s*=/;
+    for (const file of componentSources) {
+      const source = readFileSync(file, 'utf8');
+      expect(source, sourceLabel(file)).not.toMatch(rawTailwindPalette);
+      expect(source, sourceLabel(file)).not.toMatch(inlineVisualBypass);
+    }
   });
 });

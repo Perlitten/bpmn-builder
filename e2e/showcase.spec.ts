@@ -6,10 +6,12 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     page,
   }) => {
     const processApiRequests: string[] = [];
+    const sessionProbeRequests: string[] = [];
     page.on('request', (req) => {
       if (req.url().includes('/api/processes')) {
         processApiRequests.push(req.url());
       }
+      if (new URL(req.url()).pathname === '/api/auth/me') sessionProbeRequests.push(req.url());
     });
 
     await page.goto('/');
@@ -42,6 +44,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(page.getByTestId('showcase-preview').locator('polygon')).toHaveCount(2);
 
     expect(processApiRequests).toEqual([]);
+    expect(sessionProbeRequests).toEqual([]);
   });
 
   test('Keyboard test: activate the primary action and each example', async ({ page }) => {
@@ -95,6 +98,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(closeBtn).toBeFocused();
     await expect(page.locator('main')).toHaveCSS('overflow', 'hidden');
     await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+    await expect.poll(() => page.locator('header').evaluate((element) => element.inert)).toBe(true);
 
     await page.keyboard.press('Shift+Tab');
     await expect(dialog.locator(':focus')).toBeVisible();
@@ -103,6 +107,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(closeBtn).toBeVisible();
     await closeBtn.click();
     await expect(dialog).toBeHidden();
+    await expect.poll(() => page.locator('header').evaluate((element) => element.inert)).toBe(false);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await fullscreenBtn.click();

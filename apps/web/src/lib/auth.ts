@@ -11,25 +11,27 @@ export type AuthStatus = {
   callbackUrl?: string;
 };
 
-export async function fetchAuthStatus(signal?: AbortSignal): Promise<AuthStatus> {
+export type AuthBootstrap = AuthStatus & {
+  user: SessionUser | null;
+};
+
+export async function fetchAuthBootstrap(signal?: AbortSignal): Promise<AuthBootstrap> {
   const response = await fetch('/api/auth/status', { credentials: 'same-origin', signal });
-  if (!response.ok) {
+  if (!response.ok) throw new Error('Failed to read authentication status');
+  return response.json() as Promise<AuthBootstrap>;
+}
+
+export async function fetchAuthStatus(signal?: AbortSignal): Promise<AuthStatus> {
+  try {
+    const { user: _user, ...status } = await fetchAuthBootstrap(signal);
+    return status;
+  } catch (error: unknown) {
+    if (signal?.aborted) throw error;
     return {
       configured: false,
       error: 'Could not read auth status. Is the API server running?',
     };
   }
-  return response.json() as Promise<AuthStatus>;
-}
-
-export async function fetchSessionUser(signal?: AbortSignal): Promise<SessionUser | null> {
-  const response = await fetch('/api/auth/me', { credentials: 'same-origin', signal });
-  if (response.status === 401) return null;
-  if (!response.ok) {
-    throw new Error('Failed to read session');
-  }
-  const body = (await response.json()) as { user: SessionUser };
-  return body.user;
 }
 
 export async function completeOAuthHandoff(signal?: AbortSignal): Promise<void> {

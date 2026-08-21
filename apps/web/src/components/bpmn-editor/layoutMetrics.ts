@@ -11,7 +11,6 @@ export const PALETTE_RAIL_WIDTH = 64;
 export const ARCHITECT_MARGIN = 12;
 export const ARCHITECT_PANEL_WIDTH = 280;
 export const ARCHITECT_PANEL_ESTIMATE_HEIGHT = 240;
-export const ARCHITECT_Z_INDEX = 200;
 export const MOBILE_PALETTE_BAR = 56;
 export const ZOOM_CONTROLS_SIZE = 44;
 export const FIT_INSET = 12;

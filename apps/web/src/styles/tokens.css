@@ -1,4 +1,4 @@
-/* Generated from tokens.json v1.1.0. Run pnpm tokens:generate; do not edit. */
+/* Generated from tokens.json v1.2.0. Run pnpm tokens:generate; do not edit. */
 
 @theme {
   /* Product palette */
@@ -19,6 +19,10 @@
   --color-ink-soft: #334155;
   --color-line-strong: #cbd5e1;
   --color-danger-strong: #be123c;
+  --color-google-blue: #4285f4;
+  --color-google-green: #34a853;
+  --color-google-yellow: #fbbc05;
+  --color-google-red: #ea4335;
   --font-display: 'Pixelify Sans', ui-monospace, monospace;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --shadow-pixel-sm: 4px 4px 0 var(--color-ink);
@@ -63,7 +67,12 @@
   --landing-stroke-medium: 3px;
   --landing-step-duration: 90ms;
 
+  /* Effects */
+  --mask-opaque: #000000;
+  --mask-soft: rgb(0 0 0 / 0.5);
+
   /* Layers */
+  --z-import-hold: 2;
   --z-inspector: 6;
   --z-rail: 8;
   --z-zoom: 10;
@@ -71,6 +80,7 @@
   --z-catalog: 12;
   --z-menu: 13;
   --z-rail-open: 14;
+  --z-landing-overlay: 20;
   --z-chrome: 20;
   --z-architect: 200;
   --z-dialog: 400;

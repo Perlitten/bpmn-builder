@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Process } from '@bpmn/domain';
-import { createProcessSaveQueue, processSaveStorageKey, readProcessSaveJournal } from './processSaveQueue';
+import {
+  createProcessSaveQueue,
+  guardDirtyProcessLeave,
+  processSaveStorageKey,
+  readProcessSaveJournal,
+} from './processSaveQueue';
 
 function memoryStorage() {
   const values = new Map<string, string>();
@@ -141,6 +146,73 @@ describe('process save queue', () => {
     expect(save).toHaveBeenCalledWith({ name: 'Still saved', version: 1 });
     expect(queue.getState().phase).toBe('idle');
     vi.useRealTimers();
+  });
+
+  it('resumes an offline journal when connectivity returns', async () => {
+    vi.useFakeTimers();
+    let online = false;
+    const save = vi.fn(async (patch) => saved(2, patch));
+    const queue = createProcessSaveQueue({
+      storageKey: 'offline-resume',
+      initialVersion: 1,
+      save,
+      onState: () => undefined,
+      storage: memoryStorage(),
+      isOnline: () => online,
+      debounceMs: 0,
+    });
+
+    queue.enqueue({ name: 'Safe offline edit' }, true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(queue.getState().phase).toBe('offline');
+    expect(save).not.toHaveBeenCalled();
+
+    online = true;
+    queue.retry();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(save).toHaveBeenCalledWith({ name: 'Safe offline edit', version: 1 });
+    expect(queue.getState().phase).toBe('idle');
+    vi.useRealTimers();
+  });
+
+  it('retries transient server failures with backoff and preserves the pending patch', async () => {
+    vi.useFakeTimers();
+    const unavailable = Object.assign(new Error('Temporarily unavailable'), { status: 503 });
+    const save = vi.fn().mockRejectedValueOnce(unavailable).mockResolvedValueOnce(saved(2));
+    const queue = createProcessSaveQueue({
+      storageKey: 'transient-retry',
+      initialVersion: 1,
+      save,
+      onState: () => undefined,
+      storage: memoryStorage(),
+      isOnline: () => true,
+      debounceMs: 0,
+      retryMs: 1_000,
+    });
+
+    queue.enqueue({ bpmnXml: '<xml id="retry" />' }, true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(queue.getState().phase).toBe('failed');
+    expect(save).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(save).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(save).toHaveBeenLastCalledWith({ bpmnXml: '<xml id="retry" />', version: 1 });
+    expect(queue.getState().phase).toBe('idle');
+    vi.useRealTimers();
+  });
+
+  it('guards browser leave only while the queue is dirty', () => {
+    const cleanEvent = { preventDefault: vi.fn(), returnValue: 'untouched' };
+    expect(guardDirtyProcessLeave({ isDirty: () => false }, cleanEvent)).toBe(false);
+    expect(cleanEvent.preventDefault).not.toHaveBeenCalled();
+    expect(cleanEvent.returnValue).toBe('untouched');
+
+    const dirtyEvent = { preventDefault: vi.fn(), returnValue: 'untouched' };
+    expect(guardDirtyProcessLeave({ isDirty: () => true }, dirtyEvent)).toBe(true);
+    expect(dirtyEvent.preventDefault).toHaveBeenCalledOnce();
+    expect(dirtyEvent.returnValue).toBe('');
   });
 
   it('stops on a version conflict and retries only after explicit resolution', async () => {

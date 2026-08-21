@@ -19,22 +19,6 @@ export function ShowcaseViewer({ xml }: ShowcaseViewerProps) {
     };
   }, [xml]);
 
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const main = modalRef.current?.closest('main');
-    const previousMainOverflow = main?.style.overflow ?? '';
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    if (main instanceof HTMLElement) main.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      if (main instanceof HTMLElement) main.style.overflow = previousMainOverflow;
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [isFullscreen, modalRef]);
-
   return (
     <div
       ref={modalRef}

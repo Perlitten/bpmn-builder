@@ -102,10 +102,16 @@ describe('google auth and process isolation', () => {
 
     const status = await fetch(`${url}/api/auth/status`);
     expect(status.status).toBe(200);
-    const body = (await status.json()) as { configured: boolean; error: string; callbackUrl: string };
+    const body = (await status.json()) as {
+      configured: boolean;
+      error: string;
+      callbackUrl: string;
+      user: null;
+    };
     expect(body.configured).toBe(false);
     expect(body.error).toMatch(/GOOGLE_CLIENT_ID/);
     expect(body.callbackUrl).toMatch(/\/api\/auth\/google\/callback$/);
+    expect(body.user).toBeNull();
 
     const start = await fetch(`${url}/api/auth/google`, { redirect: 'manual' });
     expect(start.status).toBe(503);
@@ -181,6 +187,12 @@ describe('google auth and process isolation', () => {
     expect(user.email).toBe('ada@example.com');
     expect(user.name).toBe('Ada Lovelace');
     expect(user.id).toBeTruthy();
+
+    const bootstrap = await fetch(`${url}/api/auth/status`, {
+      headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` },
+    });
+    expect(bootstrap.status).toBe(200);
+    expect(((await bootstrap.json()) as { user: { email: string } | null }).user?.email).toBe('ada@example.com');
 
     const logout = await fetch(`${url}/api/auth/logout`, {
       method: 'POST',

@@ -4,7 +4,6 @@ import {
   ARCHITECT_OPEN_KEY,
   ARCHITECT_PANEL_WIDTH,
   ARCHITECT_STORAGE_KEY,
-  ARCHITECT_Z_INDEX,
   PALETTE_RAIL_WIDTH,
   clampArchitectPosition,
   companionMode,
@@ -33,9 +32,6 @@ function memory() {
 }
 
 describe('architectPosition', () => {
-  it('stays above catalog, inspector, and palette', () => {
-    expect(ARCHITECT_Z_INDEX).toBeGreaterThanOrEqual(200);
-  });
   it('defaults to bottom-right without covering the left rail', () => {
     const pos = defaultArchitectPosition(viewport, panel);
     expect(pos.x).toBe(viewport.width - panel.width - ARCHITECT_MARGIN);

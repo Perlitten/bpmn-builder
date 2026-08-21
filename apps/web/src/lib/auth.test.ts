@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { completeOAuthHandoff, signOut } from './auth';
+import { completeOAuthHandoff, fetchAuthBootstrap, signOut } from './auth';
 
 describe('completeOAuthHandoff', () => {
   afterEach(() => {
@@ -69,5 +69,20 @@ describe('completeOAuthHandoff', () => {
     await completeOAuthHandoff();
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('bootstraps signed-out state without an expected 401 request', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ configured: true, callbackUrl: '/callback', user: null }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchAuthBootstrap()).resolves.toMatchObject({ configured: true, user: null });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/status',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+    expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('/api/auth/me');
   });
 });
