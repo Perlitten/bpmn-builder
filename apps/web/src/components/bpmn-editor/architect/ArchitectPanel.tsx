@@ -16,6 +16,7 @@ import {
 import type { AssistantApplyResult } from './applyAssistant';
 import { isArchitectComposeSubmitKey } from './architectComposeKey';
 import { ArchitectShell } from './ArchitectShell';
+import { Button, TextAreaField } from '../../ui';
 import './architect.css';
 
 type ArchitectPanelProps = {
@@ -174,7 +175,7 @@ export function ArchitectPanel({
       ) : null}
       <label>
         <span className="sr-only">Describe a semantic edit</span>
-        <textarea
+        <TextAreaField
           ref={textareaRef}
           value={draft}
           disabled={busy || disabled}
@@ -190,37 +191,30 @@ export function ArchitectPanel({
         />
       </label>
       <div className="architect-actions">
+        <Button
+          variant="accent"
+          size="sm"
+          loading={busy}
+          loadingLabel="Applying…"
+          disabled={!error && (disabled || !draft.trim() || configured === false)}
+          onClick={() => (error ? submit(failedText ?? draft) : submit())}
+        >
+          {error ? 'Retry' : 'Apply'}
+        </Button>
         {busy ? (
-          <>
-            <button type="button" className="architect-apply" disabled>
-              Applying…
-            </button>
-            <button type="button" className="architect-secondary" onClick={cancelBusy}>
-              Cancel
-            </button>
-          </>
+          <Button variant="ghost" size="sm" onClick={cancelBusy}>
+            Cancel
+          </Button>
         ) : error ? (
           <>
-            <button type="button" className="architect-apply" onClick={() => submit(failedText ?? draft)}>
-              Retry
-            </button>
-            <button type="button" className="architect-secondary" onClick={editFailed}>
+            <Button variant="ghost" size="sm" onClick={editFailed}>
               Edit
-            </button>
-            <button type="button" className="architect-secondary" onClick={dismissError}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={dismissError}>
               Cancel
-            </button>
+            </Button>
           </>
-        ) : (
-          <button
-            type="button"
-            className="architect-apply"
-            disabled={disabled || !draft.trim() || configured === false}
-            onClick={() => submit()}
-          >
-            Apply
-          </button>
-        )}
+        ) : null}
       </div>
       {configured === false ? (
         <p className="architect-hint">AI is not configured. Add a provider key and restart.</p>

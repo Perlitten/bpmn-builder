@@ -143,7 +143,7 @@ describe('palette keyboard a11y', () => {
     expect(css).toMatch(/\.continue-menu button:focus-visible/);
   });
 
-  it('exposes the catalog as a modal dialog so Tab stays inside', () => {
+  it('exposes the catalog as a non-modal popover so Tab can leave it', () => {
     const html = renderToStaticMarkup(
       createElement(CatalogFlyout, {
         view: 'activities',
@@ -157,6 +157,6 @@ describe('palette keyboard a11y', () => {
       }),
     );
     expect(html).toMatch(/role="dialog"/);
-    expect(html).toMatch(/aria-modal="true"/);
+    expect(html).not.toMatch(/aria-modal="true"/);
   });
 });

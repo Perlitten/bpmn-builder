@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -29,6 +30,24 @@ describe('product design-system contract', () => {
     ]) {
       expect(css, `missing ${token}`).toContain(token);
     }
+  });
+
+  it('generates a clean, versioned token stylesheet with unique names', () => {
+    const source = JSON.parse(readFileSync(join(srcDir, 'styles/tokens.json'), 'utf8')) as {
+      version: string;
+      theme: Record<string, Record<string, string>>;
+      root: Record<string, Record<string, string>>;
+    };
+    expect(source.version).toMatch(/^\d+\.\d+\.\d+$/);
+    const names = [...Object.values(source.theme), ...Object.values(source.root)].flatMap(Object.keys);
+    expect(new Set(names).size).toBe(names.length);
+    const result = spawnSync(process.execPath, [resolve(srcDir, '../../../scripts/generate-tokens.mjs'), '--check']);
+    expect(result.status, result.stderr.toString()).toBe(0);
+  });
+
+  it('self-hosts every Inter weight required by the product contract', () => {
+    const fonts = readFileSync(join(srcDir, 'styles/productFonts.ts'), 'utf8');
+    for (const weight of [400, 500, 600, 700]) expect(fonts).toContain(`inter/latin-${weight}.css`);
   });
 
   it('keeps raw product colors in the token source only', () => {

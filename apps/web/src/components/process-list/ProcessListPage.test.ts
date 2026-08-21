@@ -5,7 +5,7 @@ import type { ProcessSummary } from '@bpmn/domain';
 import { AuthProvider } from '../auth/AuthGate';
 import { ListKindTabs } from './ListKindTabs';
 import { ListPaginationFooter } from './ListPaginationFooter';
-import { ProcessListPage } from '../../pages/ProcessListPage';
+import { ProcessListPage, templatePage } from '../../pages/ProcessListPage';
 import { draftNameFromTemplate, TemplatesSection } from './TemplatesSection';
 import {
   listRange,
@@ -17,31 +17,40 @@ import {
   searchWithListTab,
 } from './listTabs';
 
-const STARTER = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
-  <bpmn:process id="Process_1" isExecutable="false">
-    <bpmn:startEvent id="StartEvent_1" name="Start" />
-    <bpmn:task id="Activity_1" name="Task" />
-    <bpmn:endEvent id="EndEvent_1" name="End" />
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Activity_1" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_1" targetRef="EndEvent_1" />
-  </bpmn:process>
-</bpmn:definitions>`;
-
 function summary(name: string): ProcessSummary {
   return {
     id: name,
     name,
     description: null,
     status: 'template',
-    bpmnXml: STARTER,
     version: 1,
     createdAt: '2026-08-13T00:00:00.000Z',
     updatedAt: '2026-08-13T00:00:00.000Z',
+    structure: 'Starter · 1 task · 1 end',
+    quality: { errors: 0, warnings: 0, style: 1 },
+    preview: { caption: 'Start → Task → End', nodes: [], edges: [] },
   };
 }
 
 describe('list tabs', () => {
+  it('filters and pages built-in and user templates without a second XML payload', () => {
+    const approval = { ...summary('Approval decision'), builtin: true };
+    const onboarding = summary('Employee onboarding');
+    const page = templatePage([onboarding, approval], 'approval', 'name_asc', 1);
+    expect(page.total).toBe(1);
+    expect(page.processes).toEqual([approval]);
+    expect(page.processes[0]).not.toHaveProperty('bpmnXml');
+  });
+
+  it('keeps built-in starters discoverable before user templates', () => {
+    const builtin = { ...summary('Approval decision'), builtin: true };
+    const userTemplate = summary('Aardvark custom template');
+    expect(templatePage([userTemplate, builtin], '', 'name_asc', 1).processes).toEqual([
+      builtin,
+      userTemplate,
+    ]);
+  });
+
   it('defaults to processes and deep-links ?kind=template', () => {
     expect(listTabFromSearch('')).toBe('process');
     expect(listTabFromSearch('?q=order')).toBe('process');
@@ -182,7 +191,7 @@ describe('ProcessListPage', () => {
     expect(header).toContain('sticky');
     expect(header).not.toMatch(/\bh-11\b/);
     expect(header).toContain('Search processes');
-    expect(header).toContain('Open Architect');
+    expect(header).not.toContain('Open Architect');
     expect(header).toContain('Describe the process');
     expect(header).toContain('Create process');
     expect(header).toContain('maxLength="20000"');

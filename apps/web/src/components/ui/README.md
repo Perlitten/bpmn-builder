@@ -1,7 +1,8 @@
 # Product UI contract
 
 The authenticated product uses the flat modeling-tool system defined in
-`src/styles/tokens.css` and `ui.css`. The marketing landing is intentionally a
+generated `src/styles/tokens.css` and `ui.css`. Edit the versioned
+`src/styles/tokens.json` source and run `pnpm tokens:generate`. The marketing landing is intentionally a
 separate visual layer and must not import product motion, density, or component
 geometry.
 

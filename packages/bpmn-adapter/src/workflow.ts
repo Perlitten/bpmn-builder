@@ -69,7 +69,7 @@ function processToWorkflow(process: Process): WorkflowDocument {
   };
 }
 
-function workflowToProcess(workflow: WorkflowDocument): Process {
+export function workflowToProcess(workflow: WorkflowDocument): Process {
   const processId = workflow.processId?.trim() || 'Process_1';
   const nodes: FlowNode[] = workflow.nodes.map((node) => {
     const mapped = FROM_WORKFLOW[node.type] ?? { type: 'task' as const, bpmnType: 'bpmn:Task' };

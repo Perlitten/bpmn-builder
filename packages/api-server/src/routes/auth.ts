@@ -27,16 +27,56 @@ function redirectHome(res: Response, origin: string, error?: string): void {
   res.redirect(url.toString());
 }
 
-function isSafeRelayOrigin(origin: string): boolean {
+function canonicalOrigin(origin: string): string | null {
   try {
     const url = new URL(origin);
-    if (url.protocol === 'http:') {
-      return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-    }
-    return url.protocol === 'https:' && (url.hostname.endsWith('.vercel.app') || url.hostname.endsWith('.vercel.sh'));
+    if (url.username || url.password || url.origin !== origin) return null;
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.origin;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function exactVercelOrigin(value: string | undefined): string | null {
+  const host = value?.trim().replace(/^https?:\/\//, '');
+  if (!host || host.includes('/') || host.includes('@')) return null;
+  return canonicalOrigin(`https://${host}`);
+}
+
+function matchesConfiguredRelay(origin: string, pattern: string): boolean {
+  if (!pattern.includes('*')) return canonicalOrigin(pattern.replace(/\/$/, '')) === origin;
+  if ((pattern.match(/\*/g) ?? []).length !== 1) return false;
+  if (!/^https:\/\/[a-z0-9.-]*\*[a-z0-9.-]+$/i.test(pattern)) return false;
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace('*', '[a-z0-9-]+');
+  return new RegExp(`^${escaped}$`, 'i').test(origin);
+}
+
+/** Only explicit origins, project-specific wildcard patterns, and this deployment are relay targets. */
+export function isSafeRelayOrigin(origin: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  const candidate = canonicalOrigin(origin);
+  if (!candidate) return false;
+  const url = new URL(candidate);
+  if (
+    env.NODE_ENV !== 'production' &&
+    url.protocol === 'http:' &&
+    (url.hostname === 'localhost' || url.hostname === '127.0.0.1')
+  ) {
+    return true;
+  }
+  if (url.protocol !== 'https:') return false;
+
+  const configured = (env.OAUTH_RELAY_ORIGINS ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const deploymentOrigins = [
+    exactVercelOrigin(env.VERCEL_URL),
+    exactVercelOrigin(env.VERCEL_BRANCH_URL),
+    exactVercelOrigin(env.VERCEL_PROJECT_PRODUCTION_URL),
+    env.AUTH_BASE_URL ? canonicalOrigin(env.AUTH_BASE_URL.trim().replace(/\/$/, '')) : null,
+  ].filter((value): value is string => Boolean(value));
+  return deploymentOrigins.includes(candidate) || configured.some((pattern) => matchesConfiguredRelay(candidate, pattern));
 }
 
 export function registerAuthRoutes(app: Application): void {

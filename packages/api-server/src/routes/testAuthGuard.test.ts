@@ -43,7 +43,7 @@ describe('security: test-session route guarding', () => {
 
     const res = await fetch(`${url}/api/auth/test-session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-BPMN-CSRF': '1' },
       body: JSON.stringify({ email: 'attacker@example.com' }),
     });
     expect(res.status).toBe(404);
@@ -58,7 +58,7 @@ describe('security: test-session route guarding', () => {
 
     const res = await fetch(`${url}/api/auth/test-session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-BPMN-CSRF': '1' },
       body: JSON.stringify({ email: 'e2e@example.com' }),
     });
     expect(res.status).toBe(200);

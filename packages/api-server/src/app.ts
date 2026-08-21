@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { attachCookies } from './auth/cookies.js';
 import { attachSession, requireAuth } from './auth/middleware.js';
+import { csrfProtection } from './auth/csrf.js';
 import './auth/types.js';
 import { registerRoutes } from './routes/index.js';
 
@@ -39,6 +40,7 @@ export function createApp(): express.Express {
   app.use(attachCookies);
   app.use(attachSession);
   app.use(requireAuth);
+  app.use(csrfProtection);
   registerRoutes(app);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'not found' });

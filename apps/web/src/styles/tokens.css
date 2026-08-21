@@ -1,3 +1,5 @@
+/* Generated from tokens.json v1.1.0. Run pnpm tokens:generate; do not edit. */
+
 @theme {
   /* Product palette */
   --color-ink: #0f172a;
@@ -13,7 +15,7 @@
   --color-danger-fill: #fb7185;
   --color-ink-disabled: #7b7f8a;
 
-  /* Shared aliases retained by the separate marketing layer. */
+  /* Marketing aliases */
   --color-ink-soft: #334155;
   --color-line-strong: #cbd5e1;
   --color-danger-strong: #be123c;
@@ -22,13 +24,10 @@
   --shadow-pixel-sm: 4px 4px 0 var(--color-ink);
   --shadow-pixel-md: 6px 6px 0 var(--color-ink);
   --shadow-pixel-lg: 10px 10px 0 var(--color-ink);
-
-  /* Product motion. Marketing deliberately does not consume these. */
-  --duration-ui: 160ms;
-  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root {
+  /* Spacing */
   --space-1: 2px;
   --space-2: 4px;
   --space-3: 6px;
@@ -39,9 +38,11 @@
   --space-8: 16px;
   --space-9: 18px;
 
+  /* Geometry */
   --radius-0: 0;
   --radius-2: 2px;
 
+  /* Typography */
   --fs-10: 10px;
   --fs-11: 11px;
   --fs-12: 12px;
@@ -51,11 +52,18 @@
   --lh-relaxed: 1.6;
   --ls-caps: 0.06em;
 
+  /* Motion */
   --dur-instant: 80ms;
   --dur-ui: 160ms;
   --dur-overlay: 220ms;
   --ease-ui: cubic-bezier(0.2, 0, 0, 1);
 
+  /* Landing geometry */
+  --landing-stroke-heavy: 4px;
+  --landing-stroke-medium: 3px;
+  --landing-step-duration: 90ms;
+
+  /* Layers */
   --z-inspector: 6;
   --z-rail: 8;
   --z-zoom: 10;
@@ -63,10 +71,12 @@
   --z-catalog: 12;
   --z-menu: 13;
   --z-rail-open: 14;
+  --z-chrome: 20;
   --z-architect: 200;
-  --z-architect-list: 300;
   --z-dialog: 400;
+  --z-skip-link: 500;
 
+  /* Product geometry */
   --editor-rail-width: 64px;
   --editor-catalog-width: 260px;
   --editor-inspector-width: 252px;

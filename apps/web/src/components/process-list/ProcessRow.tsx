@@ -1,7 +1,5 @@
 import { memo, useSyncExternalStore } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
-import { DEFAULT_EXECUTION_PROFILE, lintProcess, type LintResult } from '@bpmn/rules';
-import { previewBpmn, previewStructure } from '../../lib/bpmnPreview';
 import {
   absoluteTime,
   relativeTime,
@@ -11,6 +9,7 @@ import {
 } from '../../lib/relativeTime';
 import { ChromeMenu, ChromeMenuItem } from '../ui/ChromeMenu';
 import { listQualitySignal } from './listQuality';
+import { BpmnSchematic } from './BpmnSchematic';
 
 type ProcessRowProps = {
   process: ProcessSummary;
@@ -20,39 +19,13 @@ type ProcessRowProps = {
   onDelete?: (process: ProcessSummary) => void;
 };
 
-type RowAnalysis = { lint: LintResult; structure: string };
-
-const ROW_CACHE_LIMIT = 100;
-const rowAnalysisCache = new Map<string, RowAnalysis>();
-
-function analyzeRow(xml: string): RowAnalysis {
-  const cached = rowAnalysisCache.get(xml);
-  if (cached) {
-    rowAnalysisCache.delete(xml);
-    rowAnalysisCache.set(xml, cached);
-    return cached;
-  }
-  const preview = previewBpmn(xml);
-  const result = {
-    lint: lintProcess(xml, { executionProfile: DEFAULT_EXECUTION_PROFILE, geometry: 'skip' }),
-    structure: previewStructure(preview),
-  };
-  rowAnalysisCache.set(xml, result);
-  if (rowAnalysisCache.size > ROW_CACHE_LIMIT) {
-    const oldest = rowAnalysisCache.keys().next().value;
-    if (oldest) rowAnalysisCache.delete(oldest);
-  }
-  return result;
-}
-
 export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, onDuplicate, onDelete }: ProcessRowProps) {
   const now = useSyncExternalStore(
     subscribeRelativeTime,
     relativeTimeSnapshot,
     relativeTimeServerSnapshot,
   );
-  const { lint, structure } = analyzeRow(process.bpmnXml);
-  const quality = listQualitySignal(lint);
+  const quality = listQualitySignal(process.quality);
   const updated = relativeTime(process.updatedAt, now);
   const metadataId = `process-${process.id}-metadata`;
   const actions = Boolean(onRename || onDuplicate || onDelete);
@@ -63,9 +36,12 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
         type="button"
         aria-label={`Open ${process.name}`}
         aria-describedby={metadataId}
-        className={`grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 border-0 bg-canvas px-4 py-3 text-left text-ink hover:bg-surface ${actions ? 'pr-16' : ''}`}
+        className={`grid min-h-16 w-full grid-cols-[9rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-0 bg-canvas px-4 py-3 text-left text-ink hover:bg-surface ${actions ? 'pr-16' : ''}`}
         onClick={() => onOpen(process.id)}
       >
+        <span className="row-span-2 hidden min-w-0 sm:block" aria-hidden="true">
+          <BpmnSchematic preview={process.preview} />
+        </span>
         <span className="min-w-0 truncate text-sm font-medium text-ink">{process.name}</span>
         <time
           dateTime={process.updatedAt}
@@ -74,8 +50,8 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
         >
           {updated}
         </time>
-        <span className="col-span-2 flex min-w-0 items-center gap-2 text-[11px] text-muted">
-          <span className="truncate">{structure}</span>
+        <span className="col-span-2 flex min-w-0 items-center gap-2 text-[11px] text-muted sm:col-span-1">
+          <span className="truncate">{process.structure}</span>
           {quality ? (
             <span className="shrink-0 truncate" title={quality.title}>
               {quality.label}
@@ -83,7 +59,7 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
           ) : null}
         </span>
         <span id={metadataId} className="sr-only">
-          {`Updated ${updated}. ${structure}${quality ? `. ${quality.label}` : ''}`}
+          {`Updated ${updated}. ${process.structure}${quality ? `. ${quality.label}` : ''}`}
         </span>
       </button>
       {actions ? (

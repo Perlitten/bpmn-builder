@@ -20,9 +20,6 @@ body {
 }
 
 .landing-shell {
-  --landing-stroke-heavy: 4px;
-  --landing-stroke-medium: 3px;
-  --landing-step-duration: 90ms;
   font-family: var(--font-mono);
   -webkit-font-smoothing: none;
 }
@@ -157,7 +154,6 @@ html.is-editor body,
 html.is-editor #root {
   height: 100%;
   overflow: hidden;
-  --editor-compact-rail: 56px;
 }
 
 .bpmn-canvas-host {

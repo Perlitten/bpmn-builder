@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { completeOAuthHandoff } from './auth';
+import { completeOAuthHandoff, signOut } from './auth';
 
 describe('completeOAuthHandoff', () => {
   afterEach(() => {
@@ -28,10 +28,34 @@ describe('completeOAuthHandoff', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'same-origin',
+        headers: expect.objectContaining({ 'X-BPMN-CSRF': '1' }),
         body: JSON.stringify({ token: 'handoff-secret' }),
       }),
     );
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('auth_token');
+  });
+
+  it('keeps the handoff token in the URL when the exchange fails so retry is possible', async () => {
+    const replaceState = vi.fn();
+    vi.stubGlobal('window', {
+      location: { hash: '#auth_token=handoff-secret', pathname: '/', search: '' },
+      history: { replaceState },
+    });
+    vi.stubGlobal('document', { title: 'BPMN' });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
+
+    await expect(completeOAuthHandoff()).rejects.toThrow(/handoff/i);
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it('protects sign out with the CSRF header and reports server failures', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(signOut()).rejects.toThrow(/sign out/i);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/logout',
+      expect.objectContaining({ headers: { 'X-BPMN-CSRF': '1' } }),
+    );
   });
 
   it('ignores unrelated URL fragments', async () => {

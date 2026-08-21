@@ -1,75 +1,117 @@
-import { useEffect, useState } from 'react';
-import type { BpmnPreview } from '../../lib/bpmnPreview';
-import { peekLayoutPreviewSvg, previewLayoutSvg } from '../../lib/layoutPreview';
+import { useId } from 'react';
+import type { ProcessMiniPreview } from '@bpmn/domain';
 
-type BpmnSchematicProps = {
-  xml?: string | null;
-  preview: BpmnPreview;
+type BpmnSchematicProps = { preview: ProcessMiniPreview };
+
+type PositionedNode = ProcessMiniPreview['nodes'][number] & {
+  px: number;
+  py: number;
+  width: number;
+  height: number;
 };
 
-function useLayoutPreview(xml: string | null | undefined): string | null | undefined {
-  const [svg, setSvg] = useState<string | null | undefined>(() => peekLayoutPreviewSvg(xml));
-
-  useEffect(() => {
-    if (!xml?.trim()) {
-      setSvg(null);
-      return;
-    }
-    let cancelled = false;
-    const peeked = peekLayoutPreviewSvg(xml);
-    if (peeked !== undefined) {
-      setSvg(peeked);
-      return;
-    }
-    setSvg(undefined);
-    void previewLayoutSvg(xml).then((next) => {
-      if (!cancelled) setSvg(next);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [xml]);
-
-  return svg;
+function dimensions(type: string): { width: number; height: number } {
+  const lower = type.toLowerCase();
+  if (lower.includes('event')) return { width: 36, height: 36 };
+  if (lower.includes('gateway')) return { width: 44, height: 44 };
+  return { width: 100, height: 48 };
 }
 
-function AsciiFallback({ preview }: { preview: BpmnPreview }) {
-  return (
-    <div className="min-w-0 font-mono text-[11px] leading-4 text-muted">
-      <div className="flex min-w-0 items-baseline gap-2">
-        {preview.kind === 'starter' ? (
-          <span className="shrink-0 text-[10px] uppercase tracking-wide">Starter</span>
-        ) : null}
-        <span className="truncate">{preview.happyPath}</span>
-      </div>
-      {preview.branches.map((branch, index) => (
-        <div key={`${index}:${branch}`} className="truncate pl-3">
-          └ {branch}
-        </div>
-      ))}
-    </div>
-  );
+function positioned(preview: ProcessMiniPreview): PositionedNode[] {
+  return preview.nodes.map((node, index) => ({
+    ...node,
+    px: typeof node.x === 'number' ? node.x : index * 140,
+    py: typeof node.y === 'number' ? node.y : 0,
+    ...dimensions(node.type),
+  }));
 }
 
-export function BpmnSchematic({ xml, preview }: BpmnSchematicProps) {
-  const svg = useLayoutPreview(xml);
-  const caption = [preview.happyPath, ...preview.branches.map((branch) => `└ ${branch}`)].join(' ');
-
-  if (svg) {
+function NodeShape({ node }: { node: PositionedNode }) {
+  const centerX = node.px + node.width / 2;
+  const centerY = node.py + node.height / 2;
+  const lower = node.type.toLowerCase();
+  if (lower.includes('event')) {
     return (
-      <div
-        className="pointer-events-none h-7 min-w-0 overflow-hidden text-ink [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
-        role="img"
-        aria-label={caption}
-        title={caption}
-        dangerouslySetInnerHTML={{ __html: svg }}
+      <g>
+        <circle cx={centerX} cy={centerY} r={node.width / 2 - 2} fill="var(--color-canvas)" stroke="currentColor" strokeWidth="2" />
+        {lower.includes('end') ? (
+          <circle cx={centerX} cy={centerY} r={node.width / 2 - 6} fill="none" stroke="currentColor" strokeWidth="2" />
+        ) : null}
+      </g>
+    );
+  }
+  if (lower.includes('gateway')) {
+    return (
+      <path
+        d={`M ${centerX} ${node.py + 1} L ${node.px + node.width - 1} ${centerY} L ${centerX} ${node.py + node.height - 1} L ${node.px + 1} ${centerY} Z`}
+        fill="var(--color-canvas)"
+        stroke="currentColor"
+        strokeWidth="2"
       />
     );
   }
+  const label = node.label.trim() || 'Task';
+  return (
+    <g>
+      <rect
+        x={node.px + 1}
+        y={node.py + 1}
+        width={node.width - 2}
+        height={node.height - 2}
+        rx="3"
+        fill="var(--color-canvas)"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <text x={centerX} y={centerY + 3} textAnchor="middle" fontSize="10" fill="currentColor">
+        {label.length > 14 ? `${label.slice(0, 13)}…` : label}
+      </text>
+    </g>
+  );
+}
 
-  if (svg === undefined) {
-    return <div className="h-7 min-w-0" aria-hidden="true" />;
-  }
+export function BpmnSchematic({ preview }: BpmnSchematicProps) {
+  const markerId = `mini-arrow-${useId().replaceAll(':', '')}`;
+  const nodes = positioned(preview);
+  if (!nodes.length) return <span className="font-mono text-[10px] text-muted">No diagram</span>;
 
-  return <AsciiFallback preview={preview} />;
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const minX = Math.min(...nodes.map((node) => node.px)) - 8;
+  const minY = Math.min(...nodes.map((node) => node.py)) - 8;
+  const maxX = Math.max(...nodes.map((node) => node.px + node.width)) + 12;
+  const maxY = Math.max(...nodes.map((node) => node.py + node.height)) + 8;
+
+  return (
+    <svg
+      viewBox={`${minX} ${minY} ${Math.max(1, maxX - minX)} ${Math.max(1, maxY - minY)}`}
+      className="block h-9 w-full text-ink"
+      role="img"
+      aria-label={preview.caption}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        <marker id={markerId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+        </marker>
+      </defs>
+      {preview.edges.map((edge, index) => {
+        const source = byId.get(edge.source);
+        const target = byId.get(edge.target);
+        if (!source || !target) return null;
+        return (
+          <line
+            key={`${edge.source}:${edge.target}:${index}`}
+            x1={source.px + source.width}
+            y1={source.py + source.height / 2}
+            x2={target.px}
+            y2={target.py + target.height / 2}
+            stroke="currentColor"
+            strokeWidth="2"
+            markerEnd={`url(#${markerId})`}
+          />
+        );
+      })}
+      {nodes.map((node) => <NodeShape key={node.id} node={node} />)}
+    </svg>
+  );
 }

@@ -40,17 +40,22 @@ export async function completeOAuthHandoff(signal?: AbortSignal): Promise<void> 
   const token = params.get('auth_token');
   if (!token) return;
 
-  window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
   const response = await fetch('/api/auth/complete', {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-BPMN-CSRF': '1' },
     body: JSON.stringify({ token }),
     signal,
   });
   if (!response.ok) throw new Error('Failed to complete OAuth handoff');
+  window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
 }
 
 export async function signOut(): Promise<void> {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  const response = await fetch('/api/auth/logout', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-BPMN-CSRF': '1' },
+  });
+  if (!response.ok) throw new Error('Failed to sign out');
 }

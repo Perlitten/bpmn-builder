@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
-import { ListArchitect } from '../components/bpmn-editor/architect/ListArchitect';
 import { ImportBpmnButton, type ImportBpmnButtonHandle } from '../components/process-list/ImportBpmnButton';
 import { ListKindTabs } from '../components/process-list/ListKindTabs';
 import { ListPaginationFooter } from '../components/process-list/ListPaginationFooter';
@@ -30,11 +29,40 @@ import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
 import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
+import '../styles/productFonts';
 
 export const DESCRIPTION_PLACEHOLDER =
   'Receive invoice. Review details. If approved, pay the supplier, otherwise request a revision.';
 
 const PAGE_SIZE = 20;
+
+export function templatePage(
+  templates: ProcessSummary[],
+  q: string,
+  sort: ProcessListSort,
+  page: number,
+): { processes: ProcessSummary[]; total: number; page: number; limit: number } {
+  const query = q.trim().toLocaleLowerCase();
+  const filtered = query
+    ? templates.filter((template) =>
+        `${template.name} ${template.description ?? ''}`.toLocaleLowerCase().includes(query),
+      )
+    : [...templates];
+  filtered.sort((a, b) => {
+    if (Boolean(a.builtin) !== Boolean(b.builtin)) return a.builtin ? -1 : 1;
+    if (sort === 'name_asc') return a.name.localeCompare(b.name);
+    if (sort === 'name_desc') return b.name.localeCompare(a.name);
+    const time = a.updatedAt.localeCompare(b.updatedAt);
+    return sort === 'updated_asc' ? time : -time;
+  });
+  const offset = (page - 1) * PAGE_SIZE;
+  return {
+    processes: filtered.slice(offset, offset + PAGE_SIZE),
+    total: filtered.length,
+    page,
+    limit: PAGE_SIZE,
+  };
+}
 
 type ProcessListPageProps = {
   onOpenProcess: (id: string) => void;
@@ -91,8 +119,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     let cancelled = false;
     setError(null);
     setLoading(true);
-    void api
-      .listProcesses({ q: debouncedQuery, kind, sort, page, limit: PAGE_SIZE }, ac.signal)
+    const request =
+      kind === 'template'
+        ? api.listTemplates(ac.signal).then((templates) => templatePage(templates, debouncedQuery, sort, page))
+        : api.listProcesses({ q: debouncedQuery, kind: 'process', sort, page, limit: PAGE_SIZE }, ac.signal);
+    void request
       .then((data) => {
         if (cancelled) return;
         const lastPage = lastListPage(data.total, PAGE_SIZE);
@@ -253,7 +284,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-canvas">
-      <header className="sticky top-0 z-20 shrink-0 overflow-visible border-b border-border bg-canvas">
+      <header className="sticky top-0 z-[var(--z-chrome)] shrink-0 overflow-visible border-b border-border bg-canvas">
         <div className="flex min-h-12 items-center gap-3 overflow-visible px-4 py-1.5">
           <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
           <span className="hidden font-mono text-[11px] text-muted sm:inline">{getBuildVersionInfo()}</span>
@@ -266,7 +297,6 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <ListArchitect busy={creating} error={error} onDescribe={handleDescribe} />
           <ImportBpmnButton
             ref={importRef}
             disabled={creating}
@@ -357,9 +387,9 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           <div>
             {[0, 1, 2, 3].map((key) => (
               <div key={key} className="flex items-center gap-3 border-b border-border px-4 py-3">
-                <Skeleton className="h-3 w-40 rounded-sm" />
-                <Skeleton className="h-3 flex-1 rounded-sm" />
-                <Skeleton className="h-3 w-16 rounded-sm" />
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 flex-1" />
+                <Skeleton className="h-3 w-16" />
               </div>
             ))}
           </div>

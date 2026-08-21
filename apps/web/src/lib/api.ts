@@ -22,9 +22,12 @@ export type ProcessListResponse = {
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  readonly currentVersion?: number;
+  constructor(message: string, status: number, body?: Record<string, unknown>) {
     super(message);
     this.status = status;
+    const currentVersion = body?.currentVersion;
+    if (typeof currentVersion === 'number') this.currentVersion = currentVersion;
   }
 }
 
@@ -44,17 +47,21 @@ type ApiClient = {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { headers, ...rest } = init ?? {};
+  const method = (rest.method ?? 'GET').toUpperCase();
+  const requestHeaders = new Headers(headers);
+  if (!requestHeaders.has('Content-Type')) requestHeaders.set('Content-Type', 'application/json');
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) requestHeaders.set('X-BPMN-CSRF', '1');
   const response = await fetch(path, {
     credentials: 'same-origin',
     ...rest,
-    headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
+    headers: requestHeaders,
   });
   if (response.status === 401 && !path.startsWith('/api/auth')) {
     window.dispatchEvent(new Event('bpmn:unauthorized'));
   }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new ApiError(body.error || `Request failed: ${response.status}`, response.status);
+    throw new ApiError(body.error || `Request failed: ${response.status}`, response.status, body);
   }
   return response.json() as Promise<T>;
 }

@@ -21,6 +21,7 @@ let cookie = '';
 function authed(url: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   if (!headers.has('Cookie')) headers.set('Cookie', cookie);
+  headers.set('X-BPMN-CSRF', '1');
   return fetch(url, { ...init, headers });
 }
 
@@ -93,8 +94,14 @@ describe('process template routes', () => {
 
     const listed = await authed(`${url}/api/templates`);
     expect(listed.status).toBe(200);
-    const { templates } = (await listed.json()) as { templates: { id: string }[] };
+    const { templates } = (await listed.json()) as {
+      templates: { id: string; builtin?: boolean; preview: { nodes: unknown[] } }[];
+    };
+    expect(templates.every((item) => !('bpmnXml' in item))).toBe(true);
     expect(templates.some((item) => item.id === template.id)).toBe(true);
+    const builtin = templates.find((item) => item.id === 'starter:approval');
+    expect(builtin).toMatchObject({ builtin: true });
+    expect(builtin?.preview.nodes.length).toBeGreaterThan(0);
 
     const fromTemplate = await authed(`${url}/api/processes`, {
       method: 'POST',
@@ -107,6 +114,14 @@ describe('process template routes', () => {
     };
     expect(copy.status).toBe('draft');
     expect(copy.bpmnXml).toBe(template.bpmnXml);
+
+    const fromBuiltin = await authed(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Approval draft', templateId: 'starter:approval' }),
+    });
+    expect(fromBuiltin.status).toBe(201);
+    expect(((await fromBuiltin.json()) as { process: { bpmnXml: string } }).process.bpmnXml).toContain('Review request');
   });
 
   it('duplicates a process as a new draft with copied XML and name', async () => {
@@ -222,7 +237,13 @@ describe('process list query', () => {
     const listed = await authed(`${url}/api/processes`);
     expect(listed.status).toBe(200);
     const page1 = (await listed.json()) as {
-      processes: { id: string; name: string; bpmnXml: string; status: string }[];
+      processes: {
+        id: string;
+        name: string;
+        status: string;
+        structure: string;
+        preview: { nodes: unknown[]; edges: unknown[] };
+      }[];
       total: number;
       page: number;
       limit: number;
@@ -231,9 +252,10 @@ describe('process list query', () => {
     expect(page1.limit).toBe(20);
     expect(page1.total).toBe(25);
     expect(page1.processes).toHaveLength(20);
-    expect(page1.processes[0]?.bpmnXml).toContain('startEvent');
-    expect(page1.processes[0]?.bpmnXml).toContain('task');
-    expect(page1.processes[0]?.bpmnXml).toContain('endEvent');
+    expect(page1.processes[0]).not.toHaveProperty('bpmnXml');
+    expect(page1.processes[0]?.structure).toContain('task');
+    expect(page1.processes[0]?.preview.nodes.length).toBeGreaterThan(0);
+    expect(page1.processes[0]?.preview.edges.length).toBeGreaterThan(0);
 
     const page2 = (await (
       await authed(`${url}/api/processes?page=2`)
@@ -418,6 +440,37 @@ describe('process write guards', () => {
     expect(second.status).toBe(409);
     const body = (await second.json()) as { error: string; currentVersion: number };
     expect(body.currentVersion).toBe(2);
+  });
+
+  it('allows exactly one concurrent writer for the same version', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const created = await authed(`${url}/api/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Concurrent lock' }),
+    });
+    const { process } = (await created.json()) as { process: { id: string; version: number } };
+
+    const writes = await Promise.all([
+      authed(`${url}/api/processes/${process.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Writer A', version: process.version }),
+      }),
+      authed(`${url}/api/processes/${process.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Writer B', version: process.version }),
+      }),
+    ]);
+
+    expect(writes.map((response) => response.status).sort()).toEqual([200, 409]);
+    const stored = await authed(`${url}/api/processes/${process.id}`);
+    expect(stored.status).toBe(200);
+    const body = (await stored.json()) as { process: { name: string; version: number } };
+    expect(['Writer A', 'Writer B']).toContain(body.process.name);
+    expect(body.process.version).toBe(process.version + 1);
   });
 
   it('deletes a process and 404s the second delete', async () => {

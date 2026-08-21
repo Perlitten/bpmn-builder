@@ -33,6 +33,7 @@ import { ContinueWith } from './palette/ContinueWith';
 import { gfxAnchor } from './palette/modelerServices';
 import { continueTarget, isSequenceFlowElement, resolveInsert, type InsertTarget } from './palette/insertTarget';
 import { editorNoticeText, visibleEditorChrome } from './editorNotice';
+import { useLiveBpmnXml } from './useLiveBpmnXml';
 import { PaletteRail } from './palette/PaletteRail';
 import { isSequenceFlowSource } from './palette/contextFilter';
 import type { PaletteCatalogView } from './palette/catalogPresentation';
@@ -155,9 +156,8 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const simRef = useRef<TokenSimulation | null>(null);
   const tokenViewRef = useRef<TokenView | null>(null);
   const simulatingRef = useRef(simulating);
-  const onChangeRef = useRef(onChange);
   const onSimStatusRef = useRef(onSimStatus);
-  const xmlRef = useRef(xml);
+  const { xmlRef, currentXml, revision: graphRev, emit } = useLiveBpmnXml(processId, xml, onChange);
   const [scale, setScale] = useState(1);
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const toolRef = useRef(tool);
@@ -168,7 +168,6 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const labelWriteRef = useRef(false);
   const [lockRev, setLockRev] = useState(0);
-  const [graphRev, setGraphRev] = useState(0);
   const [canDelete, setCanDelete] = useState(false);
   const [hasParticipant, setHasParticipant] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
@@ -177,12 +176,9 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const compact = useCompactViewport();
 
-  onChangeRef.current = onChange;
   onSimStatusRef.current = onSimStatus;
-  xmlRef.current = xml;
   simulatingRef.current = simulating;
   toolRef.current = tool;
-  simulationLock.on = simulating;
 
   useEffect(() => {
     const ac = new AbortController();
@@ -233,11 +229,6 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     } else {
       setAnchor(null);
     }
-  }, []);
-
-  const emit = useCallback((next: string) => {
-    setGraphRev((n) => n + 1);
-    onChangeRef.current?.(next);
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -695,18 +686,18 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   );
 
   const lint = useMemo(
-    () => lintProcess(usableXml(xml), { executionProfile: DEFAULT_EXECUTION_PROFILE }),
-    [xml, graphRev],
+    () => lintProcess(currentXml, { executionProfile: DEFAULT_EXECUTION_PROFILE }),
+    [currentXml, graphRev],
   );
 
   const poolLanes = useMemo(() => {
     if (selection?.type !== 'bpmn:Participant') return [];
     return lanesInPool(sessionRef.current?.process().lanes ?? [], selection.id);
-  }, [selection, xml, graphRev]);
+  }, [selection, currentXml, graphRev]);
 
   const nodeLane = useMemo(
     () => flowNodeLaneAssignment(selection, sessionRef.current?.process()),
-    [selection, xml, graphRev],
+    [selection, currentXml, graphRev],
   );
 
   const graph = sessionRef.current?.process();
@@ -719,7 +710,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     const session = sessionRef.current;
     if (!session) return { branchLocked: false, selectionIds: selectedIds };
     return resolveAgentContext(session.process(), selectedIds);
-  }, [selectedIds, xml, lockRev, graphRev]);
+  }, [selectedIds, currentXml, lockRev, graphRev]);
 
   return (
     <div className={`bpmn-stage bpmn-editor-stage flex${simulating ? ' is-simulating' : ''}${tool === 'pan' ? ' is-pan' : ''}`}>

@@ -23,5 +23,28 @@ export type WorkflowDocument = {
 
 export type ProcessSummary = Pick<
   Process,
-  'id' | 'name' | 'description' | 'status' | 'bpmnXml' | 'version' | 'createdAt' | 'updatedAt'
->;
+  'id' | 'name' | 'description' | 'status' | 'version' | 'createdAt' | 'updatedAt'
+> & {
+  builtin?: boolean;
+  structure: string;
+  quality: ProcessQualitySummary;
+  preview: ProcessMiniPreview;
+};
+
+export type ProcessQualitySummary = {
+  errors: number;
+  warnings: number;
+  style: number;
+};
+
+export type ProcessMiniPreview = {
+  caption: string;
+  nodes: Array<{
+    id: string;
+    type: string;
+    label: string;
+    x?: number;
+    y?: number;
+  }>;
+  edges: Array<{ source: string; target: string }>;
+};

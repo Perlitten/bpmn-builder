@@ -1,5 +1,7 @@
-import type { TextareaHTMLAttributes } from 'react';
+import { forwardRef, type TextareaHTMLAttributes } from 'react';
 
-export function TextAreaField({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`ui-textarea ${className}`} {...props} />;
-}
+export const TextAreaField = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function TextAreaField({ className = '', ...props }, ref) {
+    return <textarea ref={ref} className={`ui-textarea ${className}`} {...props} />;
+  },
+);

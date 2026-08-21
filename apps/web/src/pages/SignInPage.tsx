@@ -7,6 +7,7 @@ import { LandingSignInPanel } from '../components/landing/LandingSignInPanel';
 import { fetchAuthStatus, type AuthStatus } from '../lib/auth';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
+import '../styles/landingFonts';
 
 function authErrorMessage(code: string | null): string | null {
   if (code === 'denied') return 'Google sign-in was cancelled. Nothing was saved.';
@@ -24,7 +25,15 @@ export function SignInPage() {
   useEffect(() => {
     document.title = pageTitle('list');
     const ac = new AbortController();
-    void fetchAuthStatus(ac.signal).then(setStatus);
+    void fetchAuthStatus(ac.signal)
+      .then(setStatus)
+      .catch((error: unknown) => {
+        if (ac.signal.aborted) return;
+        setStatus({
+          configured: false,
+          error: error instanceof Error ? error.message : 'Could not reach the authentication service.',
+        });
+      });
     return () => ac.abort();
   }, []);
 
