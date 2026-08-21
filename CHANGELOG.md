@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.2.0...bpmn-builder-v0.3.0) (2026-08-21)
+
+
+### Features
+
+* rebuild landing with reusable design system ([#32](https://github.com/Perlitten/bpmn-builder/issues/32)) ([5dbddb7](https://github.com/Perlitten/bpmn-builder/commit/5dbddb7bffd30a7563190623d687af57950b9306))
+
 ## [0.2.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.1.0...bpmn-builder-v0.2.0) (2026-08-20)
 
 ### Features
