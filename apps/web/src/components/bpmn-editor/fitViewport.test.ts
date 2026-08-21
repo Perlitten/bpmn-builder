@@ -19,18 +19,18 @@ const starter = { x: 180, y: 80, width: 286, height: 80 };
 
 describe('paletteObstacle', () => {
   it('uses the measured rail when it overlaps the canvas', () => {
-    const pal = rect(0, 0, 72, 600);
+    const pal = rect(0, 0, PALETTE_RAIL_WIDTH, 600);
     expect(paletteObstacle(canvas, canvas, pal)).toEqual(pal);
   });
 
-  it('does not subtract 72px when the rail is a sibling of the canvas', () => {
-    const pal = rect(0, 0, 72, 600);
-    const host = rect(72, 0, 1000, 600);
+  it('does not subtract the rail width when the rail is a sibling of the canvas', () => {
+    const pal = rect(0, 0, PALETTE_RAIL_WIDTH, 600);
+    const host = rect(PALETTE_RAIL_WIDTH, 0, 1000, 600);
     const stage = rect(0, 0, 1000, 600);
     expect(paletteObstacle(host, stage, pal)).toBeNull();
   });
 
-  it('synthesizes a 72px strip when the canvas is flush with the stage', () => {
+  it('synthesizes the contract rail strip when the canvas is flush with the stage', () => {
     const stage = rect(0, 48, 1000, 648);
     const host = rect(0, 48, 1000, 648);
     expect(paletteObstacle(host, stage, null)).toEqual(rect(0, 48, PALETTE_RAIL_WIDTH, 648));
@@ -46,18 +46,18 @@ describe('paletteObstacle', () => {
 
 describe('remainingCanvas', () => {
   it('cuts the left strip for a full-height palette', () => {
-    const remaining = remainingCanvas(canvas, [rect(0, 0, 72, 600)]);
-    expect(remaining.left).toBe(72);
-    expect(remaining.width).toBe(928);
+    const remaining = remainingCanvas(canvas, [rect(0, 0, PALETTE_RAIL_WIDTH, 600)]);
+    expect(remaining.left).toBe(PALETTE_RAIL_WIDTH);
+    expect(remaining.width).toBe(1000 - PALETTE_RAIL_WIDTH);
   });
 
   it('cuts the shorter zoom footprint from the bottom, not a 140px left inset', () => {
-    const afterPalette = remainingCanvas(canvas, [rect(0, 0, 72, 600)]);
+    const afterPalette = remainingCanvas(canvas, [rect(0, 0, PALETTE_RAIL_WIDTH, 600)]);
     const zoom = rect(84, 548, 228, 588);
     const remaining = remainingCanvas(afterPalette, [zoom]);
-    expect(remaining.left).toBe(72);
+    expect(remaining.left).toBe(PALETTE_RAIL_WIDTH);
     expect(remaining.bottom).toBe(548);
-    expect(remaining.width).toBe(928);
+    expect(remaining.width).toBe(1000 - PALETTE_RAIL_WIDTH);
   });
 
   it('keeps the larger leftover when Architect sits on the bottom-right', () => {
@@ -68,7 +68,7 @@ describe('remainingCanvas', () => {
 });
 
 describe('DESKTOP_FIT_PADDING', () => {
-  it('subtracts the 72px palette rail in the fallback padding', () => {
+  it('subtracts the palette rail in the fallback padding', () => {
     expect(DESKTOP_FIT_PADDING.left).toBeGreaterThanOrEqual(PALETTE_RAIL_WIDTH);
   });
 });
@@ -81,9 +81,9 @@ describe('cutAround', () => {
 
 describe('fitViewbox', () => {
   it('places the start event to the right of the palette padding', () => {
-    const remaining = remainingCanvas(canvas, [rect(0, 0, 72, 600)]);
+    const remaining = remainingCanvas(canvas, [rect(0, 0, PALETTE_RAIL_WIDTH, 600)]);
     const pad = paddingFromRemaining(canvas, remaining);
-    expect(pad.left).toBe(72 + FIT_GUTTER);
+    expect(pad.left).toBe(PALETTE_RAIL_WIDTH + FIT_GUTTER);
     const vb = fitViewbox(starter, { width: 1000, height: 600 }, pad);
     expect(vb).not.toBeNull();
     const startScreenX = diagramToScreenX(starter.x, vb!, 1000);

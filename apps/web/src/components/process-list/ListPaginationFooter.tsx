@@ -30,7 +30,6 @@ export function ListPaginationFooter({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[12px]"
             disabled={page <= 1}
             onClick={onPrev}
           >
@@ -39,7 +38,6 @@ export function ListPaginationFooter({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[12px]"
             disabled={page * pageSize >= total}
             onClick={onNext}
           >

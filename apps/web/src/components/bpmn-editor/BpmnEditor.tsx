@@ -62,6 +62,7 @@ import {
 import { createSelectMarqueeModule } from './selectMarquee';
 import { applyXmlToViewer } from './applyXmlToViewer';
 import { usableXml } from './usableXml';
+import { ModeBar } from '../ui';
 
 type BpmnEditorProps = {
   processId: string;
@@ -752,6 +753,9 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       />
       <div ref={overlayRef} className="bpmn-canvas-host">
         <BpmnCanvas ref={canvasRef} />
+        {simulating ? (
+          <ModeBar mode="Simulating" detail={hint ?? 'Pick an available path on the diagram.'} meta="Read-only" />
+        ) : null}
         <BpmnZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onFit={fit} onReset={reset} />
         {continueSource && anchor && !simulating ? (
           <ContinueWith

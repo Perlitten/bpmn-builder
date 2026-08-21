@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allFindings, suggestName, type LintResult } from '@bpmn/rules';
 import { bpmnComponentRegistry, findFlowNode, type BpmnComponentDefinition, type Process } from '@bpmn/semantic-core';
 import { ScoreChips } from '../../lint/ScoreChips';
+import { SelectField } from '../../ui/SelectField';
+import { TextField } from '../../ui/TextField';
 import { isActivity } from '../palette/contextFilter';
 import { iconClassFor } from '../palette/catalogPresentation';
 import type { DiagramElement } from '../diagramElement';
@@ -72,7 +74,7 @@ function LaneNameField({
   return (
     <label>
       <span className="sr-only">Lane name</span>
-      <input
+      <TextField
         type="text"
         value={name}
         aria-label="Lane name"
@@ -171,7 +173,7 @@ export function ElementInspector({
         <h3>Name</h3>
         <label>
           <span className="sr-only">Element name</span>
-          <input
+          <TextField
             type="text"
             value={name}
             aria-label="Element name"
@@ -211,7 +213,7 @@ export function ElementInspector({
             <h3>Lane</h3>
             <label>
               <span className="sr-only">Lane</span>
-              <select
+              <SelectField
                 aria-label="Lane"
                 value={currentLaneId ?? ''}
                 onChange={(event) => {
@@ -225,7 +227,7 @@ export function ElementInspector({
                     {lane.name.trim() ? lane.name : lane.id}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </label>
           </>
         ) : null}
@@ -272,7 +274,7 @@ export function ElementInspector({
             <h3>Change to</h3>
             <label>
               <span className="sr-only">Search replacements</span>
-              <input
+              <TextField
                 type="search"
                 value={query}
                 placeholder="Search replacements…"
@@ -311,7 +313,7 @@ export function ElementInspector({
             <h3>Called element</h3>
             <label>
               <span className="sr-only">Called element</span>
-              <input
+              <TextField
                 type="text"
                 defaultValue={
                   process
@@ -351,7 +353,7 @@ export function ElementInspector({
             {kind !== 'default' && element.source && (isXorOr(element.source.type) || kind === 'conditional') ? (
               <label>
                 <span className="sr-only">Condition</span>
-                <input
+                <TextField
                   type="text"
                   defaultValue={element.businessObject?.conditionExpression?.body ?? ''}
                   key={`${element.id}:${element.businessObject?.conditionExpression?.body ?? ''}`}
@@ -382,7 +384,7 @@ export function ElementInspector({
                   />{' '}
                   Default
                 </label>
-                <input
+                <TextField
                   type="text"
                   defaultValue={flow.condition}
                   key={`${flow.id}:${flow.condition}`}

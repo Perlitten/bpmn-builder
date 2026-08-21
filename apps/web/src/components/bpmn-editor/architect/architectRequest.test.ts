@@ -132,6 +132,6 @@ describe('Architect chrome markup', () => {
     expect(src).toMatch(/createPortal/);
     expect(src).toMatch(/listArchitectPanelBox/);
     expect(css).toMatch(/\.architect-panel\.architect-list-panel[\s\S]*position:\s*fixed/);
-    expect(css).toMatch(/z-index:\s*300/);
+    expect(css).toMatch(/z-index:\s*var\(--z-architect-list\)/);
   });
 });

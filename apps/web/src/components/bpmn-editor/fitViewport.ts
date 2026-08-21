@@ -16,7 +16,7 @@ export type FitPadding = { top: number; right: number; bottom: number; left: num
 export const FIT_GUTTER = 24;
 export const FIT_MIN_VIEW = 80;
 
-/** Fallback when the canvas is full-bleed under the 72px rail. */
+/** Fallback when the canvas is full-bleed under the token-aligned rail. */
 export const DESKTOP_FIT_PADDING: FitPadding = {
   top: FIT_GUTTER,
   right: FIT_GUTTER,
@@ -108,7 +108,7 @@ export function paddingFromRemaining(canvas: Rect, remaining: Rect, gutter = FIT
 }
 
 /**
- * Left rail overlapping the canvas, or a 72px strip when the canvas is full-bleed
+ * Left rail overlapping the canvas, or the contract rail width when the canvas is full-bleed
  * and we could not measure the rail. A measured sibling or bottom bar is not an obstacle.
  */
 export function paletteObstacle(canvas: Rect, stage: Rect | null, palette: Rect | null): Rect | null {

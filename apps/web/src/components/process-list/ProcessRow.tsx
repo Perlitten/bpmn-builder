@@ -63,7 +63,7 @@ export const ProcessRow = memo(function ProcessRow({ process, onOpen, onRename, 
         type="button"
         aria-label={`Open ${process.name}`}
         aria-describedby={metadataId}
-        className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 px-4 py-3 text-left hover:bg-surface ${actions ? 'pr-16' : ''}`}
+        className={`grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 border-0 bg-canvas px-4 py-3 text-left text-ink hover:bg-surface ${actions ? 'pr-16' : ''}`}
         onClick={() => onOpen(process.id)}
       >
         <span className="min-w-0 truncate text-sm font-medium text-ink">{process.name}</span>

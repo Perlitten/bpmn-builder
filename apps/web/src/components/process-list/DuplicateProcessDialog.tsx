@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { copyProcessName, PROCESS_NAME_MAX, type ProcessSummary } from '@bpmn/domain';
 import { Button } from '../ui/Button';
+import { DialogActions, DialogBackdrop, DialogSurface } from '../ui/Dialog';
 import { TextField } from '../ui/TextField';
 import { useModal } from '../ui/useModal';
 import { duplicateRequestFromDialog } from './duplicateRequest';
@@ -38,15 +39,11 @@ export function DuplicateProcessDialog({
   const trimmed = name.trim();
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-ink/40 p-4" role="presentation">
-      <div
+    <DialogBackdrop>
+      <DialogSurface
         ref={ref}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={error ? errorId : undefined}
-        tabIndex={-1}
-        className="w-full max-w-sm rounded border border-border bg-canvas p-5 outline-none"
       >
         <form
           onSubmit={(event) => {
@@ -55,35 +52,43 @@ export function DuplicateProcessDialog({
             if (request && !busy) onConfirm(request.name);
           }}
         >
-          <h2 id={titleId} className="text-base font-semibold text-ink">
+          <h2 id={titleId} className="ui-dialog-title">
             Duplicate process
           </h2>
           <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted">Name</span>
+            <span className="ui-field-label">Name</span>
             <TextField
               value={name}
               maxLength={PROCESS_NAME_MAX}
               autoComplete="off"
               data-modal-initial-focus
-              className="mt-1 w-full"
+              aria-invalid={Boolean(error) || undefined}
+              aria-describedby={error ? errorId : undefined}
               onChange={(event) => setName(event.target.value)}
             />
           </label>
           {error ? (
-            <p id={errorId} className="mt-2 text-sm text-danger" role="alert">
+            <p id={errorId} className="ui-field-message" data-tone="danger" role="alert">
               {error}
             </p>
           ) : null}
-          <div className="mt-5 flex justify-end gap-2">
+          <DialogActions>
             <Button variant="ghost" size="sm" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="accent" size="sm" type="submit" disabled={busy || !trimmed}>
+            <Button
+              variant="accent"
+              size="sm"
+              type="submit"
+              disabled={!trimmed}
+              loading={busy}
+              loadingLabel="Copying…"
+            >
               Make a copy
             </Button>
-          </div>
+          </DialogActions>
         </form>
-      </div>
-    </div>
+      </DialogSurface>
+    </DialogBackdrop>
   );
 }

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Process } from '@bpmn/semantic-core';
+import { TextAreaField } from '../../ui/TextAreaField';
+import { TextField } from '../../ui/TextField';
 import type { DiagramElement } from '../diagramElement';
 import { applyInspectorNameKey, commitInspectorName } from './inspectorNameKey';
 import {
@@ -84,7 +86,7 @@ function FieldInput({
   return (
     <label>
       <span className={hideLabel ? 'sr-only' : 'element-inspector-field-label'}>{field.label}</span>
-      {field.kind === 'textarea' ? <textarea rows={3} {...shared} /> : <input type="text" {...shared} />}
+      {field.kind === 'textarea' ? <TextAreaField rows={3} {...shared} /> : <TextField type="text" {...shared} />}
     </label>
   );
 }
