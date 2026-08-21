@@ -18,6 +18,7 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(page.locator('#showcase-description')).toBeVisible();
     await expect(page.locator('.djs-shape').first()).toBeVisible();
     await expect(page.locator('h2')).toContainText('Sign in to save processes');
+    await expect(page.locator('[aria-busy="false"]')).toBeVisible();
 
     // Scan only after authentication state and the showcase viewer have settled.
     const result = await new AxeBuilder({ page })
@@ -41,5 +42,72 @@ test.describe('Showcase Pre-login Sandbox Demo', () => {
     await expect(page.locator('.djs-shape .djs-visual > polygon')).toHaveCount(2);
 
     expect(processApiRequests).toEqual([]);
+  });
+
+  test('Keyboard test: activate the primary action and each example', async ({ page }) => {
+    await page.goto('/');
+
+    const primaryAction = page.getByRole('link', { name: 'PRESS START' });
+    await primaryAction.focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/#signin$/);
+    await expect(page.locator('#signin')).toBeInViewport();
+
+    // Tab through examples
+    await page.getByRole('button', { name: 'Linear process' }).focus();
+    await page.keyboard.press('Enter');
+    let textareaValue = await page.locator('#showcase-description').inputValue();
+    expect(textareaValue).toContain('Submit order');
+
+    await page.getByRole('button', { name: 'Decision flow' }).focus();
+    await page.keyboard.press('Enter');
+    textareaValue = await page.locator('#showcase-description').inputValue();
+    expect(textareaValue).toContain('If the candidate is qualified');
+
+    await page.getByRole('button', { name: 'Parallel work' }).focus();
+    await page.keyboard.press('Enter');
+    textareaValue = await page.locator('#showcase-description').inputValue();
+    expect(textareaValue).toContain('meanwhile');
+  });
+
+  test('Mobile test: document width and readability affordance', async ({ page }) => {
+    // Set viewport to a common mobile size (e.g. iPhone 12/13/14)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    // Wait for the diagram to render
+    await expect(page.locator('.djs-shape').first()).toBeVisible();
+
+    // Assert no horizontal document overflow
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const innerWidth = await page.evaluate(() => window.innerWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
+
+    // Readability affordance: Fullscreen button should be visible on mobile
+    const fullscreenBtn = page.getByRole('button', { name: 'View fullscreen' });
+    await expect(fullscreenBtn).toBeVisible();
+
+    // The fullscreen surface behaves as a modal and survives a responsive resize.
+    await fullscreenBtn.click();
+    const dialog = page.getByRole('dialog', { name: 'Fullscreen process preview' });
+    const closeBtn = page.getByRole('button', { name: 'Exit fullscreen' });
+    await expect(dialog).toBeVisible();
+    await expect(closeBtn).toBeFocused();
+    await expect(page.locator('main')).toHaveCSS('overflow', 'hidden');
+    await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(dialog.locator(':focus')).toBeVisible();
+
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+    await expect(dialog).toBeHidden();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fullscreenBtn.click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(fullscreenBtn).toBeFocused();
   });
 });
