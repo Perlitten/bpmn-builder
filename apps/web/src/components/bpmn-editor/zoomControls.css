@@ -1,8 +1,48 @@
-.bpmn-zoom-controls button {
-  outline: none;
+.bpmn-zoom-controls {
+  pointer-events: auto;
+  position: absolute;
+  z-index: var(--z-zoom);
+  bottom: var(--space-6);
+  left: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-canvas);
 }
 
-.bpmn-zoom-controls button:focus-visible {
-  outline: 1px solid var(--color-ink);
-  outline-offset: -1px;
+.bpmn-zoom-controls .ui-button::before {
+  inset: 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bpmn-zoom-value {
+  width: var(--control-hit);
+  min-height: var(--control-hit);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-canvas);
+  color: var(--color-muted);
+  cursor: pointer;
+  font: 600 var(--fs-10)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.bpmn-zoom-value:hover {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+@media (max-width: 560px) {
+  .bpmn-zoom-controls {
+    bottom: calc(var(--editor-compact-rail) + var(--space-4));
+    left: var(--space-4);
+    flex-direction: row;
+  }
+
+  .bpmn-zoom-controls .ui-button::before,
+  .bpmn-zoom-value {
+    border-right: 1px solid var(--color-border);
+    border-bottom: 0;
+  }
 }

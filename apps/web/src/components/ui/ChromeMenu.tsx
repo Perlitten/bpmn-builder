@@ -75,7 +75,7 @@ export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', childr
             aria-label={ariaLabel}
             tabIndex={-1}
             onKeyDown={onMenuKeyDown}
-            className={`absolute top-full z-30 mt-1 min-w-[11rem] border border-border bg-canvas py-1.5 outline-none ${
+            className={`ui-menu ${
               align === 'right' ? 'right-0' : 'left-0'
             }`}
           >
@@ -101,14 +101,14 @@ export function ChromeMenuItem({ onSelect, disabled, icon, children }: ChromeMen
       type="button"
       role="menuitem"
       disabled={disabled}
-      className="flex w-full items-start gap-2 px-3 py-1.5 text-left text-sm text-ink outline-none hover:bg-surface focus-visible:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-[-1px] focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
+      className="ui-menu-item"
       onClick={() => {
         close();
         onSelect();
       }}
     >
       {icon ? (
-        <span className="flex h-5 w-3.5 shrink-0 items-center justify-center" aria-hidden>
+        <span className="flex h-5 w-4 shrink-0 items-center justify-center" aria-hidden>
           {icon}
         </span>
       ) : null}

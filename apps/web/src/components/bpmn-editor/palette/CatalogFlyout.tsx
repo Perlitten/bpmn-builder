@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useModal } from '../../ui/useModal';
+import { TextField } from '../../ui/TextField';
 import type { DiagramElement } from '../diagramElement';
 import {
   catalogEnterTarget,
@@ -130,7 +131,8 @@ export function CatalogFlyout({
         </div>
         <label className="palette-search">
           <Search size={17} strokeWidth={1.8} aria-hidden />
-          <input
+          <TextField
+            variant="plain"
             type="search"
             value={query}
             placeholder="Search elements"

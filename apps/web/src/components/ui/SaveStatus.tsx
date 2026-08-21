@@ -8,14 +8,14 @@ type SaveStatusProps = {
 export function SaveStatus({ saving, savedAt }: SaveStatusProps) {
   if (saving) {
     return (
-      <span className="shrink-0 text-xs text-muted" aria-live="polite">
+      <span className="ui-save-status" aria-live="polite">
         Saving…
       </span>
     );
   }
   if (savedAt) {
     return (
-      <span className="shrink-0 text-xs text-muted" aria-live="polite">
+      <span className="ui-save-status" aria-live="polite">
         Saved · {formatSaveTime(savedAt)}
       </span>
     );

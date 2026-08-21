@@ -3,6 +3,7 @@ import type { Process } from '@bpmn/domain';
 import { BpmnEditor, type BpmnEditorHandle } from '../components/bpmn-editor/BpmnEditor';
 import { EditorChrome } from '../components/shell/EditorChrome';
 import { UserMenu } from '../components/shell/UserMenu';
+import { Button } from '../components/ui';
 import { fetchProcess, saveAsTemplate, saveProcess } from '../lib/api';
 import { bpmnDownloadFilename, downloadBpmnXml, downloadBlob, downloadFilename, downloadText } from '../lib/downloadBpmn';
 import { svgToPdfBlob } from '../lib/exportDiagram';
@@ -159,9 +160,9 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
     return (
       <div className="p-6">
         <p className="text-danger">{error}</p>
-        <button type="button" className="mt-4 text-sm text-muted underline" onClick={onBack}>
+        <Button variant="outline" size="sm" className="mt-4" onClick={onBack}>
           Back to list
-        </button>
+        </Button>
       </div>
     );
   }
@@ -205,7 +206,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
           onSimStatus={(status) => setSimStatus(status || null)}
         />
         {error ? (
-          <p className="absolute bottom-4 right-4 z-10 rounded border border-border bg-canvas px-3 py-2 text-sm text-danger">
+          <p className="absolute bottom-4 right-4 z-10 border border-danger bg-canvas px-3 py-2 text-xs text-danger">
             {error}
           </p>
         ) : null}

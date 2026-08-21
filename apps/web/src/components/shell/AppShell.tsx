@@ -19,8 +19,8 @@ export function AppShell({ route, children }: AppShellProps) {
     <div
       className={
         isEditor
-          ? 'flex h-dvh flex-col overflow-hidden bg-surface'
-          : 'flex h-dvh flex-col overflow-hidden bg-canvas'
+          ? 'product-shell flex h-dvh flex-col overflow-hidden bg-surface'
+          : 'product-shell flex h-dvh flex-col overflow-hidden bg-canvas'
       }
     >
       <main

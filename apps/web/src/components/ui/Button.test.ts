@@ -6,10 +6,20 @@ import { ChromeMenuItem, nextMenuIndex } from './ChromeMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 
 describe('shared chrome focus and dialogs', () => {
-  it('gives Button the same focus-visible ring as palette controls', () => {
+  it('routes Button styling through the shared component contract', () => {
     const html = renderToStaticMarkup(createElement(Button, { children: 'New' }));
-    expect(html).toMatch(/focus-visible:outline/);
-    expect(html).toMatch(/focus-visible:outline-ink/);
+    expect(html).toContain('class="ui-button');
+    expect(html).toContain('data-variant="primary"');
+  });
+
+  it('announces loading writes without changing the control contract', () => {
+    const html = renderToStaticMarkup(
+      createElement(Button, { loading: true, loadingLabel: 'Saving…', children: 'Save' }),
+    );
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('disabled');
+    expect(html).toContain('Saving…');
+    expect(html).toMatch(/ui-button-content" aria-hidden="true">Save/);
   });
 
   it('marks confirm dialogs as modal with a labelled dialog', () => {
@@ -41,7 +51,7 @@ describe('shared chrome focus and dialogs', () => {
     );
     expect(html).toContain('Download BPMN');
     expect(html).toContain('<svg');
-    expect(html).toMatch(/items-start gap-2/);
+    expect(html).toContain('ui-menu-item');
     expect(html).toMatch(/aria-hidden/);
   });
 

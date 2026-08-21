@@ -7,7 +7,7 @@ export function isCompactViewport(width: number): boolean {
   return width <= COMPACT_MAX_WIDTH;
 }
 
-export const PALETTE_RAIL_WIDTH = 72;
+export const PALETTE_RAIL_WIDTH = 64;
 export const ARCHITECT_MARGIN = 12;
 export const ARCHITECT_PANEL_WIDTH = 280;
 export const ARCHITECT_PANEL_ESTIMATE_HEIGHT = 240;

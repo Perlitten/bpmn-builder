@@ -110,6 +110,9 @@ describe('compact editor chrome', () => {
 
   it('gives zoom controls a focus-visible ring', () => {
     const css = readFileSync(join(dir, 'zoomControls.css'), 'utf8');
-    expect(css).toMatch(/\.bpmn-zoom-controls button:focus-visible/);
+    const ui = readFileSync(join(dir, '../ui/ui.css'), 'utf8');
+    expect(css).toMatch(/\.bpmn-zoom-value/);
+    expect(ui).toMatch(/:where\(button,[\s\S]*?\):focus-visible/);
+    expect(ui).toMatch(/outline:\s*2px solid var\(--color-ink\)/);
   });
 });

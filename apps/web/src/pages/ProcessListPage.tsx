@@ -20,7 +20,9 @@ import { RenameProcessDialog } from '../components/process-list/RenameProcessDia
 import { draftNameFromTemplate, TemplatesSection } from '../components/process-list/TemplatesSection';
 import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { SelectField } from '../components/ui/SelectField';
 import { Skeleton } from '../components/ui/Skeleton';
+import { TextField } from '../components/ui/TextField';
 import { UserMenu } from '../components/shell/UserMenu';
 import { api, type ProcessListSort } from '../lib/api';
 import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPreview';
@@ -257,10 +259,10 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           <span className="hidden font-mono text-[11px] text-muted sm:inline">{getBuildVersionInfo()}</span>
           <label className="ml-auto flex min-w-0 max-w-xs flex-1 items-center">
             <span className="sr-only">{kind === 'template' ? 'Search templates' : 'Search processes'}</span>
-            <input
+            <TextField
               value={query}
               placeholder="Search"
-              className="w-full rounded border border-border bg-canvas px-2 py-1 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-full"
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
@@ -283,12 +285,14 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         </div>
         <div className="border-t border-border px-4 py-2">
           <div className="flex items-center gap-2">
-            <input
+            <TextField
               value={prompt}
               maxLength={MAX_DESCRIPTION_CHARS}
               placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Describe the process. Text is saved as the description."
-              className="min-w-0 flex-1 rounded border border-border bg-canvas px-2.5 py-1.5 text-sm text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+              aria-invalid={Boolean(promptIssue) || undefined}
+              aria-describedby="process-description-meta"
+              className="min-w-0 flex-1"
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !promptIssue) handleDescribe(prompt);
@@ -303,8 +307,8 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
               Create process
             </Button>
           </div>
-          <div className="mt-1.5 flex justify-between gap-3 text-[11px] text-muted">
-            <span className={promptIssue ? 'text-danger' : ''}>
+          <div id="process-description-meta" className="ui-field-message flex justify-between gap-3">
+            <span data-tone={promptIssue ? 'danger' : undefined}>
               {promptIssue ?? ''}
             </span>
             {prompt.length > MAX_DESCRIPTION_CHARS * 0.7 ? (
@@ -325,10 +329,10 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         <ListKindTabs kind={kind} onChange={selectTab} />
         <label className="ml-auto flex items-center gap-2 py-1.5 text-[12px] text-muted">
           <span>Sort by</span>
-          <select
+          <SelectField
             value={sort}
             aria-label={kind === 'template' ? 'Sort templates' : 'Sort processes'}
-            className="rounded border border-border bg-canvas px-2 py-1 text-[12px] font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="w-auto min-w-40 font-medium"
             onChange={(event) => {
               setSort(event.target.value as ProcessListSort);
               setPage(1);
@@ -338,7 +342,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             <option value="updated_asc">Least recently updated</option>
             <option value="name_asc">Name A–Z</option>
             <option value="name_desc">Name Z–A</option>
-          </select>
+          </SelectField>
         </label>
       </div>
 
@@ -347,7 +351,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         role="tabpanel"
         aria-labelledby={LIST_TAB_ID[kind]}
         aria-busy={loading}
-        className="min-h-0 flex-1 overflow-y-auto"
+        className="product-scrollbar min-h-0 flex-1 overflow-y-auto"
       >
         {initialLoading ? (
           <div>

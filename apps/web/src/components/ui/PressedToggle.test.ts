@@ -9,9 +9,9 @@ describe('PressedToggle', () => {
     const off = renderToStaticMarkup(createElement(PressedToggle, { pressed: false, children: 'All' }));
     expect(on).toMatch(/<button\b/);
     expect(on).toContain('aria-pressed="true"');
-    expect(on).toContain('border-ink');
+    expect(on).toContain('ui-tab');
     expect(off).toContain('aria-pressed="false"');
-    expect(off).toContain('border-transparent');
+    expect(off).toContain('ui-tab');
     expect(on).not.toMatch(/<button[\s\S]*<button/);
   });
 });
