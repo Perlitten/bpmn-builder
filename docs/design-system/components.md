@@ -3,22 +3,32 @@
 ## Button
 
 - **Kind**: local
-- **Props**: variant, size, disabled, onClick, type, className, aria-label
+- **Props**: variant, size, disabled, onClick, type, className, aria-label, aria-pressed, title, aria-expanded, aria-haspopup, aria-controls, onKeyDown, data-modal-initial-focus
 - **Variants**: size-provided
 - **States**: default, disabled
 - **Sites**:
   - `apps/web/src/components/process-list/DuplicateProcessDialog.tsx:78`
   - `apps/web/src/components/process-list/DuplicateProcessDialog.tsx:81`
   - `apps/web/src/components/process-list/ImportBpmnButton.tsx:22`
+  - `apps/web/src/components/process-list/ListPaginationFooter.tsx:30`
+  - `apps/web/src/components/process-list/ListPaginationFooter.tsx:39`
+  - `apps/web/src/components/process-list/NewProcessDialog.tsx:97`
   - `apps/web/src/components/process-list/NewProcessDialog.tsx:115`
   - `apps/web/src/components/process-list/NewProcessDialog.tsx:152`
+  - `apps/web/src/components/process-list/NewProcessDialog.tsx:156`
   - `apps/web/src/components/process-list/RenameProcessDialog.tsx:76`
+  - `apps/web/src/components/process-list/RenameProcessDialog.tsx:79`
   - `apps/web/src/components/process-list/TemplatesSection.tsx:29`
   - `apps/web/src/components/process-list/TemplatesSection.tsx:33`
   - `apps/web/src/components/shell/EditorChrome.tsx:77`
+  - `apps/web/src/components/shell/EditorChrome.tsx:110`
+  - `apps/web/src/components/ui/ChromeMenu.tsx:52`
   - `apps/web/src/components/ui/ConfirmDialog.tsx:50`
   - `apps/web/src/components/ui/ConfirmDialog.tsx:53`
+  - `apps/web/src/pages/ProcessListPage.tsx:274`
+  - `apps/web/src/pages/ProcessListPage.tsx:297`
   - `apps/web/src/pages/ProcessListPage.tsx:366`
+  - `apps/web/src/pages/ProcessListPage.tsx:371`
   - `apps/web/src/pages/SignInPage.tsx:94`
 
 ---
@@ -26,8 +36,8 @@
 ## ChromeMenuItem
 
 - **Kind**: local
-- **Props**: onSelect, icon, disabled, size, strokeWidth
-- **Variants**: size-provided
+- **Props**: onSelect, icon, disabled
+- **Variants**: default
 - **States**: default, disabled
 - **Sites**:
   - `apps/web/src/components/process-list/ProcessRow.tsx:92`
@@ -43,37 +53,26 @@
 
 ---
 
-## ProcessSummary
+## MenuIcon
 
 - **Kind**: local
-- **Props**: none
+- **Props**: icon
 - **Variants**: default
 - **States**: default
 - **Sites**:
-  - `apps/web/src/pages/ProcessListPage.tsx:45`
-  - `apps/web/src/pages/ProcessListPage.tsx:59`
-  - `apps/web/src/pages/ProcessListPage.tsx:60`
-  - `apps/web/src/pages/ProcessListPage.tsx:61`
-
----
-
-## HTMLElement
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:134`
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:150`
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:162`
+  - `apps/web/src/components/shell/EditorChrome.tsx:143`
+  - `apps/web/src/components/shell/EditorChrome.tsx:147`
+  - `apps/web/src/components/shell/EditorChrome.tsx:150`
+  - `apps/web/src/components/shell/EditorChrome.tsx:154`
+  - `apps/web/src/components/shell/EditorChrome.tsx:158`
+  - `apps/web/src/components/shell/EditorChrome.tsx:161`
 
 ---
 
 ## Icon
 
 - **Kind**: local
-- **Props**: size, strokeWidth
+- **Props**: size, strokeWidth, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Sites**:
@@ -83,29 +82,42 @@
 
 ---
 
-## HTMLInputElement
+## TextField
 
 - **Kind**: local
-- **Props**: none
-- **Variants**: default
+- **Props**: value, maxLength, autoComplete, data-modal-initial-focus, className, onChange, variant, aria-label, placeholder, onBlur, onKeyDown
+- **Variants**: variant-provided
 - **States**: default
 - **Sites**:
-  - `apps/web/src/components/process-list/ImportBpmnButton.tsx:17`
-  - `apps/web/src/components/process-list/NewProcessDialog.tsx:31`
-  - `apps/web/src/components/ui/TextField.tsx:3`
+  - `apps/web/src/components/process-list/DuplicateProcessDialog.tsx:63`
+  - `apps/web/src/components/process-list/RenameProcessDialog.tsx:61`
+  - `apps/web/src/components/shell/EditorChrome.tsx:82`
 
 ---
 
-## HTMLButtonElement
+## ChromeMenu
 
 - **Kind**: local
-- **Props**: none
+- **Props**: label, ariaLabel, disabled, align
+- **Variants**: default
+- **States**: default, disabled
+- **Sites**:
+  - `apps/web/src/components/process-list/ProcessRow.tsx:91`
+  - `apps/web/src/components/shell/EditorChrome.tsx:132`
+  - `apps/web/src/components/shell/UserMenu.tsx:10`
+
+---
+
+## ConfirmDialog
+
+- **Kind**: local
+- **Props**: open, title, body, confirmLabel, onCancel, onConfirm, role, busy
 - **Variants**: default
 - **States**: default
 - **Sites**:
-  - `apps/web/src/components/process-list/ListKindTabs.tsx:23`
-  - `apps/web/src/components/ui/Button.tsx:3`
-  - `apps/web/src/components/ui/ChromeMenu.tsx:42`
+  - `apps/web/src/components/shell/EditorChrome.tsx:167`
+  - `apps/web/src/pages/ProcessListPage.tsx:421`
+  - `apps/web/src/pages/ProcessListPage.tsx:455`
 
 ---
 
@@ -119,18 +131,6 @@
   - `apps/web/src/pages/ProcessListPage.tsx:356`
   - `apps/web/src/pages/ProcessListPage.tsx:357`
   - `apps/web/src/pages/ProcessListPage.tsx:358`
-
----
-
-## BpmnEditorHandle
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:146`
-  - `apps/web/src/pages/ProcessEditorPage.tsx:17`
 
 ---
 
@@ -148,25 +148,13 @@
 
 ## Plus
 
-- **Kind**: local
-- **Props**: size, strokeWidth
+- **Kind**: external
+- **Props**: size, strokeWidth, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Sites**:
   - `apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx:37`
   - `apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:80`
-
----
-
-## AbortController
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:42`
-  - `apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx:28`
 
 ---
 
@@ -184,8 +172,8 @@
 
 ## ArrowLeft
 
-- **Kind**: local
-- **Props**: size
+- **Kind**: external
+- **Props**: size, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Sites**:
@@ -196,25 +184,13 @@
 
 ## Diamond
 
-- **Kind**: local
-- **Props**: className, size, strokeWidth
+- **Kind**: external
+- **Props**: className, size, strokeWidth, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Sites**:
   - `apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:192`
   - `apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:96`
-
----
-
-## ImportBpmnButtonHandle
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Sites**:
-  - `apps/web/src/components/process-list/ImportBpmnButton.tsx:15`
-  - `apps/web/src/pages/ProcessListPage.tsx:64`
 
 ---
 
@@ -230,15 +206,16 @@
 
 ---
 
-## AppRoute
+## ImportBpmnButton
 
 - **Kind**: local
-- **Props**: none
+- **Props**: ref, disabled, onImport, onError
 - **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
+- **States**: default, disabled
+- **Notes**: Wrapper composing Button, owns behavior (file input/reading).
 - **Sites**:
-  - `apps/web/src/App.tsx:10`
+  - `apps/web/src/pages/ProcessListPage.tsx:268`
+  - `apps/web/src/pages/ProcessListPage.tsx:379`
 
 ---
 
@@ -278,39 +255,15 @@
 
 ---
 
-## AuthContextValue
+## ProcessEditorPage
 
 - **Kind**: local
-- **Props**: none
+- **Props**: processId, onBack
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/components/auth/AuthGate.tsx:10`
-
----
-
-## AuthContext
-
-- **Kind**: local
-- **Props**: value
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/auth/AuthGate.tsx:28`
-
----
-
-## SessionUser
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/auth/AuthGate.tsx:35`
+  - `apps/web/src/App.tsx:37`
 
 ---
 
@@ -326,75 +279,27 @@
 
 ---
 
-## BpmnModeler
+## AuthProvider
 
 - **Kind**: local
-- **Props**: none
+- **Props**: user, signOut
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:152`
+  - `apps/web/src/components/auth/AuthGate.tsx:73`
 
 ---
 
-## SemanticEditor
+## PaletteRail
 
 - **Kind**: local
-- **Props**: none
+- **Props**: tool, catalogView, query, selection, hasParticipant, onTool, onOpenCatalog, onQueryChange, onCloseCatalog, onPick
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:153`
-
----
-
-## TokenSimulation
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:154`
-
----
-
-## TokenView
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:155`
-
----
-
-## PaletteCatalogView
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:164`
-
----
-
-## DiagramElement
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:166`
+  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:725`
 
 ---
 
@@ -422,6 +327,18 @@
 
 ---
 
+## ContinueWith
+
+- **Kind**: local
+- **Props**: key, source, hasParticipant, anchor, target, choices, onPick
+- **Variants**: default
+- **States**: default
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:757`
+
+---
+
 ## EditorOnboarding
 
 - **Kind**: local
@@ -434,9 +351,33 @@
 
 ---
 
-## Minus
+## ElementInspector
 
 - **Kind**: local
+- **Props**: framed, element, canDelete, lint, replaceWorks, onRename, onRenameLane, onChangeTo, onDelete, onFlowKind, onCondition, onDefaultOutgoing, onCalledElement, process, onPreservedChange, onAttach, onCreate, onAssignLane, poolLanes, nodeLanes, currentLaneId
+- **Variants**: default
+- **States**: default
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:777`
+
+---
+
+## ArchitectPanel
+
+- **Kind**: local
+- **Props**: disabled, configured, context, onProtectBranch, onApply
+- **Variants**: default
+- **States**: default, disabled
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/components/bpmn-editor/BpmnEditor.tsx:897`
+
+---
+
+## Minus
+
+- **Kind**: external
 - **Props**: size
 - **Variants**: size-provided
 - **States**: default
@@ -448,61 +389,13 @@
 
 ## Maximize2
 
-- **Kind**: local
+- **Kind**: external
 - **Props**: size
 - **Variants**: size-provided
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
   - `apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx:45`
-
----
-
-## AssistantApplyResult
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:31`
-
----
-
-## HTMLTextAreaElement
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:41`
-
----
-
-## ChatTurn
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:51`
-
----
-
-## AgentScopeKind
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:52`
 
 ---
 
@@ -515,42 +408,6 @@
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
   - `apps/web/src/components/bpmn-editor/architect/ArchitectPanel.tsx:139`
-
----
-
-## DragState
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:71`
-
----
-
-## Point
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ArchitectShell.tsx:77`
-
----
-
-## ListArchitectPanelBox
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/architect/ListArchitect.tsx:26`
 
 ---
 
@@ -590,18 +447,6 @@
 
 ---
 
-## PreservedField
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/bpmn-editor/inspector/PreservedBpmnFields.tsx:12`
-
----
-
 ## FieldInput
 
 - **Kind**: local
@@ -614,22 +459,22 @@
 
 ---
 
-## PaletteCategoryId
+## X
 
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
+- **Kind**: external
+- **Props**: size, aria-hidden
+- **Variants**: size-provided
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:44`
+  - `apps/web/src/components/bpmn-editor/palette/CatalogFlyout.tsx:128`
 
 ---
 
 ## Search
 
-- **Kind**: local
-- **Props**: size, strokeWidth
+- **Kind**: external
+- **Props**: size, strokeWidth, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Notes**: One-off component, low reuse value.
@@ -638,15 +483,15 @@
 
 ---
 
-## BpmnComponentDefinition
+## CatalogFlyout
 
 - **Kind**: local
-- **Props**: none
+- **Props**: view, query, selection, hasParticipant, onQueryChange, onViewChange, onPick, onClose
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/components/bpmn-editor/palette/ContinueWith.tsx:44`
+  - `apps/web/src/components/bpmn-editor/palette/PaletteRail.tsx:110`
 
 ---
 
@@ -659,18 +504,6 @@
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
   - `apps/web/src/components/process-list/BpmnSchematic.tsx:74`
-
----
-
-## ChromeMenu
-
-- **Kind**: local
-- **Props**: label, ariaLabel
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/process-list/ProcessRow.tsx:91`
 
 ---
 
@@ -688,8 +521,8 @@
 
 ## PlayCircle
 
-- **Kind**: local
-- **Props**: size
+- **Kind**: external
+- **Props**: size, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Notes**: One-off component, low reuse value.
@@ -700,13 +533,25 @@
 
 ## Ellipsis
 
-- **Kind**: local
-- **Props**: size
+- **Kind**: external
+- **Props**: size, aria-hidden
 - **Variants**: size-provided
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
   - `apps/web/src/components/shell/EditorChrome.tsx:137`
+
+---
+
+## LogOut
+
+- **Kind**: external
+- **Props**: size, strokeWidth, aria-hidden
+- **Variants**: size-provided
+- **States**: default
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/components/shell/UserMenu.tsx:27`
 
 ---
 
@@ -722,42 +567,6 @@
 
 ---
 
-## Viewer
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/showcase/ShowcaseViewer.tsx:28`
-
----
-
-## CloseMenu
-
-- **Kind**: local
-- **Props**: value
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/ui/ChromeMenu.tsx:70`
-
----
-
-## ButtonHTMLAttributes
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/components/ui/PressedToggle.tsx:6`
-
----
-
 ## App
 
 - **Kind**: local
@@ -770,39 +579,27 @@
 
 ---
 
-## Process
+## EditorChrome
 
 - **Kind**: local
-- **Props**: none
+- **Props**: name, saving, savedAt, busy, notice, simulating, simStatus, onBack, onNameChange, onNameCommit, onExport, onExportSvg, onExportPdf, onSaveTemplate, onClear, onToggleSimulate, onResetSimulation, account
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/pages/ProcessEditorPage.tsx:18`
+  - `apps/web/src/pages/ProcessEditorPage.tsx:175`
 
 ---
 
-## ListTab
+## BpmnEditor
 
 - **Kind**: local
-- **Props**: none
+- **Props**: ref, processId, xml, simulating, onChange, onSimStatus
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/pages/ProcessListPage.tsx:48`
-
----
-
-## ProcessListSort
-
-- **Kind**: local
-- **Props**: none
-- **Variants**: default
-- **States**: default
-- **Notes**: One-off component, low reuse value.
-- **Sites**:
-  - `apps/web/src/pages/ProcessListPage.tsx:49`
+  - `apps/web/src/pages/ProcessEditorPage.tsx:199`
 
 ---
 
@@ -830,28 +627,63 @@
 
 ---
 
-## ImportBpmnButton
+## TemplatesSection
 
 - **Kind**: local
-- **Props**: disabled, onImport, onError
-- **Variants**: default
-- **States**: default, disabled
-- **NEAR DUPLICATE OF**: Button
-- **Notes**: Near duplicate of Button, likely differs only in padding or icon.
-- **Sites**:
-  - `apps/web/src/pages/ProcessListPage.tsx:379`
-
----
-
-## AuthStatus
-
-- **Kind**: local
-- **Props**: none
+- **Props**: templates, busy, onOpen, onUse
 - **Variants**: default
 - **States**: default
 - **Notes**: One-off component, low reuse value.
 - **Sites**:
-  - `apps/web/src/pages/SignInPage.tsx:28`
+  - `apps/web/src/pages/ProcessListPage.tsx:384`
+
+---
+
+## ProcessRow
+
+- **Kind**: local
+- **Props**: key, process, onOpen, onRename, onDuplicate, onDelete
+- **Variants**: default
+- **States**: default
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/pages/ProcessListPage.tsx:398`
+
+---
+
+## ListPaginationFooter
+
+- **Kind**: local
+- **Props**: from, to, total, page, pageSize, onPrev, onNext
+- **Variants**: default
+- **States**: default
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/pages/ProcessListPage.tsx:411`
+
+---
+
+## RenameProcessDialog
+
+- **Kind**: local
+- **Props**: process, busy, error, onRename, onClose
+- **Variants**: default
+- **States**: default, error
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/pages/ProcessListPage.tsx:431`
+
+---
+
+## DuplicateProcessDialog
+
+- **Kind**: local
+- **Props**: process, busy, error, onConfirm, onClose
+- **Variants**: default
+- **States**: default, error
+- **Notes**: One-off component, low reuse value.
+- **Sites**:
+  - `apps/web/src/pages/ProcessListPage.tsx:443`
 
 ---
 

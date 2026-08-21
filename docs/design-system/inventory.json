@@ -498,7 +498,7 @@
   {
     "category": "colors",
     "value": "border-border",
-    "count": 27,
+    "count": 28,
     "sites": [
       {
         "file": "apps/web/src/components/auth/AuthGate.tsx",
@@ -568,6 +568,11 @@
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
         "line": 76,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
         "form": "scale"
       },
       {
@@ -772,7 +777,7 @@
   {
     "category": "colors",
     "value": "bg-canvas",
-    "count": 22,
+    "count": 23,
     "sites": [
       {
         "file": "apps/web/src/components/auth/AuthGate.tsx",
@@ -835,6 +840,11 @@
         "form": "scale"
       },
       {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "scale"
+      },
+      {
         "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
         "line": 41,
         "form": "scale"
@@ -889,7 +899,7 @@
   {
     "category": "border-width",
     "value": "border",
-    "count": 19,
+    "count": 21,
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
@@ -928,6 +938,11 @@
       },
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
         "line": 62,
         "form": "scale"
       },
@@ -939,6 +954,11 @@
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
         "line": 76,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
         "form": "scale"
       },
       {
@@ -1175,7 +1195,7 @@
   {
     "category": "border-radius",
     "value": "rounded",
-    "count": 16,
+    "count": 17,
     "sites": [
       {
         "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
@@ -1205,6 +1225,11 @@
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
         "line": 32,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
         "form": "scale"
       },
       {
@@ -1255,6 +1280,88 @@
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 88,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "text-xs",
+    "count": 15,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 62,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 78,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 113,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 125,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 60,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 100,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 103,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 34,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 54,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 80,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 11,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/SaveStatus.tsx",
+        "line": 18,
         "form": "scale"
       }
     ]
@@ -1338,83 +1445,6 @@
   },
   {
     "category": "colors",
-    "value": "text-xs",
-    "count": 14,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
-        "line": 25,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 62,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 78,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 113,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 125,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 60,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 100,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 103,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 34,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 54,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 66,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 80,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/SaveStatus.tsx",
-        "line": 11,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/SaveStatus.tsx",
-        "line": 18,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "colors",
     "value": "var",
     "count": 14,
     "sites": [
@@ -1487,6 +1517,83 @@
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
         "line": 856,
         "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "shadows",
+    "value": "outline-none",
+    "count": 14,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 49,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 48,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 62,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/Button.tsx",
+        "line": 30,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 41,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/TextField.tsx",
+        "line": 18,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 88,
+        "form": "scale"
       }
     ]
   },
@@ -1635,33 +1742,53 @@
     ]
   },
   {
-    "category": "shadows",
-    "value": "outline-none",
+    "category": "typography",
+    "value": "font-medium",
     "count": 13,
     "sites": [
       {
+        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
+        "line": 25,
+        "form": "scale"
+      },
+      {
         "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 49,
+        "line": 62,
         "form": "scale"
       },
       {
         "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 71,
+        "line": 78,
         "form": "scale"
       },
       {
         "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 87,
+        "line": 127,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 69,
         "form": "scale"
       },
       {
         "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 48,
+        "line": 60,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 26,
         "form": "scale"
       },
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 62,
+        "line": 34,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
         "form": "scale"
       },
       {
@@ -1670,33 +1797,13 @@
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
-        "line": 104,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
-        "line": 41,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/TextField.tsx",
-        "line": 18,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 263,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 291,
-        "form": "scale"
-      },
-      {
         "file": "apps/web/src/pages/ProcessListPage.tsx",
         "line": 331,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 74,
         "form": "scale"
       },
       {
@@ -1774,73 +1881,6 @@
     ]
   },
   {
-    "category": "typography",
-    "value": "font-medium",
-    "count": 12,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
-        "line": 25,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 62,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 78,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 127,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
-        "line": 69,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 60,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
-        "line": 26,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 34,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/Button.tsx",
-        "line": 30,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 331,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 74,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 88,
-        "form": "scale"
-      }
-    ]
-  },
-  {
     "category": "spacing",
     "value": "6px",
     "count": 11,
@@ -1904,57 +1944,57 @@
   },
   {
     "category": "colors",
-    "value": "text-danger",
+    "value": "border-b",
     "count": 10,
     "sites": [
       {
-        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 73,
+        "file": "apps/web/src/components/auth/AuthGate.tsx",
+        "line": 62,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 91,
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 146,
+        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
+        "line": 61,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 71,
+        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
+        "line": 24,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 66,
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
-        "line": 161,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
-        "line": 208,
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
         "form": "scale"
       },
       {
         "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 307,
+        "line": 254,
         "form": "scale"
       },
       {
         "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 318,
+        "line": 323,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 355,
         "form": "scale"
       },
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 68,
+        "line": 44,
         "form": "scale"
       }
     ]
@@ -2283,47 +2323,47 @@
   },
   {
     "category": "colors",
-    "value": "border-b",
+    "value": "text-danger",
     "count": 8,
     "sites": [
       {
-        "file": "apps/web/src/components/auth/AuthGate.tsx",
-        "line": 62,
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 73,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
-        "line": 61,
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 146,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/process-list/TemplatesSection.tsx",
-        "line": 24,
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 71,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 70,
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 161,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
         "form": "scale"
       },
       {
         "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 254,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 323,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 355,
+        "line": 318,
         "form": "scale"
       },
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 44,
+        "line": 68,
         "form": "scale"
       }
     ]
@@ -2423,6 +2463,48 @@
     ]
   },
   {
+    "category": "colors",
+    "value": "text-[12px]",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 24,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 33,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 42,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
+        "form": "arbitrary"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "arbitrary"
+      }
+    ]
+  },
+  {
     "category": "spacing",
     "value": "p-4",
     "count": 7,
@@ -2466,6 +2548,48 @@
   },
   {
     "category": "spacing",
+    "value": "px-2",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 33,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
+        "line": 42,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
     "value": "px-3",
     "count": 7,
     "sites": [
@@ -2502,6 +2626,48 @@
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 73,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "py-1.5",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 255,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 326,
         "form": "scale"
       }
     ]
@@ -2582,43 +2748,6 @@
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 787,
         "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "py-1.5",
-    "count": 6,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 127,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/shell/UserMenu.tsx",
-        "line": 26,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
-        "line": 104,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 255,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 291,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 326,
-        "form": "scale"
       }
     ]
   },
@@ -2735,38 +2864,6 @@
   },
   {
     "category": "colors",
-    "value": "text-[12px]",
-    "count": 5,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
-        "line": 24,
-        "form": "arbitrary"
-      },
-      {
-        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
-        "line": 33,
-        "form": "arbitrary"
-      },
-      {
-        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
-        "line": 42,
-        "form": "arbitrary"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 326,
-        "form": "arbitrary"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 331,
-        "form": "arbitrary"
-      }
-    ]
-  },
-  {
-    "category": "colors",
     "value": "bg-surface",
     "count": 5,
     "sites": [
@@ -2793,38 +2890,6 @@
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 73,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "px-2",
-    "count": 5,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
-        "line": 33,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/ListPaginationFooter.tsx",
-        "line": 42,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 70,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 263,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 331,
         "form": "scale"
       }
     ]
@@ -3125,6 +3190,33 @@
       {
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 62,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "mt-1",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 68,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 66,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 75,
         "form": "scale"
       }
     ]
@@ -3474,28 +3566,6 @@
   },
   {
     "category": "spacing",
-    "value": "mt-1",
-    "count": 3,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 68,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 66,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 75,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
     "value": "mt-5",
     "count": 3,
     "sites": [
@@ -3540,6 +3610,28 @@
   },
   {
     "category": "spacing",
+    "value": "px-2.5",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 87,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 291,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
     "value": "py-3",
     "count": 3,
     "sites": [
@@ -3556,6 +3648,28 @@
       {
         "file": "apps/web/src/pages/ProcessListPage.tsx",
         "line": 355,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "py-1",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 263,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessListPage.tsx",
+        "line": 331,
         "form": "scale"
       }
     ]
@@ -3867,23 +3981,6 @@
   },
   {
     "category": "spacing",
-    "value": "px-2.5",
-    "count": 2,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 87,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 291,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
     "value": "gap-1.5",
     "count": 2,
     "sites": [
@@ -3912,23 +4009,6 @@
       {
         "file": "apps/web/src/pages/ProcessEditorPage.tsx",
         "line": 170,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "py-1",
-    "count": 2,
-    "sites": [
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 263,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 331,
         "form": "scale"
       }
     ]
@@ -4015,6 +4095,23 @@
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 631,
         "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
+    "value": "min-h-8",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/ListKindTabs.tsx",
+        "line": 53,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/PressedToggle.tsx",
+        "line": 13,
+        "form": "scale"
       }
     ]
   },
@@ -4415,18 +4512,6 @@
   },
   {
     "category": "spacing",
-    "value": "pr-16",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/ProcessRow.tsx",
-        "line": 66,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
     "value": "pt-0.5",
     "count": 1,
     "sites": [
@@ -4763,6 +4848,18 @@
   },
   {
     "category": "sizing",
+    "value": "min-w-[11rem]",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
+        "form": "arbitrary"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
     "value": "w-3.5",
     "count": 1,
     "sites": [
@@ -4954,25 +5051,25 @@
     ]
   },
   {
-    "category": "opacity",
-    "value": "opacity-60",
+    "category": "z_index",
+    "value": "z-30",
     "count": 1,
     "sites": [
       {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 396,
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 78,
         "form": "scale"
       }
     ]
   },
   {
     "category": "transitions",
-    "value": "transition-opacity",
+    "value": "transition-colors",
     "count": 1,
     "sites": [
       {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 396,
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 40,
         "form": "scale"
       }
     ]
