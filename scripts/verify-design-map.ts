@@ -1,15 +1,12 @@
 import * as fs from 'fs';
 
-
 function checkLine(file: string, lineNum: number, searchTerms: string[], context: string) {
     if (!fs.existsSync(file)) {
         console.error(`Verification Failed [${context}]: File ${file} does not exist.`);
         process.exit(1);
     }
     const lines = fs.readFileSync(file, 'utf-8').split('\n');
-    // Allow off-by-one or two due to AST start positioning on attributes vs element
     let found = false;
-
 
     for (let offset = -2; offset <= 2; offset++) {
         const checkLineNum = lineNum + offset;
@@ -18,7 +15,6 @@ function checkLine(file: string, lineNum: number, searchTerms: string[], context
             for (const term of searchTerms) {
                 if (lineContent.includes(term)) {
                     found = true;
-
                     break;
                 }
             }
@@ -31,6 +27,16 @@ function checkLine(file: string, lineNum: number, searchTerms: string[], context
         process.exit(1);
     }
 }
+
+function preventNotFound(file: string) {
+    const content = fs.readFileSync(file, 'utf-8');
+    if (content.includes('NOT_FOUND')) {
+        console.error(`Verification Failed: File ${file} contains placeholder 'NOT_FOUND'.`);
+        process.exit(1);
+    }
+}
+
+['docs/design-system/components.json', 'docs/design-system/inventory.json', 'docs/design-system/components.md', 'docs/design-system/inventory.md', 'docs/design-system/tailwind-layer.md', 'docs/design-system/readiness.md'].forEach(preventNotFound);
 
 console.info('Verifying docs/design-system/components.json...');
 const comps = JSON.parse(fs.readFileSync('docs/design-system/components.json', 'utf-8'));
@@ -50,7 +56,5 @@ for (const item of inv) {
     }
 }
 console.info('✓ inventory.json verified.');
-
-// We remove the hardcoded markdown citations since the new parsed files will generate them dynamically.
 
 console.info('All verification passed.');

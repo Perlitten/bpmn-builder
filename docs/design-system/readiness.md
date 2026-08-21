@@ -1,7 +1,6 @@
 # Design System Readiness & Friction Points
 
 ## Inline Styles
-- Used heavily in SVG/canvas manipulation or component coordinate mapping (`NOT_FOUND`) where state maps directly to geometric coordinates rather than static design properties.
 - This creates friction where visual properties might be dynamically injected rather than referencing static class definitions.
 
 ## External Libraries and Global CSS

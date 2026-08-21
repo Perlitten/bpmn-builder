@@ -20,11 +20,6 @@ The application defines a partial semantic token layer in `apps/web/src/index.cs
 ## Bypasses & Arbitrary Values
 The application bypasses semantic tokens in numerous places:
 
-- **Surface Bypass**: `bg-slate-100` (`NOT_FOUND`), `bg-slate-50` (`NOT_FOUND`), `bg-white/50` (`NOT_FOUND`). Should use `bg-surface` or define shades like `bg-surface-hover`.
-- **Muted Bypass**: `text-slate-500` (`NOT_FOUND`), `text-slate-400` (`NOT_FOUND`). Should use `text-muted`.
-- **Border Bypass**: `border-slate-300` (`NOT_FOUND`). Should use `border-border`.
-- **Accent Bypass**: `bg-teal-600` (`NOT_FOUND`), `bg-teal-700` (`NOT_FOUND`), `text-teal-600` (`NOT_FOUND`). Should use `bg-accent-hover` / `bg-accent-active` / `text-accent`.
-- **Danger Bypass**: `bg-red-500` (`NOT_FOUND`), `bg-red-600` (`NOT_FOUND`), `text-red-600` (`NOT_FOUND`). Should use `bg-danger-hover` / `text-danger`.
 
 ## Conflicts & Ambiguities
 - **Hover/Active States**: The token layer completely lacks states. Consequently, `hover:bg-slate-100` and `hover:bg-teal-700` are hardcoded throughout instead of using `hover:bg-surface-hover` or `hover:bg-accent-hover`.

@@ -1,6 +1,470 @@
 [
   {
     "category": "colors",
+    "value": "var(--color-ink)",
+    "count": 54,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 152,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 176,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 182,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 188,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 218,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 226,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 625,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 626,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 627,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 628,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 680,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 686,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 702,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 703,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 722,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 750,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 755,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 773,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 840,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 845,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 849,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 851,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 867,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 64,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 71,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 92,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 160,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 165,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 167,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 206,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 246,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 37,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 68,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 73,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 79,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 150,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 155,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 196,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 260,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 278,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 292,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 316,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 326,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 361,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 481,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 482,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 545,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 625,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 662,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 666,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 712,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 746,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 19,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 183,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "4px",
+    "count": 36,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 167,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 675,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 720,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 741,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 746,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 817,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 829,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 836,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 39,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 59,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 106,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 132,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 146,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 156,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 193,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 201,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 215,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 243,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 12,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 14,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 111,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 145,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 160,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 250,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 344,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 382,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 384,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 407,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 419,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 425,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 460,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 464,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 708,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 803,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 839,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 847,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
     "value": "text-muted",
     "count": 34,
     "sites": [
@@ -496,6 +960,158 @@
     ]
   },
   {
+    "category": "spacing",
+    "value": "6px",
+    "count": 29,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 148,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 633,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 654,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 675,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 761,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 836,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 864,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 13,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 35,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 49,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 59,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 89,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 90,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 112,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 118,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 134,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 147,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 156,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 237,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 33,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 129,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 134,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 145,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 273,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 344,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 407,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 467,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 602,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 839,
+        "form": "css"
+      }
+    ]
+  },
+  {
     "category": "colors",
     "value": "border-border",
     "count": 28,
@@ -643,48 +1259,195 @@
     ]
   },
   {
-    "category": "spacing",
-    "value": "4px",
-    "count": 25,
+    "category": "colors",
+    "value": "var(--color-canvas)",
+    "count": 28,
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 675,
+        "line": 151,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 720,
+        "line": 175,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 741,
+        "line": 196,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 746,
+        "line": 640,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 788,
+        "line": 678,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 829,
+        "line": 724,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 836,
+        "line": 748,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 838,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 850,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 59,
+        "line": 8,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 62,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 158,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 166,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 223,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 16,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 74,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 80,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 125,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 148,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 252,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 276,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 315,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 327,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 340,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 483,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 649,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 18,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 50,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "10px",
+    "count": 26,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 638,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 638,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 654,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 13,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 35,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 39,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 49,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 90,
         "form": "css"
       },
       {
@@ -694,17 +1457,22 @@
       },
       {
         "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 132,
+        "line": 112,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 146,
+        "line": 133,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 156,
+        "line": 147,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 193,
         "form": "css"
       },
       {
@@ -718,58 +1486,58 @@
         "form": "css"
       },
       {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 12,
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 221,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 221,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 111,
+        "line": 129,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 145,
+        "line": 165,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 160,
+        "line": 180,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 250,
+        "line": 191,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 407,
+        "line": 274,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 419,
+        "line": 647,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 464,
+        "line": 803,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 708,
+        "line": 816,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 839,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 847,
+        "line": 871,
         "form": "css"
       }
     ]
@@ -1005,6 +1773,215 @@
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 88,
         "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "8px",
+    "count": 20,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 654,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 720,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 746,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 13,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 39,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 106,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 133,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 221,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 14,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 129,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 160,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 165,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 188,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 250,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 274,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 344,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 356,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 384,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 460,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 731,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "var(--color-muted)",
+    "count": 19,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 29,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 44,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 83,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 108,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 175,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 217,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 229,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 170,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 182,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 212,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 241,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 254,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 283,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 349,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 376,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 528,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 650,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 797,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 812,
+        "form": "css"
       }
     ]
   },
@@ -1444,83 +2421,6 @@
     ]
   },
   {
-    "category": "colors",
-    "value": "var",
-    "count": 14,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 690,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 691,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 696,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 707,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 708,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 713,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 730,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 731,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 732,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 781,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 790,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 823,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 855,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 856,
-        "form": "css"
-      }
-    ]
-  },
-  {
     "category": "shadows",
     "value": "outline-none",
     "count": 14,
@@ -1814,6 +2714,73 @@
     ]
   },
   {
+    "category": "spacing",
+    "value": "2px",
+    "count": 12,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 148,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 148,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 653,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 33,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 165,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 288,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 419,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 458,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 467,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 527,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 787,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 847,
+        "form": "css"
+      }
+    ]
+  },
+  {
     "category": "sizing",
     "value": "min-w-0",
     "count": 12,
@@ -1881,63 +2848,63 @@
     ]
   },
   {
-    "category": "spacing",
-    "value": "6px",
+    "category": "colors",
+    "value": "var(--color-accent)",
     "count": 11,
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 633,
+        "line": 187,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 761,
+        "line": 197,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 864,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 35,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 89,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 134,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 237,
+        "line": 205,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 33,
+        "line": 259,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 273,
+        "line": 489,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 344,
+        "line": 490,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 602,
+        "line": 491,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 143,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 145,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 162,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 188,
         "form": "css"
       }
     ]
@@ -1996,63 +2963,6 @@
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 44,
         "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "8px",
-    "count": 10,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 654,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 13,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 39,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 221,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 14,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 129,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 165,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 188,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 274,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 460,
-        "form": "css"
       }
     ]
   },
@@ -2323,6 +3233,100 @@
   },
   {
     "category": "colors",
+    "value": "var(--color-surface)",
+    "count": 8,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 181,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 67,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 202,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 367,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 552,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 638,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 726,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 758,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "var(--color-danger)",
+    "count": 8,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 213,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 328,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 799,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 806,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 210,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 211,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 233,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 179,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
     "value": "text-danger",
     "count": 8,
     "sites": [
@@ -2463,6 +3467,53 @@
     ]
   },
   {
+    "category": "spacing",
+    "value": "px-3",
+    "count": 8,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 127,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 70,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/UserMenu.tsx",
+        "line": 26,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
+        "line": 66,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
+        "line": 104,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
+        "line": 208,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 68,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 73,
+        "form": "scale"
+      }
+    ]
+  },
+  {
     "category": "colors",
     "value": "text-[12px]",
     "count": 7,
@@ -2501,6 +3552,48 @@
         "file": "apps/web/src/pages/ProcessListPage.tsx",
         "line": 331,
         "form": "arbitrary"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "18px",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 586,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 688,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 688,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 731,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 742,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 811,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 818,
+        "form": "css"
       }
     ]
   },
@@ -2590,48 +3683,6 @@
   },
   {
     "category": "spacing",
-    "value": "px-3",
-    "count": 7,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 127,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/shell/UserMenu.tsx",
-        "line": 26,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 66,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/components/ui/ChromeMenu.tsx",
-        "line": 104,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessEditorPage.tsx",
-        "line": 208,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 68,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 73,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
     "value": "py-1.5",
     "count": 7,
     "sites": [
@@ -2715,8 +3766,87 @@
     ]
   },
   {
+    "category": "transitions",
+    "value": "animation: none",
+    "count": 7,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 138,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 309,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 315,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 324,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 329,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 334,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 339,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "var(--architect-placeholder)",
+    "count": 6,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 690,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 691,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 696,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 707,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 708,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 713,
+        "form": "css"
+      }
+    ]
+  },
+  {
     "category": "spacing",
-    "value": "2px",
+    "value": "5px",
     "count": 6,
     "sites": [
       {
@@ -2725,28 +3855,28 @@
         "form": "css"
       },
       {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 27,
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 33,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 288,
+        "line": 191,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 458,
+        "line": 356,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 527,
+        "line": 811,
         "form": "css"
       },
       {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 787,
+        "file": "apps/web/src/index.css",
+        "line": 161,
         "form": "css"
       }
     ]
@@ -2826,38 +3956,65 @@
     ]
   },
   {
-    "category": "breakpoints",
-    "value": "inline",
-    "count": 6,
+    "category": "colors",
+    "value": "var(--architect-quiet)",
+    "count": 5,
     "sites": [
       {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 79,
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 732,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 781,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 790,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 823,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 855,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "text-base",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
+        "line": 58,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 103,
+        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
+        "line": 56,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 130,
+        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
+        "line": 43,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 138,
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 55,
         "form": "scale"
       },
       {
-        "file": "apps/web/src/components/shell/UserMenu.tsx",
-        "line": 22,
-        "form": "scale"
-      },
-      {
-        "file": "apps/web/src/pages/ProcessListPage.tsx",
-        "line": 257,
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 63,
         "form": "scale"
       }
     ]
@@ -2896,6 +4053,38 @@
   },
   {
     "category": "spacing",
+    "value": "12px",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 787,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 180,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 382,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 460,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 871,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
     "value": "mt-3",
     "count": 5,
     "sites": [
@@ -2923,102 +4112,6 @@
         "file": "apps/web/src/pages/SignInPage.tsx",
         "line": 73,
         "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "560px",
-    "count": 5,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 875,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
-        "line": 257,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 395,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 836,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/index.css",
-        "line": 67,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "28px",
-    "count": 5,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 109,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 424,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 566,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 567,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 569,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "18px",
-    "count": 5,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 219,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 220,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 223,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/index.css",
-        "line": 159,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/index.css",
-        "line": 160,
-        "form": "css"
       }
     ]
   },
@@ -3087,29 +4180,61 @@
     ]
   },
   {
-    "category": "colors",
-    "value": "text-base",
+    "category": "transitions",
+    "value": "0.7s",
+    "count": 5,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 134,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 263,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 278,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 282,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 286,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "spacing",
+    "value": "3px",
     "count": 4,
     "sites": [
       {
-        "file": "apps/web/src/components/process-list/DuplicateProcessDialog.tsx",
-        "line": 58,
-        "form": "scale"
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 771,
+        "form": "css"
       },
       {
-        "file": "apps/web/src/components/process-list/RenameProcessDialog.tsx",
-        "line": 56,
-        "form": "scale"
+        "file": "apps/web/src/components/bpmn-editor/inspector/inspector.css",
+        "line": 81,
+        "form": "css"
       },
       {
-        "file": "apps/web/src/components/ui/ConfirmDialog.tsx",
-        "line": 43,
-        "form": "scale"
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 29,
+        "form": "css"
       },
       {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 63,
-        "form": "scale"
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 527,
+        "form": "css"
       }
     ]
   },
@@ -3136,33 +4261,6 @@
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 818,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "9px",
-    "count": 4,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 645,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 738,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 742,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 875,
         "form": "css"
       }
     ]
@@ -3277,33 +4375,6 @@
   },
   {
     "category": "sizing",
-    "value": "32px",
-    "count": 4,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 65,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 772,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 773,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 775,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
     "value": "48px",
     "count": 4,
     "sites": [
@@ -3325,6 +4396,60 @@
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 537,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
+    "value": "28px",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 109,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 424,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 566,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 567,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
+    "value": "18px",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 219,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 220,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 159,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 160,
         "form": "css"
       }
     ]
@@ -3411,6 +4536,33 @@
     ]
   },
   {
+    "category": "transitions",
+    "value": "animation: none !important",
+    "count": 4,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 928,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 934,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 940,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 949,
+        "form": "css"
+      }
+    ]
+  },
+  {
     "category": "colors",
     "value": "bg-ink/40",
     "count": 3,
@@ -3488,34 +4640,12 @@
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 221,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 230,
         "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "12px",
-    "count": 3,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
-        "line": 787,
-        "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 161,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 180,
+        "line": 708,
         "form": "css"
       }
     ]
@@ -3527,6 +4657,11 @@
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 586,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 688,
         "form": "css"
       },
@@ -3534,32 +4669,27 @@
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 695,
         "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 696,
-        "form": "css"
       }
     ]
   },
   {
     "category": "spacing",
-    "value": "10px",
+    "value": "9px",
     "count": 3,
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 803,
+        "line": 645,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 816,
+        "line": 738,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 871,
+        "line": 742,
         "form": "css"
       }
     ]
@@ -3720,6 +4850,28 @@
   },
   {
     "category": "sizing",
+    "value": "32px",
+    "count": 3,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 65,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 772,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 773,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
     "value": "42px",
     "count": 3,
     "sites": [
@@ -3736,50 +4888,6 @@
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
         "line": 817,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "1px",
-    "count": 3,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 110,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 423,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/index.css",
-        "line": 146,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "22px",
-    "count": 3,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 822,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 823,
-        "form": "css"
-      },
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 825,
         "form": "css"
       }
     ]
@@ -3896,6 +5004,40 @@
   },
   {
     "category": "colors",
+    "value": "var(--architect-disabled-fill)",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 731,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 856,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "var(--color-border)",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 112,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 551,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
     "value": "text-[10px]",
     "count": 2,
     "sites": [
@@ -3964,17 +5106,17 @@
   },
   {
     "category": "spacing",
-    "value": "5px",
+    "value": "14px",
     "count": 2,
     "sites": [
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 191,
+        "line": 586,
         "form": "css"
       },
       {
         "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 356,
+        "line": 871,
         "form": "css"
       }
     ]
@@ -4066,6 +5208,23 @@
   },
   {
     "category": "sizing",
+    "value": "1px",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 110,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 423,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
     "value": "27px",
     "count": 2,
     "sites": [
@@ -4100,6 +5259,23 @@
   },
   {
     "category": "sizing",
+    "value": "22px",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 822,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 823,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
     "value": "min-h-8",
     "count": 2,
     "sites": [
@@ -4111,6 +5287,23 @@
       {
         "file": "apps/web/src/components/ui/PressedToggle.tsx",
         "line": 13,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
+    "value": "max-w-lg",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
+        "line": 71,
+        "form": "scale"
+      },
+      {
+        "file": "apps/web/src/components/shell/EditorChrome.tsx",
+        "line": 87,
         "form": "scale"
       }
     ]
@@ -4163,6 +5356,23 @@
         "file": "apps/web/src/components/showcase/ShowcaseViewer.tsx",
         "line": 72,
         "form": "arbitrary"
+      }
+    ]
+  },
+  {
+    "category": "sizing",
+    "value": "100dvh",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/index.css",
+        "line": 24,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/index.css",
+        "line": 28,
+        "form": "css"
       }
     ]
   },
@@ -4231,6 +5441,52 @@
         "file": "apps/web/src/pages/ProcessListPage.tsx",
         "line": 254,
         "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "1.8s",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 126,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 162,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "transition: none !important",
+    "count": 2,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 929,
+        "form": "css"
+      },
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 935,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "var(--architect-edge)",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 730,
+        "form": "css"
       }
     ]
   },
@@ -4380,6 +5636,54 @@
   },
   {
     "category": "colors",
+    "value": "#4285F4",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 19,
+        "form": "jsx-attribute"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "#34A853",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 20,
+        "form": "jsx-attribute"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "#FBBC05",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 21,
+        "form": "jsx-attribute"
+      }
+    ]
+  },
+  {
+    "category": "colors",
+    "value": "#EA4335",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 22,
+        "form": "jsx-attribute"
+      }
+    ]
+  },
+  {
+    "category": "colors",
     "value": "text-center",
     "count": 1,
     "sites": [
@@ -4411,42 +5715,6 @@
         "file": "apps/web/src/components/bpmn-editor/BpmnZoomControls.tsx",
         "line": 25,
         "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "3px",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 29,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "14px",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 586,
-        "form": "css"
-      }
-    ]
-  },
-  {
-    "category": "spacing",
-    "value": "13px",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
-        "line": 597,
-        "form": "css"
       }
     ]
   },
@@ -4776,18 +6044,6 @@
   },
   {
     "category": "sizing",
-    "value": "max-w-lg",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/process-list/NewProcessDialog.tsx",
-        "line": 71,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
     "value": "h-4",
     "count": 1,
     "sites": [
@@ -4867,18 +6123,6 @@
         "file": "apps/web/src/components/ui/ChromeMenu.tsx",
         "line": 111,
         "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "sizing",
-    "value": "3px",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/index.css",
-        "line": 189,
-        "form": "css"
       }
     ]
   },
@@ -5028,6 +6272,18 @@
   },
   {
     "category": "typography",
+    "value": "text-2xl",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/pages/SignInPage.tsx",
+        "line": 52,
+        "form": "scale"
+      }
+    ]
+  },
+  {
+    "category": "typography",
     "value": "leading-5",
     "count": 1,
     "sites": [
@@ -5064,6 +6320,426 @@
   },
   {
     "category": "transitions",
+    "value": "animation: architect-bob var(--bob-duration) ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 91,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "5.2s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 106,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-sprite-idle 5.2s steps(1, end) infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 106,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-shadow var(--bob-duration) ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 122,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-sprite-hello 1.8s steps(1, end) 1",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 126,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "0.8s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 130,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-sprite-thinking 0.8s steps(1, end) infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 130,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-sprite-success 0.7s steps(1, end) 1",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 134,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-hello-greet 1.8s ease-out 1",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 162,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "3.4s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 192,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-sway 3.4s ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 192,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "2.4s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 201,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-pulse 2.4s ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 201,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-pad var(--bob-duration) ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 209,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "4.8s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 221,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-blink 4.8s infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 221,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "140ms",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 239,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "transition: transform 140ms var(--ease-ui, ease)",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 239,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-idle-wave var(--wave-cycle, 18s) ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 245,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "1.05s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 259,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-spin 1.05s linear infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 259,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation-duration: 0.7s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 263,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "0.28s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 274,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-talk 0.28s ease-in-out infinite",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 274,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-hop 0.7s ease-out",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 278,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-shadow-hop 0.7s ease-out",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 282,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-pad-hop 0.7s ease-out",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 286,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "0.9s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 300,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-wave 0.9s ease-in-out 2",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 300,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "0.55s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 304,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-wave 0.55s ease-in-out 2",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 304,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "0.42s",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 320,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "animation: architect-shake 0.42s ease-in-out",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/architect/architect.css",
+        "line": 320,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "transition: transform var(--duration-ui) var(--ease-ui)",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 62,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
+    "value": "transition: none",
+    "count": 1,
+    "sites": [
+      {
+        "file": "apps/web/src/components/bpmn-editor/palette/palette.css",
+        "line": 97,
+        "form": "css"
+      }
+    ]
+  },
+  {
+    "category": "transitions",
     "value": "transition-colors",
     "count": 1,
     "sites": [
@@ -5076,72 +6752,12 @@
   },
   {
     "category": "breakpoints",
-    "value": "px-3",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 70,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "breakpoints",
-    "value": "max-w-lg",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/shell/EditorChrome.tsx",
-        "line": 87,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "breakpoints",
     "value": "lg",
     "count": 1,
     "sites": [
       {
         "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
         "line": 52,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "breakpoints",
-    "value": "grid-cols-2",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/components/showcase/ShowcaseDemo.tsx",
-        "line": 52,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "breakpoints",
-    "value": "text-2xl",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 52,
-        "form": "scale"
-      }
-    ]
-  },
-  {
-    "category": "breakpoints",
-    "value": "text-base",
-    "count": 1,
-    "sites": [
-      {
-        "file": "apps/web/src/pages/SignInPage.tsx",
-        "line": 55,
         "form": "scale"
       }
     ]
