@@ -43,6 +43,9 @@ export function registerAuthRoutes(app: Application): void {
   const authRateLimit = rateLimit({
     windowMs: 10 * 60 * 1000,
     limit: 60,
+    // The E2E suite intentionally exercises many fresh sessions in one process.
+    // Only its explicit marker bypasses the limiter, and only in NODE_ENV=test.
+    skip: (req) => process.env.NODE_ENV === 'test' && req.get('x-bpmn-e2e') === '1',
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: { error: 'Too many authentication requests. Try again later.' },
