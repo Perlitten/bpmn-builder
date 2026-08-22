@@ -1,10 +1,9 @@
 import { xmlToProcess } from '@bpmn/bpmn-adapter';
 import { layoutProcess, type Bounds, type LayoutResult, type Point } from '@bpmn/layout-engine';
-import type { Process } from '@bpmn/semantic-core';
+import type { SemanticProcess } from '@bpmn/semantic-core';
 
 const PAD = 16;
 const cache = new Map<string, Promise<string | null>>();
-const resolved = new Map<string, string | null>();
 
 type Kind = 'start' | 'end' | 'event' | 'gateway' | 'task' | 'container';
 
@@ -22,7 +21,7 @@ function kindOf(type: string): Kind {
   return 'task';
 }
 
-function typeIndex(process: Process): Map<string, string> {
+function typeIndex(process: SemanticProcess): Map<string, string> {
   const types = new Map<string, string>();
   for (const node of process.nodes) types.set(node.id, node.type);
   for (const graph of process.processes ?? []) {
@@ -86,7 +85,7 @@ function shapeMarkup(kind: Kind, box: Bounds): string {
 }
 
 /** Canonical DI → tiny SVG. Null when there is nothing to paint. */
-export function layoutToSvg(process: Process, layout: LayoutResult): string | null {
+export function layoutToSvg(process: SemanticProcess, layout: LayoutResult): string | null {
   const box = extent(layout);
   if (!box || box.width <= 0 || box.height <= 0) return null;
   const types = typeIndex(process);
@@ -103,12 +102,6 @@ export function layoutToSvg(process: Process, layout: LayoutResult): string | nu
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(box.x)} ${n(box.y)} ${n(box.width)} ${n(box.height)}" preserveAspectRatio="xMinYMid meet" aria-hidden="true">${containers.join('')}${edges}${nodes.join('')}</svg>`;
 }
 
-export function peekLayoutPreviewSvg(xml: string | null | undefined): string | null | undefined {
-  if (!xml?.trim()) return null;
-  if (resolved.has(xml)) return resolved.get(xml);
-  return undefined;
-}
-
 /** `layoutProcess(xmlToProcess(xml))` scaled to an SVG string. Null if parse fails or the graph is empty. */
 export function previewLayoutSvg(xml: string | null | undefined): Promise<string | null> {
   if (!xml?.trim()) return Promise.resolve(null);
@@ -117,16 +110,12 @@ export function previewLayoutSvg(xml: string | null | undefined): Promise<string
   const pending = xmlToProcess(xml)
     .then((process) => layoutToSvg(process, layoutProcess(process)))
     .catch(() => null)
-    .then((svg) => {
-      resolved.set(xml, svg);
-      return svg;
-    });
+    .then((svg) => svg);
   cache.set(xml, pending);
   if (cache.size > 80) {
     const first = cache.keys().next().value;
     if (first !== undefined && first !== xml) {
       cache.delete(first);
-      resolved.delete(first);
     }
   }
   return pending;

@@ -1,57 +1,57 @@
 import { ID_PREFIX, nextId } from './ids.js';
-import { DEFAULT_BPMN_TYPE, type Branch, type FlowNode, type Process, type Scope, type SequenceFlow, type StructuredRegion } from './types.js';
+import { DEFAULT_BPMN_TYPE, type Branch, type FlowNode, type SemanticProcess, type Scope, type SequenceFlow, type StructuredRegion } from './types.js';
 
-export function getNode(p: Process, id: string): FlowNode {
+export function getNode(p: SemanticProcess, id: string): FlowNode {
   const node = p.nodes.find((n) => n.id === id);
   if (!node) throw new Error(`unknown node: ${id}`);
   return node;
 }
 
-export function getFlow(p: Process, id: string): SequenceFlow {
+export function getFlow(p: SemanticProcess, id: string): SequenceFlow {
   const flow = p.flows.find((f) => f.id === id);
   if (!flow) throw new Error(`unknown flow: ${id}`);
   return flow;
 }
 
-export function rootScope(p: Process): Scope {
+export function rootScope(p: SemanticProcess): Scope {
   const scope = p.scopes.find((s) => s.id === p.rootScopeId);
   if (!scope) throw new Error('missing root scope');
   return scope;
 }
 
-export function scopeOf(p: Process, nodeId: string): Scope {
+export function scopeOf(p: SemanticProcess, nodeId: string): Scope {
   const scope = p.scopes.find((s) => s.nodeIds.includes(nodeId));
   if (!scope) throw new Error(`no scope for ${nodeId}`);
   return scope;
 }
 
-export function innerScope(p: Process, ownerId: string): Scope | undefined {
+export function innerScope(p: SemanticProcess, ownerId: string): Scope | undefined {
   return p.scopes.find((s) => s.ownerId === ownerId);
 }
 
-export function outgoingFlows(p: Process, nodeId: string): SequenceFlow[] {
+export function outgoingFlows(p: SemanticProcess, nodeId: string): SequenceFlow[] {
   return p.flows.filter((f) => f.source === nodeId);
 }
 
-export function incomingFlows(p: Process, nodeId: string): SequenceFlow[] {
+export function incomingFlows(p: SemanticProcess, nodeId: string): SequenceFlow[] {
   return p.flows.filter((f) => f.target === nodeId);
 }
 
-export function successors(p: Process, nodeId: string): string[] {
+export function successors(p: SemanticProcess, nodeId: string): string[] {
   return outgoingFlows(p, nodeId).map((f) => f.target);
 }
 
-export function predecessors(p: Process, nodeId: string): string[] {
+export function predecessors(p: SemanticProcess, nodeId: string): string[] {
   return incomingFlows(p, nodeId).map((f) => f.source);
 }
 
-export function uniqueOutgoing(p: Process, nodeId: string): SequenceFlow {
+function uniqueOutgoing(p: SemanticProcess, nodeId: string): SequenceFlow {
   const outs = outgoingFlows(p, nodeId);
   if (outs.length !== 1) throw new Error(`expected 1 outgoing from ${nodeId}, got ${outs.length}`);
   return outs[0];
 }
 
-export function allRegions(p: Process): StructuredRegion[] {
+export function allRegions(p: SemanticProcess): StructuredRegion[] {
   const out: StructuredRegion[] = [];
   const walk = (regions: StructuredRegion[]) => {
     for (const r of regions) {
@@ -63,7 +63,7 @@ export function allRegions(p: Process): StructuredRegion[] {
   return out;
 }
 
-export function findBranch(p: Process, branchId: string): { region: StructuredRegion; branch: Branch } {
+export function findBranch(p: SemanticProcess, branchId: string): { region: StructuredRegion; branch: Branch } {
   for (const region of allRegions(p)) {
     const branch = region.branches.find((b) => b.id === branchId);
     if (branch) return { region, branch };
@@ -71,14 +71,14 @@ export function findBranch(p: Process, branchId: string): { region: StructuredRe
   throw new Error(`unknown branch: ${branchId}`);
 }
 
-export function findRegion(p: Process, regionId: string): StructuredRegion {
+export function findRegion(p: SemanticProcess, regionId: string): StructuredRegion {
   const region = allRegions(p).find((r) => r.id === regionId);
   if (!region) throw new Error(`unknown region: ${regionId}`);
   return region;
 }
 
 /** Node to insert after when the caller does not name a source (happy path, before End). */
-export function defaultInsertAfter(p: Process): string {
+export function defaultInsertAfter(p: SemanticProcess): string {
   const path = happyPathIds(p);
   for (let i = path.length - 1; i >= 0; i--) {
     if (getNode(p, path[i]).type === 'end') {
@@ -89,7 +89,7 @@ export function defaultInsertAfter(p: Process): string {
   return path[path.length - 1];
 }
 
-export function happyPathIds(p: Process, scopeId: string = p.rootScopeId): string[] {
+export function happyPathIds(p: SemanticProcess, scopeId: string = p.rootScopeId): string[] {
   const scope = p.scopes.find((s) => s.id === scopeId) ?? rootScope(p);
   const starts = p.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
   const start = starts.find((n) => !n.eventDefinition) ?? starts[0];
@@ -108,14 +108,14 @@ export function happyPathIds(p: Process, scopeId: string = p.rootScopeId): strin
   }
 }
 
-function dropFromLanes(p: Process, nodeId: string): void {
+function dropFromLanes(p: SemanticProcess, nodeId: string): void {
   for (const lane of p.lanes ?? []) {
     lane.nodeIds = lane.nodeIds.filter((id) => id !== nodeId);
   }
 }
 
 /** Keep `flowNodeRef` in sync: follow the source's lane, else the first band of this process. */
-function adoptLane(p: Process, nodeId: string, sourceId: string): void {
+function adoptLane(p: SemanticProcess, nodeId: string, sourceId: string): void {
   const lanes = p.lanes ?? [];
   if (!lanes.length || lanes.some((lane) => lane.nodeIds.includes(nodeId))) return;
   const fromSource = lanes.find((lane) => lane.nodeIds.includes(sourceId));
@@ -125,7 +125,7 @@ function adoptLane(p: Process, nodeId: string, sourceId: string): void {
   if (lane) lane.nodeIds.push(nodeId);
 }
 
-export function insertOnFlow(p: Process, flowId: string, node: FlowNode): SequenceFlow {
+export function insertOnFlow(p: SemanticProcess, flowId: string, node: FlowNode): SequenceFlow {
   const flow = getFlow(p, flowId);
   const oldTarget = flow.target;
   flow.target = node.id;
@@ -156,7 +156,7 @@ export function isEventSubProcess(node: FlowNode): boolean {
 }
 
 export function makeNode(
-  p: Process,
+  p: SemanticProcess,
   type: FlowNode['type'],
   name: string,
   id?: string,
@@ -172,7 +172,7 @@ export function makeNode(
   };
 }
 
-export function detachLinear(p: Process, nodeId: string): FlowNode {
+export function detachLinear(p: SemanticProcess, nodeId: string): FlowNode {
   const node = getNode(p, nodeId);
   if (node.type === 'start' || node.type === 'end') throw new Error(`cannot move ${node.type}`);
   const ins = incomingFlows(p, nodeId);
@@ -191,7 +191,7 @@ export function detachLinear(p: Process, nodeId: string): FlowNode {
   return node;
 }
 
-export function removeJoin(p: Process, nodeId: string): void {
+export function removeJoin(p: SemanticProcess, nodeId: string): void {
   const ins = incomingFlows(p, nodeId);
   const outs = outgoingFlows(p, nodeId);
   if (ins.length < 2 || outs.length !== 1) throw new Error(`cannot remove ${nodeId}`);
@@ -206,7 +206,7 @@ export function removeJoin(p: Process, nodeId: string): void {
   dropFromLanes(p, nodeId);
 }
 
-export function flowAfter(p: Process, afterId: string, branchId?: string): SequenceFlow {
+export function flowAfter(p: SemanticProcess, afterId: string, branchId?: string): SequenceFlow {
   if (branchId) {
     const { region, branch } = findBranch(p, branchId);
     if (afterId === region.split) return getFlow(p, branch.entryFlowId);
@@ -226,7 +226,7 @@ export function flowAfter(p: Process, afterId: string, branchId?: string): Seque
   throw new Error(`ambiguous after ${afterId}: pass branchId`);
 }
 
-export function flowBefore(p: Process, beforeId: string, branchId?: string): SequenceFlow {
+export function flowBefore(p: SemanticProcess, beforeId: string, branchId?: string): SequenceFlow {
   if (branchId) {
     const { region, branch } = findBranch(p, branchId);
     if (beforeId === region.join) {
@@ -240,7 +240,7 @@ export function flowBefore(p: Process, beforeId: string, branchId?: string): Seq
   throw new Error(`ambiguous before ${beforeId}: pass branchId`);
 }
 
-export function branchTailAfter(p: Process, branchId: string): { afterId: string; branchId: string } {
+export function branchTailAfter(p: SemanticProcess, branchId: string): { afterId: string; branchId: string } {
   const { region, branch } = findBranch(p, branchId);
   const afterId = branch.nodeIds.length ? branch.nodeIds[branch.nodeIds.length - 1] : region.split;
   return { afterId, branchId };
@@ -250,7 +250,7 @@ export function branchTailAfter(p: Process, branchId: string): { afterId: string
 export type InsertSpec = { after?: string; branchId?: string; onFlow?: string };
 
 /** The sequence flow a create must split for `spec`. */
-export function insertionFlow(p: Process, spec: InsertSpec): SequenceFlow {
+export function insertionFlow(p: SemanticProcess, spec: InsertSpec): SequenceFlow {
   if (spec.onFlow) return getFlow(p, spec.onFlow);
   if (spec.branchId && !spec.after) {
     const tail = branchTailAfter(p, spec.branchId);
@@ -265,7 +265,7 @@ export type BranchTarget = { flowId: string; branchId?: string; label: string };
  * Continuations leaving `nodeId`, one per outgoing sequence flow, named like the branch.
  * The editor offers these when `flowAfter` alone would be ambiguous.
  */
-export function branchTargetsAfter(p: Process, nodeId: string): BranchTarget[] {
+export function branchTargetsAfter(p: SemanticProcess, nodeId: string): BranchTarget[] {
   const regions = allRegions(p).filter((region) => region.split === nodeId);
   return outgoingFlows(p, nodeId)
     .filter((flow) => !flow.exception)

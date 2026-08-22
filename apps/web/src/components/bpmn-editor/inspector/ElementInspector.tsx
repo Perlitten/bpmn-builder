@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { allFindings, suggestName, type LintResult } from '@bpmn/rules';
-import { bpmnComponentRegistry, findFlowNode, type BpmnComponentDefinition, type Process } from '@bpmn/semantic-core';
+import { bpmnComponentRegistry, findFlowNode, type BpmnComponentDefinition, type SemanticProcess } from '@bpmn/semantic-core';
 import { ScoreChips } from '../../lint/ScoreChips';
 import { SelectField } from '../../ui/SelectField';
 import { TextField } from '../../ui/TextField';
@@ -44,7 +44,7 @@ type ElementInspectorProps = {
   onCalledElement?: (calledElement: string) => void;
   onAttach: (def: BpmnComponentDefinition) => void;
   onCreate: (def: BpmnComponentDefinition) => void;
-  process?: Process;
+  process?: SemanticProcess;
   onPreservedChange?: (change: PreservedChange) => void;
   poolLanes?: PoolLaneRow[];
   nodeLanes?: PoolLaneRow[];

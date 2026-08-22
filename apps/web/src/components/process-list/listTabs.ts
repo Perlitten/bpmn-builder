@@ -2,9 +2,9 @@ export const LIST_TABS = ['process', 'template'] as const;
 
 export type ListTab = (typeof LIST_TABS)[number];
 
-export const LIST_SORTS = ['updated_desc', 'updated_asc', 'name_asc', 'name_desc'] as const;
+const LIST_SORTS = ['updated_desc', 'updated_asc', 'name_asc', 'name_desc'] as const;
 
-export type ListSort = (typeof LIST_SORTS)[number];
+type ListSort = (typeof LIST_SORTS)[number];
 
 export type ListState = {
   kind: ListTab;

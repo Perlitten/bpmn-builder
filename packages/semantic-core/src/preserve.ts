@@ -1,7 +1,7 @@
 import { rebuildStructure } from './detect.js';
-import type { Applied, BpmnPreserve, FlowNode, Process, ProcessGraph, SequenceFlow } from './types.js';
+import type { Applied, BpmnPreserve, FlowNode, SemanticProcess, ProcessGraph, SequenceFlow } from './types.js';
 
-function apply(prev: Process, fn: (draft: Process) => string): Applied {
+function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
   const id = fn(draft);
   rebuildStructure(draft);
@@ -13,7 +13,7 @@ type PreserveOwner = {
   bpmnPreserve?: BpmnPreserve;
 };
 
-type ProcessHost = ProcessGraph | Process;
+type ProcessHost = ProcessGraph | SemanticProcess;
 const UNSAFE_KEYS = new Set(['__proto__']);
 
 function setRecordValue<T extends object>(record: T, key: string, value: unknown): void {
@@ -21,7 +21,7 @@ function setRecordValue<T extends object>(record: T, key: string, value: unknown
   Object.defineProperty(record, key, { configurable: true, enumerable: true, writable: true, value });
 }
 
-function peers(draft: Process): ProcessHost[] {
+function peers(draft: SemanticProcess): ProcessHost[] {
   return [draft, ...(draft.processes ?? [])];
 }
 
@@ -47,7 +47,7 @@ function patchProps(owner: PreserveOwner, patch: (props: Record<string, unknown>
   assignPreserve(owner, compactPreserve(owner.bpmnPreserve?.attrs, props));
 }
 
-function locateNode(draft: Process, id: string): FlowNode {
+function locateNode(draft: SemanticProcess, id: string): FlowNode {
   for (const host of peers(draft)) {
     const node = host.nodes.find((item) => item.id === id);
     if (node) return node;
@@ -55,7 +55,7 @@ function locateNode(draft: Process, id: string): FlowNode {
   throw new Error(`unknown node: ${id}`);
 }
 
-function locateFlow(draft: Process, id: string): SequenceFlow | undefined {
+function locateFlow(draft: SemanticProcess, id: string): SequenceFlow | undefined {
   for (const host of peers(draft)) {
     const flow = host.flows.find((item) => item.id === id);
     if (flow) return flow;
@@ -63,7 +63,7 @@ function locateFlow(draft: Process, id: string): SequenceFlow | undefined {
   return undefined;
 }
 
-function locateProcess(draft: Process, id: string): ProcessHost {
+function locateProcess(draft: SemanticProcess, id: string): ProcessHost {
   const participant = draft.participants.find((item) => item.id === id);
   const processId = participant?.processId ?? id;
   const host = peers(draft).find((item) => item.id === processId);
@@ -71,7 +71,7 @@ function locateProcess(draft: Process, id: string): ProcessHost {
   return host;
 }
 
-function locatePreserveOwner(draft: Process, id: string): PreserveOwner {
+function locatePreserveOwner(draft: SemanticProcess, id: string): PreserveOwner {
   for (const host of peers(draft)) {
     if (host.id === id) return host;
     const node = host.nodes.find((item) => item.id === id);
@@ -90,7 +90,7 @@ function documentationItems(owner: PreserveOwner): Record<string, unknown>[] {
 }
 
 /** BPMN `documentation` on a node, flow, process, or pool. */
-export function setDocumentation(process: Process, id: string, text: string): Applied {
+export function setDocumentation(process: SemanticProcess, id: string, text: string): Applied {
   return apply(process, (draft) => {
     const owner = locatePreserveOwner(draft, id);
     const body = text;
@@ -103,7 +103,7 @@ export function setDocumentation(process: Process, id: string, text: string): Ap
   });
 }
 
-export function setIsExecutable(process: Process, executable: boolean, id?: string): Applied {
+export function setIsExecutable(process: SemanticProcess, executable: boolean, id?: string): Applied {
   return apply(process, (draft) => {
     const host = id ? locateProcess(draft, id) : draft;
     host.isExecutable = executable;
@@ -126,7 +126,7 @@ function hasTimer(node: FlowNode): boolean {
 }
 
 /** ISO-8601 `timeDuration` on a timer event definition. */
-export function setTimerDuration(process: Process, id: string, duration: string): Applied {
+export function setTimerDuration(process: SemanticProcess, id: string, duration: string): Applied {
   return apply(process, (draft) => {
     const node = locateNode(draft, id);
     if (!hasTimer(node)) throw new Error(`cannot set timer duration on ${node.bpmnType ?? node.type}`);
@@ -155,7 +155,7 @@ export function setTimerDuration(process: Process, id: string, duration: string)
 }
 
 /** Camunda / BPMN attributes stored on `bpmnPreserve.attrs` (topic, assignee, script, …). */
-export function setPreserveAttr(process: Process, id: string, key: string, value: string): Applied {
+export function setPreserveAttr(process: SemanticProcess, id: string, key: string, value: string): Applied {
   return apply(process, (draft) => {
     const owner = locatePreserveOwner(draft, id);
     const attrs = { ...owner.bpmnPreserve?.attrs };
@@ -182,7 +182,7 @@ function loopIsEmpty(loop: Record<string, unknown>): boolean {
 }
 
 /** Multi-instance `isSequential` / `loopCardinality` on an activity. */
-export function setMultiInstance(process: Process, id: string, spec: MultiInstanceSpec): Applied {
+export function setMultiInstance(process: SemanticProcess, id: string, spec: MultiInstanceSpec): Applied {
   return apply(process, (draft) => {
     const node = locateNode(draft, id);
     if (node.type !== 'task' && !(node.type === 'subProcess' && !node.triggeredByEvent)) {
@@ -237,7 +237,7 @@ export function readMultiInstance(node: FlowNode | undefined): { sequential: boo
   };
 }
 
-export function owningProcessHost(process: Process, elementId: string): ProcessHost {
+export function owningProcessHost(process: SemanticProcess, elementId: string): ProcessHost {
   for (const host of peers(process)) {
     if (host.id === elementId) return host;
     if (host.nodes.some((node) => node.id === elementId) || host.flows.some((flow) => flow.id === elementId)) return host;
@@ -251,7 +251,7 @@ export function owningProcessHost(process: Process, elementId: string): ProcessH
   }
 }
 
-export function findFlowNode(process: Process, id: string): FlowNode | undefined {
+export function findFlowNode(process: SemanticProcess, id: string): FlowNode | undefined {
   try {
     return locateNode(process, id);
   } catch {
@@ -259,6 +259,6 @@ export function findFlowNode(process: Process, id: string): FlowNode | undefined
   }
 }
 
-export function findSequenceFlow(process: Process, id: string): SequenceFlow | undefined {
+export function findSequenceFlow(process: SemanticProcess, id: string): SequenceFlow | undefined {
   return locateFlow(process, id);
 }

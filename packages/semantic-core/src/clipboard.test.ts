@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { extractSubgraph, pasteSubgraph } from './clipboard.js';
 import { addTask, createProcess, getNode, happyPathIds, splitExclusive } from './index.js';
-import type { Process } from './types.js';
+import type { SemanticProcess } from './types.js';
 
-function named(process: Process, name: string): string {
+function named(process: SemanticProcess, name: string): string {
   const node = process.nodes.find((item) => item.name === name);
   if (!node) throw new Error(`no node named ${name}`);
   return node.id;
 }
 
-function pathNames(process: Process): string[] {
+function pathNames(process: SemanticProcess): string[] {
   return happyPathIds(process).map((id) => getNode(process, id).name);
 }
 

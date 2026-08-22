@@ -23,20 +23,20 @@ import {
 } from './graph.js';
 import { nextId } from './ids.js';
 import type { InsertSpec } from './graph.js';
-import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, Process } from './types.js';
+import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, SemanticProcess } from './types.js';
 
-function apply(prev: Process, fn: (draft: Process) => string): Applied {
+function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
   const id = fn(draft);
   rebuildStructure(draft);
   return { process: draft, inverse: () => structuredClone(prev), id };
 }
 
-export function createProcess(input: { id?: string; name?: string } = {}): Process {
+export function createProcess(input: { id?: string; name?: string } = {}): SemanticProcess {
   const idSeq: Record<string, number> = {};
   const id = input.id ?? 'Process_1';
   idSeq.Process = 1;
-  const draft: Process = {
+  const draft: SemanticProcess = {
     id,
     name: input.name ?? 'Process',
     rootScopeId: 'Scope_1',
@@ -90,7 +90,7 @@ function placeExtra(spec: PlaceSpec): Pick<FlowNode, 'eventDefinition' | 'cancel
   return extra.eventDefinition || extra.cancelActivity === false || extra.calledElement ? extra : undefined;
 }
 
-export function addAfter(process: Process, afterId: string, spec: PlaceSpec = {}): Applied {
+export function addAfter(process: SemanticProcess, afterId: string, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
     const type = placeType(spec);
     if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
@@ -101,7 +101,7 @@ export function addAfter(process: Process, afterId: string, spec: PlaceSpec = {}
   });
 }
 
-export function addBefore(process: Process, beforeId: string, spec: PlaceSpec = {}): Applied {
+export function addBefore(process: SemanticProcess, beforeId: string, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
     const type = placeType(spec);
     if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
@@ -113,7 +113,7 @@ export function addBefore(process: Process, beforeId: string, spec: PlaceSpec = 
 }
 
 /** Split one named sequence flow — the precise target when a `+` sits on an edge. */
-export function addOnFlow(process: Process, flowId: string, spec: PlaceSpec = {}): Applied {
+export function addOnFlow(process: SemanticProcess, flowId: string, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
     const type = placeType(spec);
     if (type === 'start') throw new Error('cannot insert a start on a sequence flow');
@@ -124,7 +124,7 @@ export function addOnFlow(process: Process, flowId: string, spec: PlaceSpec = {}
   });
 }
 
-export function addTask(process: Process, spec: PlaceSpec = {}): Applied {
+export function addTask(process: SemanticProcess, spec: PlaceSpec = {}): Applied {
   if (spec.before) return addBefore(process, spec.before, spec);
   if (spec.onFlow) return addOnFlow(process, spec.onFlow, spec);
   if (spec.after) return addAfter(process, spec.after, spec);
@@ -135,7 +135,7 @@ export function addTask(process: Process, spec: PlaceSpec = {}): Applied {
   return addAfter(process, defaultInsertAfter(process), spec);
 }
 
-export function removeElement(process: Process, id: string): Applied {
+export function removeElement(process: SemanticProcess, id: string): Applied {
   return apply(process, (draft) => {
     const node = getNode(draft, id);
     if (node.type === 'start') throw new Error('cannot remove start');
@@ -148,7 +148,7 @@ export function removeElement(process: Process, id: string): Applied {
   });
 }
 
-export function renameElement(process: Process, id: string, name: string): Applied {
+export function renameElement(process: SemanticProcess, id: string, name: string): Applied {
   return apply(process, (draft) => {
     const node = draft.nodes.find((n) => n.id === id);
     if (node) {
@@ -214,7 +214,7 @@ function catchEventDefinition(name: string, index: number): string {
 }
 
 function splitGateway(
-  process: Process,
+  process: SemanticProcess,
   spec: SplitSpec & { kind: GatewayKind },
 ): Applied {
   const branches = spec.branches ?? defaultSplitBranches(spec.kind);
@@ -270,28 +270,28 @@ function splitGateway(
 /** Where the split lands: after a node, on a gateway branch, or on one named flow. */
 export type SplitSpec = InsertSpec & { name?: string; branches?: Array<{ name: string; id?: string }> };
 
-export function splitExclusive(process: Process, spec: SplitSpec): Applied {
+export function splitExclusive(process: SemanticProcess, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'exclusive' });
 }
 
-export function splitParallel(process: Process, spec: SplitSpec): Applied {
+export function splitParallel(process: SemanticProcess, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'parallel' });
 }
 
-export function splitInclusive(process: Process, spec: SplitSpec): Applied {
+export function splitInclusive(process: SemanticProcess, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'inclusive' });
 }
 
-export function splitEventBased(process: Process, spec: SplitSpec): Applied {
+export function splitEventBased(process: SemanticProcess, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'eventBased' });
 }
 
-export function splitComplex(process: Process, spec: SplitSpec): Applied {
+export function splitComplex(process: SemanticProcess, spec: SplitSpec): Applied {
   return splitGateway(process, { ...spec, kind: 'complex' });
 }
 
 export function attachBoundaryEvent(
-  process: Process,
+  process: SemanticProcess,
   spec: { on: string; name?: string; eventDefinition: string; interrupting?: boolean },
 ): Applied {
   return apply(process, (draft) => {
@@ -322,13 +322,13 @@ export function attachBoundaryEvent(
 }
 
 export function attachBoundaryTimer(
-  process: Process,
+  process: SemanticProcess,
   spec: { on: string; name?: string; interrupting?: boolean },
 ): Applied {
   return attachBoundaryEvent(process, { ...spec, eventDefinition: 'TimerEventDefinition' });
 }
 
-export function attachBoundaryError(process: Process, spec: { on: string; name?: string }): Applied {
+export function attachBoundaryError(process: SemanticProcess, spec: { on: string; name?: string }): Applied {
   return attachBoundaryEvent(process, { ...spec, eventDefinition: 'ErrorEventDefinition', interrupting: true });
 }
 
@@ -343,7 +343,7 @@ function stripEventDefinitions(node: FlowNode): void {
   else delete node.bpmnPreserve;
 }
 
-export function setEventDefinition(process: Process, id: string, eventDefinition: string | undefined): Applied {
+export function setEventDefinition(process: SemanticProcess, id: string, eventDefinition: string | undefined): Applied {
   return apply(process, (draft) => {
     const node = getNode(draft, id);
     if (node.type !== 'start' && node.type !== 'end' && node.type !== 'intermediateCatch' && node.type !== 'boundaryEvent') {
@@ -356,7 +356,7 @@ export function setEventDefinition(process: Process, id: string, eventDefinition
   });
 }
 
-export function setCalledElement(process: Process, id: string, calledElement: string): Applied {
+export function setCalledElement(process: SemanticProcess, id: string, calledElement: string): Applied {
   return apply(process, (draft) => {
     const node = getNode(draft, id);
     if (node.bpmnType !== 'bpmn:CallActivity' && node.type !== 'task') {
@@ -429,7 +429,7 @@ function family(type: FlowNodeType): 'event' | 'task' | 'gateway' | 'subprocess'
 }
 
 /** Same-family type change (Task → User Task, XOR → AND). Does not insert splits. */
-export function replaceBpmnType(process: Process, id: string, bpmnType: string): Applied {
+export function replaceBpmnType(process: SemanticProcess, id: string, bpmnType: string): Applied {
   const nextKind = BPMN_TO_KIND[bpmnType];
   if (!nextKind) throw new Error(`cannot replace with ${bpmnType}`);
   return apply(process, (draft) => {
@@ -444,7 +444,7 @@ export function replaceBpmnType(process: Process, id: string, bpmnType: string):
 }
 
 /** Registry-aware replace: bpmnType + event definition + subprocess flags. */
-export function replaceComponent(process: Process, id: string, componentId: string): Applied {
+export function replaceComponent(process: SemanticProcess, id: string, componentId: string): Applied {
   const def = bpmnComponentRegistry.get(componentId);
   if (!def) throw new Error(`unknown component: ${componentId}`);
   if (def.bpmnType === 'bpmn:SequenceFlow') {
@@ -479,7 +479,7 @@ export function replaceComponent(process: Process, id: string, componentId: stri
 }
 
 export function setFlowKind(
-  process: Process,
+  process: SemanticProcess,
   flowId: string,
   kind: 'sequence' | 'conditional' | 'default',
   condition?: string,
@@ -504,7 +504,7 @@ export function setFlowKind(
   });
 }
 
-export function setBranchLocked(process: Process, branchId: string, locked: boolean): Applied {
+export function setBranchLocked(process: SemanticProcess, branchId: string, locked: boolean): Applied {
   return apply(process, (draft) => {
     const { branch } = findBranch(draft, branchId);
     if (locked) branch.locked = true;
@@ -513,7 +513,7 @@ export function setBranchLocked(process: Process, branchId: string, locked: bool
   });
 }
 
-export function addBranch(process: Process, regionId: string, spec: { name?: string; id?: string } = {}): Applied {
+export function addBranch(process: SemanticProcess, regionId: string, spec: { name?: string; id?: string } = {}): Applied {
   return apply(process, (draft) => {
     const region = findRegion(draft, regionId);
     const name = spec.name ?? `Branch ${region.branches.length + 1}`;
@@ -531,7 +531,7 @@ export function addBranch(process: Process, regionId: string, spec: { name?: str
   });
 }
 
-export function moveAfter(process: Process, nodeId: string, afterId: string, branchId?: string): Applied {
+export function moveAfter(process: SemanticProcess, nodeId: string, afterId: string, branchId?: string): Applied {
   if (nodeId === afterId) throw new Error('cannot move a node after itself');
   return apply(process, (draft) => {
     const dest = flowAfter(draft, afterId, branchId);
@@ -543,7 +543,7 @@ export function moveAfter(process: Process, nodeId: string, afterId: string, bra
 }
 
 export function moveToBranch(
-  process: Process,
+  process: SemanticProcess,
   nodeId: string,
   branchId: string,
   spec: { after?: string } = {},

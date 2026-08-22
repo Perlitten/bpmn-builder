@@ -6,7 +6,7 @@ import {
   readMultiInstance,
   readPreserveAttr,
   readTimerDuration,
-  type Process,
+  type SemanticProcess,
 } from '@bpmn/semantic-core';
 import type { DiagramElement } from '../diagramElement';
 
@@ -27,11 +27,11 @@ export type PreservedField = {
   change: PreservedChange;
 };
 
-function bpmnTypeOf(process: Process, element: DiagramElement): string {
+function bpmnTypeOf(process: SemanticProcess, element: DiagramElement): string {
   return findFlowNode(process, element.id)?.bpmnType ?? element.type;
 }
 
-function isTimerElement(process: Process, element: DiagramElement): boolean {
+function isTimerElement(process: SemanticProcess, element: DiagramElement): boolean {
   const node = findFlowNode(process, element.id);
   if (node?.eventDefinition === 'TimerEventDefinition') return true;
   const defs = node?.bpmnPreserve?.props?.eventDefinitions;
@@ -62,7 +62,7 @@ function isActivityType(type: string): boolean {
  * Fields the serializer already round-trips. Still opaque: extensionElements,
  * camunda:type, messageRef/errorRef, timeDate/timeCycle, artifacts, definitions meta.
  */
-export function preservedFieldsFor(process: Process, element: DiagramElement): PreservedField[] {
+export function preservedFieldsFor(process: SemanticProcess, element: DiagramElement): PreservedField[] {
   const node = findFlowNode(process, element.id);
   const flow = findSequenceFlow(process, element.id);
   const type = bpmnTypeOf(process, element);

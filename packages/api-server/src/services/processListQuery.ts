@@ -1,12 +1,12 @@
-export const PROCESS_LIST_KINDS = ['all', 'process', 'template'] as const;
-export const PROCESS_LIST_SORTS = ['updated_desc', 'updated_asc', 'name_asc', 'name_desc'] as const;
+const PROCESS_LIST_KINDS = ['all', 'process', 'template'] as const;
+const PROCESS_LIST_SORTS = ['updated_desc', 'updated_asc', 'name_asc', 'name_desc'] as const;
 
-export type ProcessListKind = (typeof PROCESS_LIST_KINDS)[number];
-export type ProcessListSort = (typeof PROCESS_LIST_SORTS)[number];
+type ProcessListKind = (typeof PROCESS_LIST_KINDS)[number];
+type ProcessListSort = (typeof PROCESS_LIST_SORTS)[number];
 
-export const PROCESS_LIST_DEFAULT_LIMIT = 20;
-export const PROCESS_LIST_MAX_LIMIT = 100;
-export const PROCESS_LIST_MAX_PAGE = 10_000;
+const PROCESS_LIST_DEFAULT_LIMIT = 20;
+const PROCESS_LIST_MAX_LIMIT = 100;
+const PROCESS_LIST_MAX_PAGE = 10_000;
 
 export type ProcessListQuery = {
   q: string;

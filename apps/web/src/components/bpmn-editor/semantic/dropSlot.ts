@@ -1,5 +1,5 @@
 import { layoutProcess, TOKENS, type Bounds } from '@bpmn/layout-engine';
-import { allRegions, getNode, happyPathIds, type Process, type StructuredRegion } from '@bpmn/semantic-core';
+import { allRegions, getNode, happyPathIds, type SemanticProcess, type StructuredRegion } from '@bpmn/semantic-core';
 
 export type DropSlot = {
   afterId?: string;
@@ -28,7 +28,7 @@ function area(box: Bounds): number {
  * Coordinates are compared to canonical layout of the current graph, not the dragged XY.
  * Lane body → assignLane; drop on a node in a lane → moveAfter/moveToBranch + assignLane.
  */
-export function dropSlot(process: Process, draggedId: string, point: { x: number; y: number }): DropSlot | null {
+export function dropSlot(process: SemanticProcess, draggedId: string, point: { x: number; y: number }): DropSlot | null {
   const dragged = process.nodes.find((node) => node.id === draggedId);
   if (!dragged || dragged.type === 'boundaryEvent') return null;
   const layout = layoutProcess(process);
@@ -42,7 +42,7 @@ export function dropSlot(process: Process, draggedId: string, point: { x: number
 }
 
 function reorderSlot(
-  process: Process,
+  process: SemanticProcess,
   layout: ReturnType<typeof layoutProcess>,
   draggedId: string,
   point: { x: number; y: number },
@@ -78,7 +78,7 @@ function reorderSlot(
 }
 
 function laneForDrop(
-  process: Process,
+  process: SemanticProcess,
   layout: ReturnType<typeof layoutProcess>,
   draggedId: string,
   point: { x: number; y: number },

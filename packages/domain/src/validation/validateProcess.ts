@@ -1,4 +1,4 @@
-import type { Process } from '../types/Process.js';
+import type { StoredProcess } from '../types/StoredProcess.js';
 import type { ValidationIssue } from '../types/ValidationIssue.js';
 import { isNonEmptyString } from './isNonEmptyString.js';
 import { isProcessStatus } from './isProcessStatus.js';
@@ -9,11 +9,11 @@ export const PROCESS_DESCRIPTION_MAX = 20_000;
 export const PROCESS_BPMN_XML_MAX = 2 * 1024 * 1024;
 
 export type ProcessPatch = Partial<
-  Pick<Process, 'name' | 'description' | 'status' | 'bpmnXml' | 'workflowJson' | 'version'>
+  Pick<StoredProcess, 'name' | 'description' | 'status' | 'bpmnXml' | 'workflowJson' | 'version'>
 >;
 
 export type ProcessValidationResult =
-  | { ok: true; process: Process }
+  | { ok: true; process: StoredProcess }
   | { ok: false; error: string; issues: ValidationIssue[] };
 
 function fail(error: string, issues?: ValidationIssue[]): ProcessValidationResult {
@@ -55,7 +55,7 @@ export function validateProcessPatch(
 }
 
 export function validateProcess(
-  input: Partial<Process>,
+  input: Partial<StoredProcess>,
   options: { mode?: 'draft' | 'publish' } = {},
 ): ProcessValidationResult {
   if (!isNonEmptyString(input.id)) return fail('id is required');

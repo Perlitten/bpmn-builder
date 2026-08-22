@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { createFromComponent } from './create.js';
 import { allRegions, branchTargetsAfter, getFlow, insertionFlow, outgoingFlows } from './graph.js';
 import { addOnFlow, addTask, createProcess, splitExclusive } from './ops.js';
-import type { Process } from './types.js';
+import type { SemanticProcess } from './types.js';
 
 /** Start → Review → XOR split (Yes/No) → XOR join → End, the shape the stress test hit. */
-function withSplit(): { process: Process; splitId: string; yes: string; no: string } {
+function withSplit(): { process: SemanticProcess; splitId: string; yes: string; no: string } {
   let process = createProcess();
   process = addTask(process, { name: 'Review' }).process;
   process = splitExclusive(process, {
@@ -16,7 +16,7 @@ function withSplit(): { process: Process; splitId: string; yes: string; no: stri
   return { process, splitId: region.split, yes: region.branches[0]!.id, no: region.branches[1]!.id };
 }
 
-const names = (process: Process, ids: string[]) =>
+const names = (process: SemanticProcess, ids: string[]) =>
   ids.map((id) => process.nodes.find((node) => node.id === id)!.name);
 
 describe('create into a gateway branch', () => {

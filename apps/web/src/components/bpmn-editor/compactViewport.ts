@@ -3,7 +3,7 @@ import { COMPACT_MAX_WIDTH, isCompactViewport } from './layoutMetrics';
 
 export { COMPACT_MAX_WIDTH, isCompactViewport };
 
-export const COMPACT_MQ = `(max-width: ${COMPACT_MAX_WIDTH}px)`;
+const COMPACT_MQ = `(max-width: ${COMPACT_MAX_WIDTH}px)`;
 
 export function useCompactViewport(): boolean {
   const [compact, setCompact] = useState(() =>

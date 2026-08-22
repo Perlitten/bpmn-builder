@@ -32,7 +32,7 @@ type ProcessDetailPanelProps = {
 
 type StructureMetric = { value: string; label: string };
 
-export function structureMetrics(process: ProcessSummary): StructureMetric[] {
+function structureMetrics(process: ProcessSummary): StructureMetric[] {
   const metrics = process.structure
     .split('·')
     .map((part) => part.trim())

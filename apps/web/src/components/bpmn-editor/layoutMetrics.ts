@@ -15,4 +15,3 @@ export const EDITOR_CHROME_HEIGHT = 44;
 export const EDITOR_INSPECTOR_WIDTH = 252;
 export const MOBILE_PALETTE_BAR = 56;
 export const ZOOM_CONTROLS_SIZE = 44;
-export const FIT_INSET = 12;

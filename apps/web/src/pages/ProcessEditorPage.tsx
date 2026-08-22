@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Process } from '@bpmn/domain';
+import type { StoredProcess } from '@bpmn/domain';
 import { BpmnEditor, type BpmnEditorHandle } from '../components/bpmn-editor/BpmnEditor';
 import { EditorChrome } from '../components/shell/EditorChrome';
 import { UserMenu } from '../components/shell/UserMenu';
@@ -26,9 +26,9 @@ type ProcessEditorPageProps = {
 };
 
 export function mergeLatestProcessWithPendingPatch(
-  latest: Process,
+  latest: StoredProcess,
   pending: ProcessSavePatch,
-): Process {
+): StoredProcess {
   return { ...latest, ...pending };
 }
 
@@ -36,7 +36,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   const { user } = useAuth();
   const editorRef = useRef<BpmnEditorHandle>(null);
   const saveQueueRef = useRef<ProcessSaveQueue | null>(null);
-  const [process, setProcess] = useState<Process | null>(null);
+  const [process, setProcess] = useState<StoredProcess | null>(null);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

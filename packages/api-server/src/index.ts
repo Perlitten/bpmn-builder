@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
-import { migrate } from '../../db/src/index.js';
+import { migrate } from '@bpmn/db';
 import { createApp } from './app.js';
 import { repairEmptyDiagrams, seedIfEmpty } from './seed.js';
 

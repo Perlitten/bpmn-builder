@@ -15,7 +15,7 @@ export function attachSession(req: Request, res: Response, next: NextFunction): 
     .catch(next);
 }
 
-export function isPublicApiPath(path: string): boolean {
+function isPublicApiPath(path: string): boolean {
   return path === '/api/health' || path.startsWith('/api/auth');
 }
 

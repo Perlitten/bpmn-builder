@@ -1,4 +1,4 @@
-import { branchTargetsAfter, type Process } from '@bpmn/semantic-core';
+import { branchTargetsAfter, type SemanticProcess } from '@bpmn/semantic-core';
 import { isBpmnType, type DiagramElement } from '../diagramElement';
 
 /** Where a contextual create lands. Semantics only — branch or flow, never coordinates. */
@@ -16,7 +16,7 @@ export function isSequenceFlowElement(element: DiagramElement | null): boolean {
  */
 export function continueTarget(
   element: DiagramElement | null,
-  process?: Process,
+  process?: SemanticProcess,
 ): { target?: InsertTarget; choices: BranchChoice[] } {
   if (!element) return { choices: [] };
   if (isSequenceFlowElement(element)) return { target: { onFlow: element.id }, choices: [] };
@@ -37,7 +37,7 @@ export function continueTarget(
  */
 export function resolveInsert(
   element: DiagramElement | null,
-  process: Process | undefined,
+  process: SemanticProcess | undefined,
   picked?: InsertTarget,
 ): { target?: InsertTarget; choices: BranchChoice[]; blocked: boolean } {
   const at = continueTarget(element, process);

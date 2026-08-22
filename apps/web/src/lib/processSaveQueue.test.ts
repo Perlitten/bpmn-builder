@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Process } from '@bpmn/domain';
+import type { StoredProcess } from '@bpmn/domain';
 import {
   createProcessSaveQueue,
   guardDirtyProcessLeave,
@@ -16,7 +16,7 @@ function memoryStorage() {
   };
 }
 
-function saved(version: number, patch: Partial<Process> = {}): Process {
+function saved(version: number, patch: Partial<StoredProcess> = {}): StoredProcess {
   return {
     id: 'process-1',
     name: 'Process',
@@ -35,8 +35,8 @@ describe('process save queue', () => {
   it('serializes writes and coalesces edits made while a write is in flight', async () => {
     vi.useFakeTimers();
     const storage = memoryStorage();
-    const releases: Array<(value: Process) => void> = [];
-    const save = vi.fn(() => new Promise<Process>((resolve) => releases.push(resolve)));
+    const releases: Array<(value: StoredProcess) => void> = [];
+    const save = vi.fn(() => new Promise<StoredProcess>((resolve) => releases.push(resolve)));
     const queue = createProcessSaveQueue({
       storageKey: 'journal',
       initialVersion: 3,
@@ -70,8 +70,8 @@ describe('process save queue', () => {
 
   it('journals the active request together with edits queued behind it', async () => {
     const storage = memoryStorage();
-    let finishFirst!: (value: Process) => void;
-    const firstSave = new Promise<Process>((resolve) => {
+    let finishFirst!: (value: StoredProcess) => void;
+    const firstSave = new Promise<StoredProcess>((resolve) => {
       finishFirst = resolve;
     });
     const queue = createProcessSaveQueue({
@@ -206,7 +206,7 @@ describe('process save queue', () => {
   it('does not schedule another retry after the queue is destroyed', async () => {
     vi.useFakeTimers();
     let rejectSave!: (error: unknown) => void;
-    const save = vi.fn(() => new Promise<Process>((_resolve, reject) => {
+    const save = vi.fn(() => new Promise<StoredProcess>((_resolve, reject) => {
       rejectSave = reject;
     }));
     const queue = createProcessSaveQueue({

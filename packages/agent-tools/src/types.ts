@@ -1,4 +1,4 @@
-import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, Process as _Process, RegionKind, UnstructuredMark } from '../../semantic-core/src/index.js';
+import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, RegionKind, UnstructuredMark } from '@bpmn/semantic-core';
 
 export const TOOL_NAMES = [
   'inspectProcess',
@@ -37,8 +37,6 @@ export const TOOL_NAMES = [
 export type ToolName = (typeof TOOL_NAMES)[number];
 
 export const READ_ONLY_TOOLS = ['inspectProcess', 'inspectRegion', 'inspectBranch', 'lint'] as const;
-
-export type ReadOnlyTool = (typeof READ_ONLY_TOOLS)[number];
 
 export const AGENT_SCOPE_KINDS = ['process', 'region', 'branch', 'selection'] as const;
 
