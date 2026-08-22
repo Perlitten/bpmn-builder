@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
+import { ArrowRight, Mic } from 'lucide-react';
+import { DuplicateProcessDialog } from '../components/process-list/DuplicateProcessDialog';
 import { ImportBpmnButton, type ImportBpmnButtonHandle } from '../components/process-list/ImportBpmnButton';
 import { ListKindTabs } from '../components/process-list/ListKindTabs';
 import { ListPaginationFooter } from '../components/process-list/ListPaginationFooter';
+import { MobileProcessCapture } from '../components/process-list/MobileProcessCapture';
+import { ProcessComposer } from '../components/process-list/ProcessComposer';
+import { ProcessDetailPanel } from '../components/process-list/ProcessDetailPanel';
+import { ProcessEmptyState } from '../components/process-list/ProcessEmptyState';
+import { ProcessListHeader } from '../components/process-list/ProcessListHeader';
 import {
   LIST_PANEL_ID,
   LIST_TAB_ID,
@@ -14,23 +21,23 @@ import {
   type ListTab,
 } from '../components/process-list/listTabs';
 import { ProcessRow } from '../components/process-list/ProcessRow';
-import { DuplicateProcessDialog } from '../components/process-list/DuplicateProcessDialog';
 import { RenameProcessDialog } from '../components/process-list/RenameProcessDialog';
-import { draftNameFromTemplate, TemplatesSection } from '../components/process-list/TemplatesSection';
+import { draftNameFromTemplate } from '../components/process-list/TemplatesSection';
+import { UserMenu } from '../components/shell/UserMenu';
 import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { SelectField } from '../components/ui/SelectField';
 import { Skeleton } from '../components/ui/Skeleton';
 import { TextField } from '../components/ui/TextField';
-import { TextAreaField } from '../components/ui/TextAreaField';
-import { UserMenu } from '../components/shell/UserMenu';
-import { api, type ProcessListSort } from '../lib/api';
+import { api, fetchProcess, type ProcessListSort } from '../lib/api';
 import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPreview';
 import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
+import { bpmnDownloadFilename, downloadBpmnXml } from '../lib/downloadBpmn';
 import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
 import '../styles/productFonts';
+import '../components/process-list/process-list.css';
 
 export const DESCRIPTION_PLACEHOLDER =
   'Receive invoice. Review details. If approved, pay the supplier, otherwise request a revision.';
@@ -41,22 +48,33 @@ type ProcessListPageProps = {
   onOpenProcess: (id: string) => void;
 };
 
+type MobileFilter = 'all' | 'attention' | 'draft';
+
 export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const initialListState = useRef(
     listStateFromSearch(typeof window === 'undefined' ? '' : window.location.search),
   ).current;
   const [processes, setProcesses] = useState<ProcessSummary[]>([]);
+  const [suggestedTemplates, setSuggestedTemplates] = useState<ProcessSummary[]>([]);
   const [query, setQuery] = useState(initialListState.q);
   const [debouncedQuery, setDebouncedQuery] = useState(initialListState.q.trim());
   const [kind, setKind] = useState<ListTab>(initialListState.kind);
   const [sort, setSort] = useState<ProcessListSort>(initialListState.sort);
   const [page, setPage] = useState(initialListState.page);
   const [total, setTotal] = useState(0);
-  const [prompt, setPrompt] = useState('');
+  const [processTotal, setProcessTotal] = useState(0);
+  const [templateTotal, setTemplateTotal] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileDetail, setMobileDetail] = useState(false);
+  const [mobileCapture, setMobileCapture] = useState(false);
+  const [mobileFilter, setMobileFilter] = useState<MobileFilter>('all');
+  const [prompt, setPrompt] = useState(DESCRIPTION_PLACEHOLDER);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [importFailure, setImportFailure] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ file: File; xml: string } | null>(null);
   const [renameTarget, setRenameTarget] = useState<ProcessSummary | null>(null);
@@ -72,15 +90,29 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   }, []);
 
   useEffect(() => {
+    const ac = new AbortController();
+    void api.listTemplates({ sort: 'name_asc', page: 1, limit: 3 }, ac.signal)
+      .then((data) => {
+        setSuggestedTemplates(data.processes);
+        setTemplateTotal(data.total);
+      })
+      .catch((err: unknown) => {
+        if (!isAbort(err)) setSuggestedTemplates([]);
+      });
+    return () => ac.abort();
+  }, [reloadToken]);
+
+  useEffect(() => {
     if (firstQuerySync.current) {
       firstQuerySync.current = false;
       return;
     }
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setDebouncedQuery(query.trim());
       setPage(1);
+      setMobileDetail(false);
     }, 200);
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [query]);
 
   useEffect(() => {
@@ -90,12 +122,12 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   useEffect(() => {
     const ac = new AbortController();
     let cancelled = false;
-    setError(null);
+    setLoadError(null);
     setLoading(true);
-    const request =
-      kind === 'template'
-        ? api.listTemplates({ q: debouncedQuery, sort, page, limit: PAGE_SIZE }, ac.signal)
-        : api.listProcesses({ q: debouncedQuery, kind: 'process', sort, page, limit: PAGE_SIZE }, ac.signal);
+    const request = kind === 'template'
+      ? api.listTemplates({ q: debouncedQuery, sort, page, limit: PAGE_SIZE }, ac.signal)
+      : api.listProcesses({ q: debouncedQuery, kind: 'process', sort, page, limit: PAGE_SIZE }, ac.signal);
+
     void request
       .then((data) => {
         if (cancelled) return;
@@ -106,45 +138,66 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         }
         setProcesses(data.processes);
         setTotal(data.total);
+        if (kind === 'process') setProcessTotal(data.total);
+        setSelectedId((current) => (
+          data.processes.some((process) => process.id === current)
+            ? current
+            : data.processes[0]?.id ?? null
+        ));
       })
       .catch((err: unknown) => {
         if (cancelled || isAbort(err)) return;
-        setError(err instanceof Error ? err.message : 'Failed to load processes');
+        setLoadError(err instanceof Error ? err.message : 'Failed to load processes');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
       ac.abort();
     };
   }, [debouncedQuery, kind, sort, page, reloadToken]);
 
+  const attentionCount = useMemo(
+    () => processes.filter((process) => process.quality.errors + process.quality.warnings > 0).length,
+    [processes],
+  );
+  const draftCount = useMemo(
+    () => processes.filter((process) => process.status === 'draft').length,
+    [processes],
+  );
+  const visibleProcesses = useMemo(() => {
+    if (kind !== 'process' || mobileFilter === 'all') return processes;
+    if (mobileFilter === 'draft') return processes.filter((process) => process.status === 'draft');
+    return processes.filter((process) => process.quality.errors + process.quality.warnings > 0);
+  }, [kind, mobileFilter, processes]);
+  const selectedProcess = visibleProcesses.find((process) => process.id === selectedId) ?? visibleProcesses[0] ?? null;
+
   const selectTab = (next: ListTab) => {
     setKind(next);
     setPage(1);
     setProcesses([]);
     setTotal(0);
+    setSelectedId(null);
+    setMobileDetail(false);
+    setMobileFilter('all');
     writeListTab(next);
   };
 
   const createAndOpen = async (
-    input: {
-      name: string;
-      description?: string;
-      bpmnXml?: string;
-      templateId?: string;
-    },
+    input: { name: string; description?: string; bpmnXml?: string; templateId?: string },
     imported?: { file: File; xml: string },
     signal?: AbortSignal,
   ) => {
     setCreating(true);
-    setError(null);
+    setActionError(null);
     setImportFailure(null);
     try {
       const created = await api.createProcess(input, signal);
       setPendingImport(null);
       setImportFailure(null);
+      setMobileCapture(false);
       onOpenProcess(created.id);
     } catch (err) {
       if (isAbort(err)) return;
@@ -153,7 +206,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         setPendingImport(imported);
         setImportFailure(message);
       } else {
-        setError(message);
+        setActionError(message);
       }
     } finally {
       setCreating(false);
@@ -168,7 +221,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
       const bpmnXml = describeBpmnXml(name, description);
       void createAndOpen({ name, description, bpmnXml }, undefined, signal);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create BPMN from this description');
+      setActionError(err instanceof Error ? err.message : 'Could not create BPMN from this description');
     }
   };
 
@@ -178,11 +231,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     setRowActionError(null);
     try {
       const renamed = await api.renameProcess(renameTarget.id, name, renameTarget.version);
-      setProcesses((current) => current.map((process) =>
+      setProcesses((current) => current.map((process) => (
         process.id === renamed.id
           ? { ...process, name: renamed.name, updatedAt: renamed.updatedAt, version: renamed.version }
-          : process,
-      ));
+          : process
+      )));
       setRenameTarget(null);
       setReloadToken((current) => current + 1);
     } catch (err) {
@@ -209,15 +262,21 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    const deletingId = deleteTarget.id;
     setRowActionBusy(true);
     setRowActionError(null);
     try {
-      await api.deleteProcess(deleteTarget.id);
+      await api.deleteProcess(deletingId);
       const nextTotal = Math.max(0, total - 1);
       const lastPage = lastListPage(nextTotal, PAGE_SIZE);
       setDeleteTarget(null);
       setTotal(nextTotal);
-      setProcesses((current) => current.filter((process) => process.id !== deleteTarget.id));
+      setProcesses((current) => {
+        const next = current.filter((process) => process.id !== deletingId);
+        setSelectedId((selected) => selected === deletingId ? next[0]?.id ?? null : selected);
+        return next;
+      });
+      setMobileDetail(false);
       if (page > lastPage) setPage(lastPage);
       else setReloadToken((current) => current + 1);
     } catch (err) {
@@ -227,18 +286,21 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     }
   };
 
+  const handleExport = async (process: ProcessSummary) => {
+    setExportingId(process.id);
+    setActionError(null);
+    try {
+      const { process: fullProcess } = await fetchProcess(process.id);
+      downloadBpmnXml(fullProcess.bpmnXml, bpmnDownloadFilename(fullProcess.name));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to export BPMN');
+    } finally {
+      setExportingId(null);
+    }
+  };
+
   const handleImport = (file: File, xml: string) => {
     void createAndOpen({ name: processNameFromBpmn(xml, file.name), bpmnXml: xml }, { file, xml });
-  };
-
-  const handleImportFileError = (message: string) => {
-    setPendingImport(null);
-    setImportFailure(message);
-  };
-
-  const clearImportFailure = () => {
-    setImportFailure(null);
-    setPendingImport(null);
   };
 
   const handleRetryImport = () => {
@@ -250,184 +312,225 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     importRef.current?.open();
   };
 
+  const useTemplate = (template: ProcessSummary) => {
+    void createAndOpen({ name: draftNameFromTemplate(template.name), templateId: template.id });
+  };
+
   const { from, to } = listRange(total, page, PAGE_SIZE);
   const searching = Boolean(debouncedQuery);
   const promptIssue = descriptionInputIssue(prompt);
   const initialLoading = loading && processes.length === 0;
+  const fullEmptyState = !initialLoading && !loadError && kind === 'process' && !searching && total === 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-canvas">
-      <header className="sticky top-0 z-[var(--z-chrome)] shrink-0 overflow-visible border-b border-border bg-canvas">
-        <div className="flex min-h-12 items-center gap-3 overflow-visible px-4 py-1.5">
-          <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
-          <span className="hidden font-mono text-[11px] text-muted sm:inline">{getBuildVersionInfo()}</span>
-          <label className="ml-auto flex min-w-0 max-w-xs flex-1 items-center">
-            <span className="sr-only">{kind === 'template' ? 'Search templates' : 'Search processes'}</span>
-            <TextField
-              value={query}
-              placeholder="Search"
-              className="w-full"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
-          <ImportBpmnButton
-            ref={importRef}
-            disabled={creating}
-            onImport={handleImport}
-            onError={handleImportFileError}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={creating}
-            onClick={() => void createAndOpen({ name: 'Untitled process' })}
-          >
-            New blank
-          </Button>
-          <UserMenu />
-        </div>
-        <div className="border-t border-border px-4 py-2">
-          <div className="flex items-center gap-2">
-            <TextAreaField
-              value={prompt}
-              rows={2}
-              maxLength={MAX_DESCRIPTION_CHARS}
-              placeholder={DESCRIPTION_PLACEHOLDER}
-              aria-label="Describe the process. Text is saved as the description."
-              aria-invalid={Boolean(promptIssue) || undefined}
-              aria-describedby="process-description-meta"
-              className="min-w-0 flex-1 resize-none"
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !promptIssue) {
-                  event.preventDefault();
-                  handleDescribe(prompt);
-                }
+    <div className={`process-list-page ${mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
+      <ProcessListHeader
+        query={query}
+        total={total}
+        empty={fullEmptyState}
+        buildVersion={getBuildVersionInfo()}
+        searchLabel={kind === 'template' ? 'Search templates' : 'Search processes'}
+        onQueryChange={setQuery}
+        actions={(
+          <div className="process-list-primary-actions">
+            <ImportBpmnButton
+              ref={importRef}
+              disabled={creating}
+              onImport={handleImport}
+              onError={(message) => {
+                setPendingImport(null);
+                setImportFailure(message);
               }}
             />
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={creating || !prompt.trim() || Boolean(promptIssue)}
-              onClick={() => handleDescribe(prompt)}
-            >
-              Create process
+            <Button variant="outline" size="sm" disabled={creating} onClick={() => void createAndOpen({ name: 'Untitled process' })}>
+              New blank
             </Button>
           </div>
-          <div id="process-description-meta" className="ui-field-message flex justify-between gap-3">
-            <span data-tone={promptIssue ? 'danger' : undefined}>
-              {promptIssue ?? 'Ctrl/Command + Enter to create'}
-            </span>
-            {prompt.length > MAX_DESCRIPTION_CHARS * 0.7 ? (
-              <span className="shrink-0 tabular-nums">{prompt.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
-            ) : null}
-          </div>
-        </div>
-      </header>
+        )}
+        account={<UserMenu compact />}
+      />
 
-      {error && !importFailure ? (
-        <p className="shrink-0 px-4 py-2 text-sm text-danger" role="alert">
-          {error}
-        </p>
+      {(loadError || actionError) && !importFailure ? (
+        <div className="process-list-error" role="alert">
+          <span>{loadError ?? actionError}</span>
+          {loadError ? (
+            <Button variant="outline" size="sm" onClick={() => setReloadToken((current) => current + 1)}>Retry</Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setActionError(null)}>Dismiss</Button>
+          )}
+        </div>
       ) : null}
 
-      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4">
-        <h1 className="sr-only">{kind === 'template' ? 'Templates' : 'Processes'}</h1>
-        <ListKindTabs kind={kind} onChange={selectTab} />
-        <label className="ml-auto flex items-center gap-2 py-1.5 text-[12px] text-muted">
-          <span>Sort by</span>
-          <SelectField
-            value={sort}
-            aria-label={kind === 'template' ? 'Sort templates' : 'Sort processes'}
-            className="w-auto min-w-40 font-medium"
-            onChange={(event) => {
-              setSort(event.target.value as ProcessListSort);
-              setPage(1);
-            }}
-          >
-            <option value="updated_desc">Recently updated</option>
-            <option value="updated_asc">Least recently updated</option>
-            <option value="name_asc">Name A–Z</option>
-            <option value="name_desc">Name Z–A</option>
-          </SelectField>
-        </label>
-      </div>
+      {fullEmptyState ? (
+        <ProcessEmptyState
+          value={prompt}
+          issue={promptIssue}
+          busy={creating}
+          placeholder={DESCRIPTION_PLACEHOLDER}
+          templates={suggestedTemplates}
+          onChange={setPrompt}
+          onCreate={() => handleDescribe(prompt)}
+          onUseTemplate={useTemplate}
+        />
+      ) : (
+        <div className={`process-workbench ${mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
+          <section className="process-index" aria-label={kind === 'template' ? 'Templates' : 'Processes'}>
+            <ProcessComposer
+              value={prompt}
+              issue={promptIssue}
+              busy={creating}
+              maxLength={MAX_DESCRIPTION_CHARS}
+              placeholder={DESCRIPTION_PLACEHOLDER}
+              onChange={setPrompt}
+              onCreate={() => handleDescribe(prompt)}
+            />
 
-      <div
-        id={LIST_PANEL_ID}
-        role="tabpanel"
-        aria-labelledby={LIST_TAB_ID[kind]}
-        aria-busy={loading}
-        className="product-scrollbar min-h-0 flex-1 overflow-y-auto"
-      >
-        {initialLoading ? (
-          <div>
-            {[0, 1, 2, 3].map((key) => (
-              <div key={key} className="flex items-center gap-3 border-b border-border px-4 py-3">
-                <Skeleton className="h-3 w-40" />
-                <Skeleton className="h-3 flex-1" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            ))}
-          </div>
-        ) : processes.length === 0 ? (
-          <div className="px-4 py-8">
-            <p className="text-sm text-muted">{emptyCopy(kind, searching)}</p>
-            {searching ? (
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => setQuery('')}>
-                Clear search
-              </Button>
-            ) : kind === 'process' ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={creating}
-                  onClick={() => void createAndOpen({ name: 'Untitled process' })}
-                >
-                  Create blank
-                </Button>
-                <ImportBpmnButton disabled={creating} onImport={handleImport} onError={handleImportFileError} />
+            <div className="process-index-toolbar">
+              <h1 className="sr-only">{kind === 'template' ? 'Templates' : 'Processes'}</h1>
+              <ListKindTabs
+                kind={kind}
+                counts={{ process: processTotal, template: templateTotal }}
+                onChange={selectTab}
+              />
+              <SelectField
+                value={sort}
+                aria-label={kind === 'template' ? 'Sort templates' : 'Sort processes'}
+                className="process-index-sort"
+                onChange={(event) => {
+                  setSort(event.target.value as ProcessListSort);
+                  setPage(1);
+                }}
+              >
+                <option value="updated_desc">Recent</option>
+                <option value="updated_asc">Oldest</option>
+                <option value="name_asc">A–Z</option>
+                <option value="name_desc">Z–A</option>
+              </SelectField>
+            </div>
+
+            {kind === 'process' ? (
+              <div className="process-list-mobile-filter" aria-label="Process filters for this page">
+                <button type="button" aria-pressed={mobileFilter === 'all'} onClick={() => setMobileFilter('all')}>
+                  All {processes.length}
+                </button>
+                <button type="button" data-tone="error" aria-pressed={mobileFilter === 'attention'} onClick={() => setMobileFilter('attention')}>
+                  Attention {attentionCount}
+                </button>
+                <button type="button" aria-pressed={mobileFilter === 'draft'} onClick={() => setMobileFilter('draft')}>
+                  Drafts {draftCount}
+                </button>
+                <span className="process-list-mobile-filter-scope">This page</span>
               </div>
             ) : null}
-          </div>
-        ) : kind === 'template' ? (
-          <TemplatesSection
-            templates={processes}
-            busy={creating}
-            onOpen={onOpenProcess}
-            onUse={(template) =>
-              void createAndOpen({
-                name: draftNameFromTemplate(template.name),
-                templateId: template.id,
-              })
-            }
-          />
-        ) : (
-          <div className={loading ? 'opacity-60 transition-opacity' : ''}>
-            {processes.map((process) => (
-              <ProcessRow
-                key={process.id}
-                process={process}
-                onOpen={onOpenProcess}
-                onRename={setRenameTarget}
-                onDuplicate={setDuplicateTarget}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
-      <ListPaginationFooter
-        from={from}
-        to={to}
-        total={total}
-        page={page}
-        pageSize={PAGE_SIZE}
-        onPrev={() => setPage((current) => Math.max(1, current - 1))}
-        onNext={() => setPage((current) => current + 1)}
-      />
+            <div
+              id={LIST_PANEL_ID}
+              role="tabpanel"
+              aria-labelledby={LIST_TAB_ID[kind]}
+              aria-busy={loading}
+              className="process-index-list product-scrollbar"
+            >
+              {initialLoading ? (
+                <div role="status" aria-label="Loading processes">
+                  {[0, 1, 2, 3, 4].map((key) => (
+                    <div key={key} className="process-index-skeleton">
+                      <Skeleton className="h-3 w-40" />
+                      <Skeleton className="ml-auto h-3 w-12" />
+                    </div>
+                  ))}
+                </div>
+              ) : visibleProcesses.length === 0 ? (
+                <div className="process-index-empty">
+                  <p>{emptyCopy(kind, searching, mobileFilter)}</p>
+                  {searching ? (
+                    <Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>
+                  ) : mobileFilter !== 'all' ? (
+                    <Button variant="outline" size="sm" onClick={() => setMobileFilter('all')}>Show all</Button>
+                  ) : null}
+                </div>
+              ) : (
+                <div className={loading ? 'opacity-60 transition-opacity' : ''}>
+                  {visibleProcesses.map((process) => (
+                    <ProcessRow
+                      key={process.id}
+                      process={process}
+                      selected={process.id === selectedProcess?.id}
+                      onOpen={(id) => {
+                        setSelectedId(id);
+                        setMobileDetail(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <ListPaginationFooter
+              className="process-index-pagination"
+              from={from}
+              to={to}
+              total={total}
+              page={page}
+              pageSize={PAGE_SIZE}
+              onPrev={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => current + 1)}
+            />
+
+            <div className="process-mobile-composer">
+              <TextField
+                readOnly
+                value=""
+                placeholder="Describe a process…"
+                aria-label="Describe a new process"
+                onFocus={() => setMobileCapture(true)}
+                onClick={() => setMobileCapture(true)}
+              />
+              <Button variant="outline" size="md" aria-label="Dictate a process" onClick={() => setMobileCapture(true)}>
+                <Mic size={17} strokeWidth={1.8} aria-hidden="true" />
+              </Button>
+              <Button variant="accentSolid" size="md" aria-label="Create a process" onClick={() => setMobileCapture(true)}>
+                <ArrowRight size={17} strokeWidth={2} aria-hidden="true" />
+              </Button>
+            </div>
+          </section>
+
+          {selectedProcess ? (
+            <ProcessDetailPanel
+              process={selectedProcess}
+              kind={kind}
+              busy={rowActionBusy || creating}
+              exporting={exportingId === selectedProcess.id}
+              onBack={() => setMobileDetail(false)}
+              onOpenEditor={kind === 'process' || !selectedProcess.builtin ? onOpenProcess : undefined}
+              onUseTemplate={kind === 'template' ? useTemplate : undefined}
+              onDuplicate={kind === 'process' ? setDuplicateTarget : undefined}
+              onExport={kind === 'process' || !selectedProcess.builtin ? (process) => void handleExport(process) : undefined}
+              onRename={!selectedProcess.builtin ? setRenameTarget : undefined}
+              onDelete={!selectedProcess.builtin ? setDeleteTarget : undefined}
+              onRegenerate={(description) => handleDescribe(description)}
+            />
+          ) : (
+            <div className="process-detail-placeholder">
+              <p>Select a process to inspect its diagram, checks, and source description.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mobileCapture ? (
+        <MobileProcessCapture
+          initialValue={prompt}
+          templates={suggestedTemplates}
+          busy={creating}
+          error={actionError}
+          onClose={() => setMobileCapture(false)}
+          onCreate={(description) => {
+            setPrompt(description);
+            handleDescribe(description);
+          }}
+          onUseTemplate={useTemplate}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={Boolean(importFailure)}
@@ -436,7 +539,10 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         body={importFailure ?? ''}
         confirmLabel="Retry"
         onConfirm={handleRetryImport}
-        onCancel={clearImportFailure}
+        onCancel={() => {
+          setImportFailure(null);
+          setPendingImport(null);
+        }}
       />
 
       <RenameProcessDialog
@@ -481,15 +587,16 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   );
 }
 
-function emptyCopy(kind: ListTab, searching: boolean): string {
+function emptyCopy(kind: ListTab, searching: boolean, filter: MobileFilter): string {
   if (kind === 'template') {
     return searching
       ? 'No templates match this search.'
       : 'No templates yet. Save a process as a template from the editor.';
   }
-  return searching
-    ? 'No processes match this search.'
-    : 'No processes yet. Describe one above, create a blank Start → Task → End, or import BPMN 2.0.';
+  if (searching) return 'No processes match this search.';
+  if (filter === 'attention') return 'No processes on this page need attention.';
+  if (filter === 'draft') return 'No draft processes on this page.';
+  return 'No processes yet.';
 }
 
 function isAbort(err: unknown): boolean {

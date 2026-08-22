@@ -8,6 +8,7 @@ type ChromeMenuProps = {
   ariaLabel: string;
   disabled?: boolean;
   align?: 'left' | 'right';
+  triggerVariant?: 'ghost' | 'outline';
   children: ReactNode;
 };
 
@@ -20,7 +21,14 @@ export function nextMenuIndex(count: number, current: number, key: string): numb
   return null;
 }
 
-export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', children }: ChromeMenuProps) {
+export function ChromeMenu({
+  label,
+  ariaLabel,
+  disabled,
+  align = 'right',
+  triggerVariant = 'outline',
+  children,
+}: ChromeMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -67,7 +75,7 @@ export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', childr
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button
-        variant="outline"
+        variant={triggerVariant}
         size="sm"
         disabled={disabled}
         aria-expanded={open}

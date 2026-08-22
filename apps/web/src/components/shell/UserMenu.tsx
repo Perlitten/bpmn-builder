@@ -2,7 +2,7 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '../auth/AuthGate';
 import { Avatar, ChromeMenu, ChromeMenuItem } from '../ui';
 
-export function UserMenu() {
+export function UserMenu({ compact = false }: { compact?: boolean }) {
   const { user, signOut } = useAuth();
   const label = user.name?.trim() || user.email;
 
@@ -10,10 +10,11 @@ export function UserMenu() {
     <ChromeMenu
       align="right"
       ariaLabel="Account"
+      triggerVariant={compact ? 'ghost' : 'outline'}
       label={
         <>
           <Avatar name={label} src={user.avatarUrl} />
-          <span className="hidden max-w-[9rem] truncate sm:inline">{label}</span>
+          {compact ? null : <span className="hidden max-w-[9rem] truncate sm:inline">{label}</span>}
         </>
       }
     >

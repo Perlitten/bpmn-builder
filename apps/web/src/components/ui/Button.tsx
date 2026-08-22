@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'accent' | 'danger' | 'ghost' | 'outline';
+  variant?: 'primary' | 'accent' | 'accentSolid' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md';
   loading?: boolean;
   loadingLabel?: ReactNode;
@@ -40,7 +40,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const busy = useMinimumBusy(loading);
-  const contractVariant = variant === 'outline' ? 'default' : variant;
+  const contractVariant = variant === 'outline' ? 'default' : variant === 'accentSolid' ? 'accent-solid' : variant;
   return (
     <button
       {...props}
