@@ -1177,8 +1177,7 @@
   }
 
   .process-detail-title-group > span,
-  .process-detail-actions > .ui-button,
-  .process-detail-actions > .relative:not(:last-child) {
+  .process-detail-actions > .ui-button {
     display: none;
   }
 

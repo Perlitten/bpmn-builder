@@ -84,11 +84,19 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const [rowActionBusy, setRowActionBusy] = useState(false);
   const [rowActionError, setRowActionError] = useState<string | null>(null);
   const importRef = useRef<ImportBpmnButtonHandle>(null);
+  const selectedRowRef = useRef<HTMLButtonElement>(null);
+  const restoreRowFocusOnClose = useRef(false);
   const firstQuerySync = useRef(true);
 
   useEffect(() => {
     document.title = pageTitle('list');
   }, []);
+
+  useEffect(() => {
+    if (previewOpen || !restoreRowFocusOnClose.current) return;
+    restoreRowFocusOnClose.current = false;
+    selectedRowRef.current?.focus();
+  }, [previewOpen]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -456,6 +464,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
                       key={process.id}
                       process={process}
                       selected={previewOpen && process.id === selectedProcess?.id}
+                      focusRef={process.id === selectedProcess?.id ? selectedRowRef : undefined}
                       onOpen={(id) => {
                         setSelectedId(id);
                         setPreviewOpen(true);
@@ -504,6 +513,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
               exporting={exportingId === selectedProcess.id}
               onBack={() => setMobileDetail(false)}
               onClose={() => {
+                restoreRowFocusOnClose.current = true;
                 setPreviewOpen(false);
                 setMobileDetail(false);
               }}

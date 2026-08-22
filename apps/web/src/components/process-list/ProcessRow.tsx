@@ -1,4 +1,4 @@
-import { memo, useSyncExternalStore } from 'react';
+import { memo, useSyncExternalStore, type Ref } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -19,6 +19,7 @@ type ProcessRowProps = {
   onDuplicate?: (process: ProcessSummary) => void;
   onDelete?: (process: ProcessSummary) => void;
   selected?: boolean;
+  focusRef?: Ref<HTMLButtonElement>;
 };
 
 export const ProcessRow = memo(function ProcessRow({
@@ -28,6 +29,7 @@ export const ProcessRow = memo(function ProcessRow({
   onDuplicate,
   onDelete,
   selected = false,
+  focusRef,
 }: ProcessRowProps) {
   const now = useSyncExternalStore(
     subscribeRelativeTime,
@@ -42,6 +44,7 @@ export const ProcessRow = memo(function ProcessRow({
   return (
     <div className="process-index-row-wrap relative" data-process-id={process.id}>
       <button
+        ref={focusRef}
         type="button"
         aria-label={`Preview ${process.name}`}
         aria-describedby={metadataId}
