@@ -42,7 +42,7 @@ test.describe('BpmnBuilder critical journeys', () => {
   });
 
   test('creates, renames, saves, and reloads a process', async ({ page }) => {
-    await page.getByRole('button', { name: 'New blank' }).click();
+    await page.getByRole('button', { name: 'Create process' }).click();
     await expect(page.locator('.bpmn-canvas-host')).toBeVisible();
     await expect(page.locator('.bpmn-canvas-host .djs-shape').first()).toBeVisible();
     expect(await page.locator('.bpmn-canvas-host .djs-shape').count()).toBeGreaterThan(0);

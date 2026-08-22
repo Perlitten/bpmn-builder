@@ -58,6 +58,7 @@ test.describe('authenticated visual regression', () => {
 
     await page.goto('/');
     await expect(page.locator('header')).toContainText('BPMN');
+    await expect(page.getByRole('heading', { name: 'Describe a process in plain sentences' })).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
   });
 

@@ -151,7 +151,7 @@ function listPage(): ReactElement {
 }
 
 describe('ProcessListPage', () => {
-  it('uses two tabs and a pinned pagination footer instead of kind pills', () => {
+  it('uses a two-tab workbench with a pinned pagination footer', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
@@ -160,41 +160,41 @@ describe('ProcessListPage', () => {
     expect(html).toContain('>Templates<');
     expect(html).not.toContain('>All<');
     expect(html).not.toMatch(/<h2[^>]*>Templates</);
-    expect(html).toMatch(/overflow-y-auto[\s\S]*<footer\b/);
+    expect(html).toMatch(/process-index-list[\s\S]*<footer\b/);
     expect(html).toContain('Showing 0–0 of 0');
-    expect(html).toContain('flex h-full min-h-0 flex-col');
+    expect(html).toContain('process-list-page');
+    expect(html).toContain('process-workbench');
+    expect(html).toContain('process-detail-placeholder');
   });
 
-  it('keeps search, actions, and describe-to-create in one sticky header', () => {
+  it('keeps search and account actions in the header and docks describe-to-create in the index', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
-    expect(header).toContain('sticky');
-    expect(header).not.toMatch(/\bh-11\b/);
+    expect(header).toContain('process-list-header');
     expect(header).toContain('Search processes');
-    expect(header).not.toContain('Open Architect');
-    expect(header).toContain('Describe the process');
-    expect(header).toContain('Create process');
-    expect(header).toContain('<textarea');
-    expect(header).toContain('Ctrl/Command + Enter to create');
-    expect(header).toContain('maxLength="20000"');
-    expect(header).not.toContain('0/20,000');
+    expect(header).toContain('Architect mascot');
+    expect(header).not.toContain('Describe the process');
+    expect(header).not.toContain('<textarea');
+    expect(html).toContain('Describe → BPMN');
+    expect(html).toContain('Create process');
+    expect(html).toContain('<textarea');
+    expect(html).toContain('maxLength="20000"');
     expect(header).toContain('New blank');
-    expect(header).not.toContain('+ New');
+    expect(header).toContain('Import BPMN');
   });
 
-  it('uses one explicit sort control with visible directions instead of tab-like toggles', () => {
+  it('uses one compact sort control with explicit options instead of tab-like toggles', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
-    expect(html).toContain('Sort by');
     expect(html).toContain('aria-label="Sort processes"');
-    expect(html).toContain('Recently updated');
-    expect(html).toContain('Least recently updated');
-    expect(html).toContain('Name A–Z');
-    expect(html).toContain('Name Z–A');
-    expect(html).not.toContain('aria-pressed');
+    expect(html).toContain('>Recent<');
+    expect(html).toContain('>Oldest<');
+    expect(html).toContain('>A–Z<');
+    expect(html).toContain('>Z–A<');
+    expect(html).not.toContain('Sort: newest');
   });
 
   it('does not show the duplicate dialog until the user confirms from the row menu', () => {

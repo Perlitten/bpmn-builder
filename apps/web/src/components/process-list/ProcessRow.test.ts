@@ -109,13 +109,14 @@ describe('ProcessRow', () => {
         onDelete: () => undefined,
       }),
     );
-    expect(html).toContain('aria-label="Open Approval"');
+    expect(html).toContain('aria-label="Preview Approval"');
+    expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('aria-describedby="process-Approval-metadata"');
     expect(html).toMatch(/id="process-Approval-metadata"[^>]*>Updated [^<]+XOR/);
     expect(html).toContain('aria-label="Actions for Approval"');
     expect(html).toContain('<time');
     expect(html).toContain('dateTime="2026-08-13T00:00:00.000Z"');
-    expect(html).toContain('py-3');
+    expect(html).toContain('process-index-row');
   });
 
   it('keeps row actions when Duplicate is the only overflow action', () => {

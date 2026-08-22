@@ -11,7 +11,7 @@ test.describe('product design system', () => {
     });
     expect(response.ok()).toBeTruthy();
     await page.goto('/');
-    await page.getByRole('button', { name: 'New blank' }).click();
+    await page.getByRole('button', { name: 'Create process' }).click();
     await expect(page.locator('.bpmn-canvas-host .djs-shape').first()).toBeVisible();
   });
 

@@ -11,9 +11,10 @@ import {
 type ListKindTabsProps = {
   kind: ListTab;
   onChange: (kind: ListTab) => void;
+  counts?: Partial<Record<ListTab, number>>;
 };
 
-export function ListKindTabs({ kind, onChange }: ListKindTabsProps) {
+export function ListKindTabs({ kind, onChange, counts }: ListKindTabsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +55,9 @@ export function ListKindTabs({ kind, onChange }: ListKindTabsProps) {
             onClick={() => onChange(tab)}
           >
             {LIST_TAB_LABEL[tab]}
+            {typeof counts?.[tab] === 'number' ? (
+              <span className="process-tab-count">{counts[tab]}</span>
+            ) : null}
           </button>
         );
       })}
