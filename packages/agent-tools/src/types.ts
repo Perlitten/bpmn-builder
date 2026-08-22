@@ -17,6 +17,7 @@ export const TOOL_NAMES = [
   'createEventSubprocess',
   'splitComplex',
   'setFlowKind',
+  'connectSequenceFlow',
   'setCalledElement',
   'addDataObject',
   'addDataStore',
@@ -118,6 +119,17 @@ export type ToolResult = Applied & {
   view?: unknown;
 };
 
+export type PlanFailure = {
+  index: number;
+  name: ToolName;
+  message: string;
+};
+
 export type PlanResult = Applied & {
   steps: ToolResult[];
+};
+
+export type BestEffortPlanResult = PlanResult & {
+  stepIndices: number[];
+  failures: PlanFailure[];
 };

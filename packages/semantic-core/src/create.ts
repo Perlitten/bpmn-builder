@@ -1,4 +1,12 @@
-import { addAssociation, addDataObject, addDataStore, addGroup, addTextAnnotation, resolveAssociationEnds } from './artifacts.js';
+import {
+  addAssociation,
+  addDataAssociation,
+  addDataObject,
+  addDataStore,
+  addGroup,
+  addTextAnnotation,
+  resolveAssociationEnds,
+} from './artifacts.js';
 import { BPMN, TASK_TYPES } from './components/define.js';
 import { bpmnComponentRegistry } from './components/index.js';
 import { addLane, addMessageInteraction, addPool, applyInPool, poolTargetOf } from './collaboration.js';
@@ -6,6 +14,7 @@ import { defaultInsertAfter, getNode, happyPathIds, isActivity, outgoingFlows } 
 import {
   addTask,
   attachBoundaryEvent,
+  connectSequenceFlow,
   setEventDefinition,
   setFlowKind,
   splitComplex,
@@ -19,10 +28,48 @@ import type { Applied, SemanticProcess } from './types.js';
 
 const TASK_SET = new Set<string>(TASK_TYPES);
 
-const CATCH_DEFS = new Set(['TimerEventDefinition', 'MessageEventDefinition', 'ConditionalEventDefinition']);
-const START_DEFS = new Set(['MessageEventDefinition', 'TimerEventDefinition', 'ConditionalEventDefinition']);
-const END_DEFS = new Set(['ErrorEventDefinition', 'TerminateEventDefinition']);
-const BOUNDARY_DEFS = new Set(['TimerEventDefinition', 'ErrorEventDefinition']);
+const CATCH_DEFS = new Set([
+  'TimerEventDefinition',
+  'MessageEventDefinition',
+  'ConditionalEventDefinition',
+  'LinkEventDefinition',
+  'SignalEventDefinition',
+]);
+const THROW_DEFS = new Set([
+  'MessageEventDefinition',
+  'EscalationEventDefinition',
+  'LinkEventDefinition',
+  'CompensateEventDefinition',
+  'SignalEventDefinition',
+]);
+const START_DEFS = new Set([
+  'MessageEventDefinition',
+  'TimerEventDefinition',
+  'ConditionalEventDefinition',
+  'SignalEventDefinition',
+  'ErrorEventDefinition',
+  'EscalationEventDefinition',
+  'CompensateEventDefinition',
+]);
+const END_DEFS = new Set([
+  'MessageEventDefinition',
+  'ErrorEventDefinition',
+  'EscalationEventDefinition',
+  'SignalEventDefinition',
+  'CompensateEventDefinition',
+  'TerminateEventDefinition',
+  'CancelEventDefinition',
+]);
+const BOUNDARY_DEFS = new Set([
+  'MessageEventDefinition',
+  'TimerEventDefinition',
+  'ErrorEventDefinition',
+  'EscalationEventDefinition',
+  'ConditionalEventDefinition',
+  'SignalEventDefinition',
+  'CompensateEventDefinition',
+  'CancelEventDefinition',
+]);
 
 /**
  * Insert a registry component after `afterId` (or on the happy path).
@@ -73,7 +120,12 @@ export function createFromComponent(
 
   if (componentId === 'start.none') throw new Error('A process already has a start event');
   if (componentId === 'end.none') throw new Error('End cannot be inserted on a sequence that already continues');
-  if (componentId === 'flow.sequence') throw new Error('no semantic create op for flow.sequence');
+  if (componentId === 'flow.sequence') {
+    const from = spec.from ?? after;
+    const to = spec.to;
+    if (!from || !to) throw new Error('Sequence flow needs from and to elements');
+    return connectSequenceFlow(process, { from, to, name });
+  }
 
   if (componentId === 'participant.pool') return addPool(process, { name });
   if (componentId === 'participant.lane') {
@@ -113,6 +165,16 @@ export function createFromComponent(
     });
   }
 
+  if (def.bpmnType === BPMN.throw && (def.eventDefinition ? THROW_DEFS.has(def.eventDefinition) : componentId === 'intermediate.none')) {
+    return addTask(process, {
+      ...target,
+      name,
+      type: 'intermediateThrow',
+      bpmnType: BPMN.throw,
+      ...(def.eventDefinition ? { eventDefinition: def.eventDefinition } : {}),
+    });
+  }
+
   if (def.bpmnType === BPMN.catch && def.eventDefinition && CATCH_DEFS.has(def.eventDefinition)) {
     return addTask(process, {
       ...target,
@@ -123,8 +185,13 @@ export function createFromComponent(
     });
   }
 
-  if (def.bpmnType === BPMN.start && def.eventDefinition && START_DEFS.has(def.eventDefinition) && !componentId.includes('nonInterrupting')) {
-    return setEventDefinition(process, resolveStart(process, after), def.eventDefinition);
+  if (def.bpmnType === BPMN.start && def.eventDefinition && START_DEFS.has(def.eventDefinition)) {
+    return setEventDefinition(
+      process,
+      resolveStart(process, after),
+      def.eventDefinition,
+      componentId.includes('nonInterrupting') ? false : true,
+    );
   }
 
   if (def.bpmnType === BPMN.end && def.eventDefinition && END_DEFS.has(def.eventDefinition)) {
@@ -143,6 +210,12 @@ export function createFromComponent(
 
   if (componentId === 'flow.association') {
     return addAssociation(process, resolveAssociationEnds(process, { from: spec.from, to: spec.to, after }));
+  }
+  if (componentId === 'flow.dataAssociation') {
+    const from = spec.from ?? after;
+    const to = spec.to;
+    if (!from || !to) throw new Error('Data association needs from and to elements');
+    return addDataAssociation(process, { from, to });
   }
 
   if (componentId === 'data.object') return addDataObject(process, { name });
@@ -175,6 +248,11 @@ function resolveStart(process: SemanticProcess, after?: string): string {
   if (after) {
     const node = process.nodes.find((n) => n.id === after);
     if (node?.type === 'start') return node.id;
+    if (node?.type === 'subProcess') {
+      const inner = process.scopes.find((scope) => scope.ownerId === node.id);
+      const innerStart = inner && process.nodes.find((candidate) => candidate.type === 'start' && inner.nodeIds.includes(candidate.id));
+      if (innerStart) return innerStart.id;
+    }
   }
   const starts = process.nodes.filter((n) => n.type === 'start');
   const none = starts.find((n) => !n.eventDefinition);

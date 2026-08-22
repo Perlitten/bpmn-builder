@@ -1,4 +1,4 @@
-import { addLane, addMessageInteraction, addPool, addTask, createEventSubprocess, createProcess, renameElement, splitExclusive, splitInclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
+import { addLane, addMessageInteraction, addPool, addTask, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitInclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
 import { layoutProcess, TOKENS } from '@bpmn/layout-engine';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -192,6 +192,32 @@ describe('XML ⇄ graph ⇄ XML', () => {
 });
 
 describe('graph → layoutProcess → DI', () => {
+  it('round-trips explicit loops and catalog event/data elements', async () => {
+    let process = createProcess({ name: 'Approval rework' });
+    const task = addTask(process, { name: 'Review request' });
+    process = task.process;
+    const host = task.id;
+    const approve = addTask(process, { name: 'Approve request', after: host });
+    process = approve.process;
+    const boundary = createFromComponent(process, 'boundary.compensation', { after: host });
+    process = boundary.process;
+    const catchEvent = createFromComponent(process, 'intermediate.catch.link', { after: host });
+    process = catchEvent.process;
+    process = createFromComponent(process, 'end.cancel').process;
+    const data = createFromComponent(process, 'data.object', { name: 'Request' });
+    process = data.process;
+    process = createFromComponent(process, 'flow.dataAssociation', { from: data.id, to: host }).process;
+    process = createFromComponent(process, 'flow.sequence', { from: approve.id, to: host, name: 'Rework' }).process;
+    const xml = exportProcessXml(process);
+    expect(xml).toContain('compensateEventDefinition');
+    expect(xml).toContain('linkEventDefinition');
+    expect(xml).toMatch(/data(?:Input|Output)?Association/);
+    expect(xml).toContain('name="Rework"');
+    const imported = await xmlToProcess(xml);
+    expect(imported.flows.some((flow) => flow.name === 'Rework' && flow.source === approve.id && flow.target === host)).toBe(true);
+    expect(imported.nodes.some((node) => node.eventDefinition === 'CompensateEventDefinition')).toBe(true);
+    expect(imported.artifacts?.some((item) => /Data(?:Input|Output)?Association$/.test(String(item.$type)))).toBe(true);
+  });
   it('matches the layout-engine addTask snapshot in XML DI', async () => {
     let p = createProcess();
     p = addTask(p, { name: 'Review' }).process;

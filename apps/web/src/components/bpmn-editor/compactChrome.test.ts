@@ -22,10 +22,15 @@ const chromeProps = {
   onExport: () => undefined,
   onExportSvg: () => undefined,
   onExportPdf: () => undefined,
+  onExportPng: () => undefined,
   onSaveTemplate: () => undefined,
   onClear: () => undefined,
   onToggleSimulate: () => undefined,
   onResetSimulation: () => undefined,
+  canUndo: false,
+  canRedo: false,
+  onUndo: () => undefined,
+  onRedo: () => undefined,
 };
 
 describe('compact editor chrome', () => {
@@ -68,6 +73,7 @@ describe('compact editor chrome', () => {
     expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileCode\}[\s\S]*?Download BPMN/);
     expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileImage\}[\s\S]*?SVG · vector/);
     expect(src).toMatch(/icon=\{<MenuIcon icon=\{FileText\}[\s\S]*?PDF · printable/);
+    expect(src).toMatch(/PNG · raster/);
     expect(src).toMatch(/icon=\{<MenuIcon icon=\{LayoutTemplate\}[\s\S]*?Save as template/);
     expect(src).toMatch(/icon=\{<MenuIcon icon=\{RotateCcw\}[\s\S]*?Reset process/);
     expect(src).not.toMatch(/text-danger[\s\S]*Reset process|Reset process[\s\S]*text-danger/);

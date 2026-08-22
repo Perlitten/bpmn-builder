@@ -78,6 +78,25 @@ export function addAssociation(process: SemanticProcess, spec: { from: string; t
   });
 }
 
+/** Data input/output association; kept as a first-class artifact so import/export does not downgrade it. */
+export function addDataAssociation(process: SemanticProcess, spec: { from: string; to: string }): Applied {
+  if (spec.from === spec.to) throw new Error('Data association needs two different elements');
+  return apply(process, (draft) => {
+    const id = nextId(draft, 'DataAssociation');
+    extras(draft).push({
+      // Data associations are attached to the activity in BPMN XML. Keep the
+      // semantic catalog generic, but serialize the input direction because
+      // the source is a data object and the target is an activity.
+      $type: 'bpmn:DataInputAssociation',
+      id,
+      // BPMN DataAssociation.sourceRef is a collection (unlike Association.sourceRef).
+      sourceRef: [{ $ref: spec.from }],
+      targetRef: { $ref: spec.to },
+    });
+    return id;
+  });
+}
+
 export function resolveAssociationEnds(
   process: SemanticProcess,
   spec: { from?: string; to?: string; after?: string },

@@ -7,7 +7,7 @@ import { Button } from '../components/ui';
 import { useAuth } from '../components/auth/AuthGate';
 import { fetchProcess, saveAsTemplate, saveProcess } from '../lib/api';
 import { bpmnDownloadFilename, downloadBpmnXml, downloadBlob, downloadFilename, downloadText } from '../lib/downloadBpmn';
-import { svgToPdfBlob } from '../lib/exportDiagram';
+import { svgToPdfBlob, svgToPngBlob } from '../lib/exportDiagram';
 import { pageTitle } from '../lib/pageTitle';
 import {
   createProcessSaveQueue,
@@ -193,7 +193,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   }, [name, process?.name]);
 
   const handleExportDiagram = useCallback(
-    async (format: 'svg' | 'pdf') => {
+    async (format: 'svg' | 'pdf' | 'png') => {
       setNotice(null);
       setBusy(true);
       try {
@@ -205,8 +205,10 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
         const stem = name || process?.name || 'process';
         if (format === 'svg') {
           downloadText(svg, downloadFilename(stem, 'svg'), 'image/svg+xml;charset=utf-8');
-        } else {
+        } else if (format === 'pdf') {
           downloadBlob(await svgToPdfBlob(svg), downloadFilename(stem, 'pdf'));
+        } else {
+          downloadBlob(await svgToPngBlob(svg), downloadFilename(stem, 'png'));
         }
         setError(null);
       } catch (err: unknown) {
@@ -261,6 +263,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
         onExport={() => void handleExport()}
         onExportSvg={() => void handleExportDiagram('svg')}
         onExportPdf={() => void handleExportDiagram('pdf')}
+        onExportPng={() => void handleExportDiagram('png')}
         onSaveTemplate={() => void handleSaveTemplate()}
         onClear={handleClear}
         onToggleSimulate={() => {
@@ -268,6 +271,10 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
           setNotice(null);
         }}
         onResetSimulation={() => editorRef.current?.resetSimulation()}
+        canUndo={editorRef.current?.canUndo() ?? false}
+        canRedo={editorRef.current?.canRedo() ?? false}
+        onUndo={() => void editorRef.current?.undo()}
+        onRedo={() => void editorRef.current?.redo()}
         account={<UserMenu />}
       />
       <div className="relative min-h-0 flex-1 overflow-hidden">

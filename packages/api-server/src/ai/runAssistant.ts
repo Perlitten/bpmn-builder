@@ -2,7 +2,7 @@ import {
   ToolPlanError,
   collaborationRequested,
   constrainToolPlan,
-  executePlan,
+  executePlanBestEffort,
   isSemanticProcess,
   parseAgentScope,
   parseToolPlan,
@@ -11,6 +11,7 @@ import {
   toolSystemPrompt,
   userFacingAssistantMessage,
   type AgentScope,
+  type BestEffortPlanResult,
   type ToolCall,
 } from '../../../agent-tools/src/index.js';
 import { xmlToProcess } from '../../../bpmn-adapter/src/index.js';
@@ -25,6 +26,12 @@ type AssistantStep = {
   view?: unknown;
 };
 
+export type AssistantFailure = {
+  index: number;
+  name: ToolCall['name'];
+  message: string;
+};
+
 /** Semantic assistant result. Never includes BPMN XML / DI. */
 export type AssistantData = {
   message: string;
@@ -32,6 +39,7 @@ export type AssistantData = {
   results: AssistantStep[];
   process: SemanticProcess;
   previousProcess: SemanticProcess;
+  failures?: AssistantFailure[];
 };
 
 const clip = (value: string, max = 24000) =>
@@ -71,10 +79,10 @@ function llmTools(raw: Record<string, unknown>): ToolCall[] {
   return parseToolPlan(raw.tools);
 }
 
-function resultsOf(tools: ToolCall[], plan: ReturnType<typeof executePlan>): AssistantStep[] {
+function resultsOf(tools: ToolCall[], plan: BestEffortPlanResult): AssistantStep[] {
   return plan.steps.map((step, i) => ({
     name: step.name,
-    args: tools[i]?.args ?? {},
+    args: tools[plan.stepIndices[i] ?? i]?.args ?? {},
     id: step.id,
     ...(step.view !== undefined ? { view: step.view } : {}),
   }));
@@ -137,12 +145,20 @@ export async function runAssistant(
     message = truthfulNoEditMessage(message, tools);
   }
 
-  const plan = executePlan(previousProcess, tools, { scope });
+  const plan = executePlanBestEffort(previousProcess, tools, { scope });
+  const failures = plan.failures.map((failure) => ({ ...failure }));
+  if (failures.length) {
+    const summary = failures
+      .map((failure) => `Step ${failure.index + 1} (${failure.name}) failed: ${failure.message}`)
+      .join(' · ');
+    message = `${message || 'Updated the process from your request.'} ${summary}`.trim();
+  }
   return {
     message,
     tools,
     results: resultsOf(tools, plan),
     process: plan.process,
     previousProcess,
+    ...(failures.length ? { failures } : {}),
   };
 }

@@ -75,6 +75,8 @@ export type FlowNode = {
   eventDefinition?: string;
   /** Interrupting boundary (`cancelActivity`). Default true in BPMN. */
   cancelActivity?: boolean;
+  /** Event-subprocess start interrupting flag. BPMN defaults to true. */
+  isInterrupting?: boolean;
   /** Event subprocess (`triggeredByEvent`). Not on sequence flow. */
   triggeredByEvent?: boolean;
   /** Call activity `calledElement` (process id). */

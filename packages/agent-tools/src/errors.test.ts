@@ -23,9 +23,9 @@ describe('userFacingPlanError', () => {
     );
   });
 
-  it('explains the current loop limitation instead of showing construction jargon', () => {
-    expect(userFacingPlanError('That construction cannot be added here: connect Return quote back to Review quote')).toMatch(
-      /Return flows are not supported yet/,
+  it('explains cross-scope flow errors in BPMN terms', () => {
+    expect(userFacingPlanError('connectSequenceFlow: sequence flow must stay inside one process scope')).toMatch(
+      /stay inside one process scope/i,
     );
   });
 });

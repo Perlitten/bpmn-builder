@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutTemplate,
   PlayCircle,
+  Redo2,
   RotateCcw,
   Undo2,
   type LucideIcon,
@@ -35,10 +36,15 @@ type EditorChromeProps = {
   onExport: () => void;
   onExportSvg: () => void;
   onExportPdf: () => void;
+  onExportPng: () => void;
   onSaveTemplate: () => void;
   onClear: () => void;
   onToggleSimulate: () => void;
   onResetSimulation: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
   account?: ReactNode;
 };
 
@@ -58,10 +64,15 @@ export function EditorChrome({
   onExport,
   onExportSvg,
   onExportPdf,
+  onExportPng,
   onSaveTemplate,
   onClear,
   onToggleSimulate,
   onResetSimulation,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   account,
 }: EditorChromeProps) {
   const compactViewport = useCompactViewport();
@@ -102,6 +113,14 @@ export function EditorChrome({
       ) : null}
       {notice && !compact ? <span className="editor-notice max-w-[min(18rem,32vw)] truncate text-xs text-accent" role="status">{notice}</span> : null}
       <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
+        <Button variant="ghost" size="sm" disabled={busy || !canUndo} onClick={onUndo} aria-label="Undo last change" title="Undo (Ctrl+Z)">
+          <Undo2 size={14} aria-hidden />
+          <span className="sr-only">Undo</span>
+        </Button>
+        <Button variant="ghost" size="sm" disabled={busy || !canRedo} onClick={onRedo} aria-label="Redo last change" title="Redo (Ctrl+Shift+Y)">
+          <Redo2 size={14} aria-hidden />
+          <span className="sr-only">Redo</span>
+        </Button>
         <Button
           variant={simulating ? 'accent' : 'outline'}
           size="sm"
@@ -152,10 +171,14 @@ export function EditorChrome({
             Download diagram
             <span className="text-[11px] font-normal text-muted">PDF · printable</span>
           </ChromeMenuItem>
+          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={FileImage} />} onSelect={onExportPng}>
+            Download diagram
+            <span className="text-[11px] font-normal text-muted">PNG · raster</span>
+          </ChromeMenuItem>
           <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={LayoutTemplate} />} onSelect={onSaveTemplate}>
             Save as template
           </ChromeMenuItem>
-          <ChromeMenuItem disabled={busy} icon={<MenuIcon icon={RotateCcw} />} onSelect={() => setConfirmClear(true)}>
+          <ChromeMenuItem disabled={busy} tone="danger" icon={<MenuIcon icon={RotateCcw} />} onSelect={() => setConfirmClear(true)}>
             Reset process
           </ChromeMenuItem>
         </ChromeMenu>

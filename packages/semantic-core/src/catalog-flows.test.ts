@@ -28,9 +28,13 @@ describe('catalog flows (slice 2)', () => {
     expect(next.condition).toBeUndefined();
   });
 
-  it('refuses a free Visio sequence flow and AND-gateway default', () => {
+  it('creates an explicit sequence flow but still validates its endpoints', () => {
     const p = createProcess();
-    expect(() => createFromComponent(p, 'flow.sequence')).toThrow(/no semantic create op/);
+    const task = createFromComponent(p, 'activity.task', { after: 'StartEvent_1', name: 'Review' });
+    const second = createFromComponent(task.process, 'activity.task', { after: task.id, name: 'Approve' });
+    const loop = createFromComponent(second.process, 'flow.sequence', { from: second.id, to: task.id, name: 'Retry' });
+    expect(loop.process.flows.some((flow) => flow.source === second.id && flow.target === task.id)).toBe(true);
+    expect(() => createFromComponent(p, 'flow.sequence')).toThrow(/from and to/i);
     expect(() => createFromComponent(p, 'flow.conditional')).toThrow(/Select a sequence flow/);
   });
 

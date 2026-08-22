@@ -16,6 +16,7 @@ export type AssistantPayload = {
   process?: unknown;
   previousProcess?: unknown;
   bpmnXml?: unknown;
+  failures?: Array<{ index: number; name: string; message: string }>;
 };
 
 export type AssistantApplySession = {
@@ -72,12 +73,20 @@ export async function applyAssistantResult(
   const warningMessage = findings.length
     ? ` Applied with warnings: ${findings.join(' · ')}${findings.length >= 4 ? ' · …' : ''}`
     : '';
+  const failedSteps = Array.isArray(data.failures)
+    ? data.failures
+        .map((failure) => `Step ${failure.index + 1} (${failure.name}) failed: ${failure.message}`)
+        .slice(0, 4)
+    : [];
+  const failureMessage = failedSteps.length
+    ? ` Some requested edits could not be applied: ${failedSteps.join(' · ')}${data.failures && data.failures.length > 4 ? ' · …' : ''}`
+    : '';
 
   return {
     xml,
     diff: semanticDiff(before, session.process()),
-    message: `${message || 'Updated the process from your request.'}${warningMessage}`,
+    message: `${message || 'Updated the process from your request.'}${warningMessage}${failureMessage}`,
     applied: true,
-    ...(findings.length ? { warnings: findings } : {}),
+    ...(findings.length || failedSteps.length ? { warnings: [...findings, ...failedSteps] } : {}),
   };
 }

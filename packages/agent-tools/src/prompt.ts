@@ -14,7 +14,7 @@ const TASK_BPMN = new Set<string>([
   BPMN.callActivity,
 ]);
 
-const AGENT_SKIP_CREATE = new Set(['start.none', 'end.none', 'flow.sequence']);
+const AGENT_SKIP_CREATE = new Set(['start.none', 'end.none']);
 const COLLAB_COMPONENT_IDS = new Set(['participant.pool', 'participant.lane', 'flow.message']);
 const COLLAB_TOOLS = new Set<ToolName>(['addPool', 'addLane', 'addMessageInteraction']);
 
@@ -119,6 +119,7 @@ Allowed tools:
 - attachBoundaryError { on, name? }                      // interrupting error boundary on an activity
 - createEventSubprocess { parent?, name? }               // event subprocess in the process or a subprocess
 - setFlowKind { flowId, kind, condition? }               // kind: sequence | conditional | default
+- connectSequenceFlow { from, to, name?, kind?, condition? } // explicit flow, including a valid rework/back edge
 - setCalledElement { id, calledElement }                 // call activity process ref
 - addDataObject { name? }
 - addDataStore { name? }
@@ -142,6 +143,7 @@ Supported constructions (not a census; do not list these back):
 - Boundary timer / error — attachBoundaryTimer, attachBoundaryError
 - Event subprocess — createEventSubprocess
 - Sequence flow kind — setFlowKind (not a Visio arrow)
+- Explicit connections / rework loops — connectSequenceFlow; use node ids or unique names. Keep it inside one process scope.
 - Call activity — setCalledElement
 - Data / artifacts — addDataObject, addDataStore, addTextAnnotation, addGroup, addAssociation
 - Collaboration — addPool, addLane, assignLane, addMessageInteraction. Use addPool / addLane / addMessageInteraction only if the user asked for a pool, lane, partner, participant, swimlane, or a message between organizations. assignLane moves an existing flow node into a lane (same op as the inspector). Boundary events stay on their host. A registration, application, or approval flow is one process with tasks and gateways. Do not start with a pool.
@@ -152,6 +154,7 @@ Rules:
 - branchId is a gateway arm (Branch_*), never a region id (Region_*). Whole-process scope: omit branchId. If you pass after: Region_1 it means after the join.
 - Node names resolve when unique. XOR branches are named Yes/No by default.
 - Decisions: splitExclusive, splitParallel, splitInclusive, splitEventBased, or splitComplex — never a lone gateway node.
+- Rework loops: use connectSequenceFlow for a named return edge; do not claim that BPMN cycles are unsupported.
 - For splitParallel, a non-empty named branch is materialised as one task with that name. Do not add a duplicate task for that arm; use addTask with branchId only for extra activities or when the branch name is intentionally blank. For XOR/OR/event-based branches, names label the outgoing flow and work still requires addTask using branchId.
 - Lanes subdivide one participant. The first addLane creates the host participant automatically. Never use addPool for lane names, and never pass a Lane_* id as participantId; use a Participant_* id, a unique pool name, or omit participantId for the host pool.
 - Timeout while a task is active: attachBoundaryTimer. Failure on a task: attachBoundaryError. Not an event-based gateway.

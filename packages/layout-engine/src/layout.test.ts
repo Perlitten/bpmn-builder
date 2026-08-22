@@ -1,4 +1,4 @@
-import { addLane, addMessageInteraction, addPool, addTask, assignLane, attachBoundaryTimer, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
+import { addLane, addMessageInteraction, addPool, addTask, assignLane, attachBoundaryTimer, connectSequenceFlow, createEventSubprocess, createFromComponent, createProcess, renameElement, splitExclusive, splitParallel, wrapInSubprocess } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { layout, layoutProcess } from './layout.js';
 import { centerY, isOrthogonal } from './route.js';
@@ -705,6 +705,20 @@ describe('layout', () => {
         y: centerY(target),
       });
     }
+    allOrthogonal(di);
+  });
+
+  it('routes an explicit rework back edge without dropping it from DI', () => {
+    let process = createProcess();
+    const review = addTask(process, { name: 'Review request' });
+    process = review.process;
+    const approve = addTask(process, { name: 'Approve request' });
+    process = approve.process;
+    process = connectSequenceFlow(process, { from: approve.id, to: review.id, name: 'Request changes' }).process;
+    const di = layoutProcess(process);
+    const loop = process.flows.find((flow) => flow.name === 'Request changes');
+    expect(loop).toBeDefined();
+    expect(di.edges[loop!.id]?.length).toBeGreaterThanOrEqual(2);
     allOrthogonal(di);
   });
 

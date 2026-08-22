@@ -86,6 +86,10 @@ export type BpmnEditorHandle = {
   getDiagramSvg: () => Promise<string | undefined>;
   resetToStarter: () => Promise<void>;
   resetSimulation: () => void;
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 };
 
 type Viewbox = {
@@ -359,6 +363,14 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       simRef.current?.reset();
       publishSim();
     },
+    undo: async () => {
+      await applyUndo();
+    },
+    redo: async () => {
+      await applyRedo();
+    },
+    canUndo: () => sessionRef.current?.canUndo() ?? false,
+    canRedo: () => sessionRef.current?.canRedo() ?? false,
   }));
 
   useEffect(() => {

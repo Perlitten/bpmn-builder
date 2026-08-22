@@ -24,7 +24,7 @@ import {
 } from './graph.js';
 import { nextId } from './ids.js';
 import type { InsertSpec } from './graph.js';
-import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, SemanticProcess } from './types.js';
+import type { Applied, FlowNode, FlowNodeType, GatewayKind, PlaceSpec, SemanticProcess, SequenceFlow } from './types.js';
 
 function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
@@ -365,14 +365,27 @@ function stripEventDefinitions(node: FlowNode): void {
   else delete node.bpmnPreserve;
 }
 
-export function setEventDefinition(process: SemanticProcess, id: string, eventDefinition: string | undefined): Applied {
+export function setEventDefinition(
+  process: SemanticProcess,
+  id: string,
+  eventDefinition: string | undefined,
+  isInterrupting?: boolean,
+): Applied {
   return apply(process, (draft) => {
     const node = getNode(draft, id);
-    if (node.type !== 'start' && node.type !== 'end' && node.type !== 'intermediateCatch' && node.type !== 'boundaryEvent') {
+    if (
+      node.type !== 'start' &&
+      node.type !== 'end' &&
+      node.type !== 'intermediateCatch' &&
+      node.type !== 'intermediateThrow' &&
+      node.type !== 'boundaryEvent'
+    ) {
       throw new Error(`cannot set event definition on ${node.type}`);
     }
     if (eventDefinition) node.eventDefinition = eventDefinition;
     else delete node.eventDefinition;
+    if (node.type === 'start' && isInterrupting === false) node.isInterrupting = false;
+    else if (node.type === 'start') delete node.isInterrupting;
     stripEventDefinitions(node);
     return id;
   });
@@ -523,6 +536,64 @@ export function setFlowKind(
       flow.condition = undefined;
     }
     return flowId;
+  });
+}
+
+/**
+ * Add a sequence flow between two existing flow nodes.
+ *
+ * Unlike the structured split helpers this operation deliberately permits a
+ * back edge. BPMN approval/rework loops are valid graphs; structure detection
+ * will mark the affected gateway region as unstructured when it cannot prove a
+ * block-shaped join, while the edge remains fully editable/exportable.
+ */
+export function connectSequenceFlow(
+  process: SemanticProcess,
+  spec: {
+    from: string;
+    to: string;
+    name?: string;
+    condition?: string;
+    kind?: 'sequence' | 'conditional' | 'default';
+    id?: string;
+  },
+): Applied {
+  return apply(process, (draft) => {
+    const source = getNode(draft, spec.from);
+    const target = getNode(draft, spec.to);
+    if (source.type === 'end') throw new Error('cannot connect from an end event');
+    if (target.type === 'start') throw new Error('cannot connect to a start event');
+    const sourceScope = scopeOf(draft, source.id);
+    const targetScope = scopeOf(draft, target.id);
+    if (sourceScope.id !== targetScope.id) {
+      throw new Error('sequence flow must stay inside one process scope');
+    }
+    if (draft.flows.some((flow) => flow.source === source.id && flow.target === target.id)) {
+      throw new Error('sequence flow already exists between these elements');
+    }
+    const kind = spec.kind ?? 'sequence';
+    if (kind === 'conditional' && !['task', 'subProcess', 'exclusiveGateway', 'inclusiveGateway'].includes(source.type)) {
+      throw new Error('conditional flow needs a task, subprocess, XOR, or OR source');
+    }
+    if (kind === 'default' && !['task', 'subProcess', 'exclusiveGateway', 'inclusiveGateway'].includes(source.type)) {
+      throw new Error('default flow needs a task, subprocess, XOR, or OR source');
+    }
+    if (kind === 'default') {
+      for (const flow of draft.flows) {
+        if (flow.source === source.id) flow.isDefault = false;
+      }
+    }
+    const flow: SequenceFlow = {
+      id: nextId(draft, 'SequenceFlow', spec.id),
+      source: source.id,
+      target: target.id,
+      ...(spec.name?.trim() ? { name: spec.name.trim() } : {}),
+      ...(kind === 'conditional' ? { condition: spec.condition?.trim() ?? '' } : {}),
+      ...(kind === 'default' ? { isDefault: true } : {}),
+    };
+    draft.flows.push(flow);
+    sourceScope.flowIds.push(flow.id);
+    return flow.id;
   });
 }
 
