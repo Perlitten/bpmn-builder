@@ -30,9 +30,13 @@ test.describe('product design system', () => {
       expect(railBox!.width).toBe(viewport!.width);
       expect(railBox!.height).toBe(56);
       expect(inspectorBox!.width).toBe(viewport!.width);
+      await expect(page.locator('.editor-onboarding')).toContainText('Tap a shape');
+      await expect(page.locator('.editor-onboarding')).not.toContainText(/Double-click|Space/);
     } else {
       expect(railBox!.width).toBe(64);
       expect(inspectorBox!.width).toBe(252);
+      await expect(page.locator('.editor-onboarding')).toContainText('Double-click a shape');
+      await expect(page.locator('.editor-onboarding')).toContainText('hold Space');
     }
 
     const back = page.getByRole('button', { name: 'Back to process list' });

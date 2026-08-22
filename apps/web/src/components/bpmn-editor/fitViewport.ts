@@ -161,8 +161,10 @@ export function collectFitObstacles(host: HTMLElement): Rect[] {
   if (zoom) obstacles.push(zoom);
   const inspector = elementRect(stage?.querySelector('.element-inspector') ?? null);
   if (inspector && intersects(canvas, inspector)) obstacles.push(inspector);
-  const architect = elementRect(doc.querySelector('.architect-shell'))
-    ?? elementRect(doc.querySelector('.architect-panel'));
+  // Floating Architect is draggable and must not collapse Fit to viewport to
+  // the largest rectangle around a temporary overlay. Only its compact dock is
+  // fixed chrome that reduces the usable canvas.
+  const architect = elementRect(doc.querySelector('.architect-shell.is-docked.is-open'));
   if (architect && intersects(canvas, architect)) obstacles.push(architect);
   return obstacles;
 }

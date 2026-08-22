@@ -7,6 +7,7 @@ import { LandingSignInPanel } from '../components/landing/LandingSignInPanel';
 import { fetchAuthStatus, type AuthStatus } from '../lib/auth';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
+import '../styles/landingFonts';
 
 function authErrorMessage(code: string | null): string | null {
   if (code === 'denied') return 'Google sign-in was cancelled. Nothing was saved.';
@@ -16,17 +17,29 @@ function authErrorMessage(code: string | null): string | null {
   return null;
 }
 
-export function SignInPage() {
-  const [status, setStatus] = useState<AuthStatus | null>(null);
+export function SignInPage({ initialStatus = null }: { initialStatus?: AuthStatus | null }) {
+  const [status, setStatus] = useState<AuthStatus | null>(initialStatus);
   const errorCode = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('error');
   const oauthError = authErrorMessage(errorCode);
 
   useEffect(() => {
     document.title = pageTitle('list');
+    if (initialStatus) {
+      setStatus(initialStatus);
+      return;
+    }
     const ac = new AbortController();
-    void fetchAuthStatus(ac.signal).then(setStatus);
+    void fetchAuthStatus(ac.signal)
+      .then(setStatus)
+      .catch((error: unknown) => {
+        if (ac.signal.aborted) return;
+        setStatus({
+          configured: false,
+          error: error instanceof Error ? error.message : 'Could not reach the authentication service.',
+        });
+      });
     return () => ac.abort();
-  }, []);
+  }, [initialStatus]);
 
   const configured = status === null ? null : status.configured;
   const setupError = status && !status.configured ? status.error ?? 'Google OAuth is unavailable.' : null;
@@ -34,8 +47,8 @@ export function SignInPage() {
 
   return (
     <div className="landing-shell flex min-h-dvh flex-col bg-canvas" aria-busy={status === null}>
-      <LandingHeader configured={configured} buildVersion={buildVersion} />
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      <LandingHeader buildVersion={buildVersion} />
+      <main className="min-h-0 flex-1">
         <LandingHero />
         <LandingProofStrip />
         <LandingSignInPanel
@@ -45,7 +58,7 @@ export function SignInPage() {
           callbackUrl={status?.callbackUrl}
         />
       </main>
-      <LandingFooter buildVersion={buildVersion} />
+      <LandingFooter />
     </div>
   );
 }

@@ -90,6 +90,20 @@
   white-space: nowrap;
 }
 
+.ui-button[aria-busy='true'] .ui-button-content {
+  visibility: hidden;
+}
+
+.ui-button[data-size='sm'] {
+  padding-inline: var(--space-5);
+  font-size: var(--fs-11);
+}
+
+.ui-button[data-size='md'] {
+  padding-inline: var(--space-6);
+  font-size: var(--fs-12);
+}
+
 .ui-button[data-variant='primary'] {
   --ui-button-edge: var(--color-ink);
   --ui-button-fill: var(--color-ink);
@@ -345,6 +359,14 @@
   background: var(--color-canvas);
   color: var(--color-ink);
   font: 600 var(--fs-10)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+}
+
+.ui-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .ui-save-status {

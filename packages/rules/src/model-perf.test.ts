@@ -9,10 +9,12 @@ describe('XML parsing performance', () => {
     for (let i = 0; i < NESTING_DEPTH; i++) xml += `</bpmn:subProcess>`;
     xml += '</bpmn:process></bpmn:definitions>';
 
-    const start = Date.now();
+    // Measure parser CPU, not scheduler stalls from parallel coverage workers.
+    const start = process.cpuUsage();
     toLintModel(xml);
-    const duration = Date.now() - start;
-    console.info(`Time taken: ${duration}ms`);
-    expect(duration).toBeLessThan(1000);
+    const usage = process.cpuUsage(start);
+    const cpuMs = (usage.user + usage.system) / 1000;
+    console.info(`CPU time: ${cpuMs.toFixed(1)}ms`);
+    expect(cpuMs).toBeLessThan(1000);
   });
 });

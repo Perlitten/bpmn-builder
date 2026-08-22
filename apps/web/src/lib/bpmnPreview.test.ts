@@ -117,6 +117,16 @@ describe('process names', () => {
     expect(processNameFromDescription('Invoice approval\nthen pay')).toBe('Invoice approval');
   });
 
+  it('turns a natural-language request into a concise process name', () => {
+    expect(processNameFromDescription('сделай мне базовую регистрацию с подтверждением почты')).toBe(
+      'Базовую регистрацию',
+    );
+    expect(processNameFromDescription('Create a customer onboarding process with manager approval')).toBe(
+      'Customer onboarding process',
+    );
+    expect(processNameFromDescription('Receive order. Process payment. Dispatch shipment.')).toBe('Receive order');
+  });
+
   it('reads the BPMN process name', () => {
     expect(processNameFromBpmn(XOR, 'file.bpmn')).toBe('Approval');
   });

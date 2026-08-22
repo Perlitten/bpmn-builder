@@ -1,13 +1,8 @@
-type LandingFooterProps = {
-  buildVersion: string;
-};
-
-export function LandingFooter({ buildVersion }: LandingFooterProps) {
+export function LandingFooter() {
   return (
-    <footer className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t-4 border-ink px-4 py-3 font-mono text-[11px] font-medium leading-6 tracking-[0.08em] text-ink-soft sm:px-5">
+    <footer className="flex min-h-14 items-center gap-4 border-t-4 border-ink bg-canvas px-4 font-mono text-[10px] font-medium tracking-[0.12em] text-ink-muted sm:px-5">
       <span className="text-ink">BPMN 2.0</span>
-      <span>PERLITTEN/BPMN-BUILDER</span>
-      <span className="ml-auto">{buildVersion.toUpperCase()}</span>
+      <span className="ml-auto text-right">PERLITTEN / BPMN BUILDER</span>
     </footer>
   );
 }

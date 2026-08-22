@@ -1,6 +1,16 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { completeOAuthHandoff, fetchSessionUser, signOut as postSignOut, type SessionUser } from '../../lib/auth';
-import { SignInPage } from '../../pages/SignInPage';
+import { createContext, lazy, Suspense, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  completeOAuthHandoff,
+  fetchAuthBootstrap,
+  signOut as postSignOut,
+  type AuthStatus,
+  type SessionUser,
+} from '../../lib/auth';
+import { Button } from '../ui';
+
+const SignInPage = lazy(() =>
+  import('../../pages/SignInPage').then((module) => ({ default: module.SignInPage })),
+);
 
 type AuthContextValue = {
   user: SessionUser;
@@ -33,19 +43,26 @@ export function AuthProvider({
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const ac = new AbortController();
+    setLoading(true);
+    setError(null);
     void completeOAuthHandoff(ac.signal)
-      .catch(() => undefined)
-      .then(() => fetchSessionUser(ac.signal))
+      .then(() => fetchAuthBootstrap(ac.signal))
       .then((next) => {
-        setUser(next);
+        const { user: nextUser, ...status } = next;
+        setAuthStatus(status);
+        setUser(nextUser);
         setLoading(false);
       })
-      .catch(() => {
-        setUser(null);
+      .catch((reason: unknown) => {
+        if (ac.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : 'Could not reach the session service');
         setLoading(false);
       });
     const onUnauthorized = () => setUser(null);
@@ -54,7 +71,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       ac.abort();
       window.removeEventListener('bpmn:unauthorized', onUnauthorized);
     };
-  }, []);
+  }, [attempt]);
 
   if (loading) {
     return (
@@ -67,14 +84,41 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) return <SignInPage />;
+  if (error) {
+    return (
+      <div className="flex h-dvh flex-col bg-canvas">
+        <header className="flex h-11 items-center border-b border-border px-4">
+          <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
+        </header>
+        <main className="m-auto max-w-md px-6 text-center" role="alert">
+          <h1 className="text-lg font-semibold text-ink">Session service is unavailable</h1>
+          <p className="mt-2 text-sm text-muted">{error}. Your sign-in state was not changed.</p>
+          <Button className="mt-5" variant="accent" onClick={() => setAttempt((value) => value + 1)}>
+            Retry
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Suspense fallback={<p className="p-6 text-sm text-muted" role="status">Loading sign-in…</p>}>
+        <SignInPage initialStatus={authStatus} />
+      </Suspense>
+    );
+  }
 
   return (
     <AuthProvider
       user={user}
       signOut={async () => {
-        await postSignOut();
-        setUser(null);
+        try {
+          await postSignOut();
+          setUser(null);
+        } catch (reason: unknown) {
+          setError(reason instanceof Error ? reason.message : 'Could not reach the session service');
+        }
       }}
     >
       {children}

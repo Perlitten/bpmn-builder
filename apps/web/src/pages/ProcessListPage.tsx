@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
-import { ListArchitect } from '../components/bpmn-editor/architect/ListArchitect';
 import { ImportBpmnButton, type ImportBpmnButtonHandle } from '../components/process-list/ImportBpmnButton';
 import { ListKindTabs } from '../components/process-list/ListKindTabs';
 import { ListPaginationFooter } from '../components/process-list/ListPaginationFooter';
@@ -23,6 +22,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { SelectField } from '../components/ui/SelectField';
 import { Skeleton } from '../components/ui/Skeleton';
 import { TextField } from '../components/ui/TextField';
+import { TextAreaField } from '../components/ui/TextAreaField';
 import { UserMenu } from '../components/shell/UserMenu';
 import { api, type ProcessListSort } from '../lib/api';
 import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPreview';
@@ -30,6 +30,7 @@ import { describeBpmnXml, descriptionInputIssue } from '../lib/describeProcess';
 import { MAX_DESCRIPTION_CHARS } from '../lib/linearProcess';
 import { pageTitle } from '../lib/pageTitle';
 import { getBuildVersionInfo } from '../lib/version';
+import '../styles/productFonts';
 
 export const DESCRIPTION_PLACEHOLDER =
   'Receive invoice. Review details. If approved, pay the supplier, otherwise request a revision.';
@@ -91,8 +92,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     let cancelled = false;
     setError(null);
     setLoading(true);
-    void api
-      .listProcesses({ q: debouncedQuery, kind, sort, page, limit: PAGE_SIZE }, ac.signal)
+    const request =
+      kind === 'template'
+        ? api.listTemplates({ q: debouncedQuery, sort, page, limit: PAGE_SIZE }, ac.signal)
+        : api.listProcesses({ q: debouncedQuery, kind: 'process', sort, page, limit: PAGE_SIZE }, ac.signal);
+    void request
       .then((data) => {
         if (cancelled) return;
         const lastPage = lastListPage(data.total, PAGE_SIZE);
@@ -253,7 +257,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-canvas">
-      <header className="sticky top-0 z-20 shrink-0 overflow-visible border-b border-border bg-canvas">
+      <header className="sticky top-0 z-[var(--z-chrome)] shrink-0 overflow-visible border-b border-border bg-canvas">
         <div className="flex min-h-12 items-center gap-3 overflow-visible px-4 py-1.5">
           <span className="text-sm font-semibold tracking-tight text-ink">BPMN</span>
           <span className="hidden font-mono text-[11px] text-muted sm:inline">{getBuildVersionInfo()}</span>
@@ -266,7 +270,6 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <ListArchitect busy={creating} error={error} onDescribe={handleDescribe} />
           <ImportBpmnButton
             ref={importRef}
             disabled={creating}
@@ -285,17 +288,21 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         </div>
         <div className="border-t border-border px-4 py-2">
           <div className="flex items-center gap-2">
-            <TextField
+            <TextAreaField
               value={prompt}
+              rows={2}
               maxLength={MAX_DESCRIPTION_CHARS}
               placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Describe the process. Text is saved as the description."
               aria-invalid={Boolean(promptIssue) || undefined}
               aria-describedby="process-description-meta"
-              className="min-w-0 flex-1"
+              className="min-w-0 flex-1 resize-none"
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !promptIssue) handleDescribe(prompt);
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !promptIssue) {
+                  event.preventDefault();
+                  handleDescribe(prompt);
+                }
               }}
             />
             <Button
@@ -309,7 +316,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           </div>
           <div id="process-description-meta" className="ui-field-message flex justify-between gap-3">
             <span data-tone={promptIssue ? 'danger' : undefined}>
-              {promptIssue ?? ''}
+              {promptIssue ?? 'Ctrl/Command + Enter to create'}
             </span>
             {prompt.length > MAX_DESCRIPTION_CHARS * 0.7 ? (
               <span className="shrink-0 tabular-nums">{prompt.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
@@ -357,9 +364,9 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           <div>
             {[0, 1, 2, 3].map((key) => (
               <div key={key} className="flex items-center gap-3 border-b border-border px-4 py-3">
-                <Skeleton className="h-3 w-40 rounded-sm" />
-                <Skeleton className="h-3 flex-1 rounded-sm" />
-                <Skeleton className="h-3 w-16 rounded-sm" />
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 flex-1" />
+                <Skeleton className="h-3 w-16" />
               </div>
             ))}
           </div>

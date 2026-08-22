@@ -20,9 +20,8 @@ body {
 }
 
 .landing-shell {
-  --landing-stroke-heavy: 4px;
-  --landing-stroke-medium: 3px;
-  --landing-step-duration: 90ms;
+  width: 100%;
+  overflow-x: clip;
   font-family: var(--font-mono);
   -webkit-font-smoothing: none;
 }
@@ -125,7 +124,7 @@ body {
   background-position: 0 0;
   background-size: 8px 8px;
   opacity: 0.3;
-  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.5) 0%, transparent 30%);
+  mask-image: linear-gradient(to bottom, var(--mask-soft) 0%, transparent 30%);
   animation: landing-dither 9s linear infinite;
 }
 
@@ -133,11 +132,17 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: var(--z-landing-overlay);
   pointer-events: none;
   background-image: repeating-linear-gradient(180deg, var(--color-ink) 0 1px, transparent 1px 3px);
   opacity: 0.08;
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 24%, transparent 80%, #000 100%);
+  mask-image: linear-gradient(
+    to bottom,
+    var(--mask-opaque) 0%,
+    transparent 24%,
+    transparent 80%,
+    var(--mask-opaque) 100%
+  );
 }
 
 @keyframes landing-dither {
@@ -157,7 +162,10 @@ html.is-editor body,
 html.is-editor #root {
   height: 100%;
   overflow: hidden;
-  --editor-compact-rail: 56px;
+}
+
+.landing-action-cta {
+  box-shadow: var(--shadow-pixel-cta);
 }
 
 .bpmn-canvas-host {
@@ -188,6 +196,11 @@ html.is-editor #root {
   inset: 0;
 }
 
+.bpmn-editor-stage .bpmn-canvas:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
 @media (max-width: 560px) {
   .bpmn-editor-stage {
     flex-direction: column;
@@ -208,7 +221,7 @@ html.is-editor #root {
   left: 0;
   top: 0;
   pointer-events: none;
-  z-index: 2;
+  z-index: var(--z-import-hold);
 }
 
 /* Default bpmn-js strip — replaced by the semantic rail */

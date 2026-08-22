@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.describe('landing page visual regression', () => {
   test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/api/auth/status', async (route) => {
       await route.fulfill({
         json: {
@@ -20,7 +21,7 @@ test.describe('landing page visual regression', () => {
     await expect(page.locator('[aria-busy="false"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     // Wait for the showcase viewer to render
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.getByTestId('showcase-preview')).toBeVisible();
     await expect(page).toHaveScreenshot('landing-desktop.png', {
       animations: 'disabled',
       caret: 'hide',
@@ -35,7 +36,7 @@ test.describe('landing page visual regression', () => {
     await expect(page.locator('header')).toContainText('BPMN');
     await expect(page.locator('[aria-busy="false"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
-    await expect(page.locator('.djs-shape').first()).toBeVisible();
+    await expect(page.getByTestId('showcase-preview')).toBeVisible();
     await expect(page).toHaveScreenshot('landing-mobile.png', {
       animations: 'disabled',
       caret: 'hide',

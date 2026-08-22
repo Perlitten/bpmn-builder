@@ -6,6 +6,7 @@ import { issueTestSession } from '../auth/testSession.js';
 import { hashOAuthStateNonce, parseOAuthState } from '../auth/session.js';
 import { OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
+import { isSafeRelayOrigin } from './auth.js';
 
 const listen = (app: ReturnType<typeof createApp>) =>
   new Promise<{ server: http.Server; url: string }>((resolve) => {
@@ -39,6 +40,21 @@ describe('google auth and process isolation', () => {
     process.env.GOOGLE_CLIENT_SECRET = 'google-client-secret';
     resetDbForTests();
     await migrate();
+  });
+
+  it('allows only explicitly configured OAuth relay deployments', () => {
+    const env = {
+      NODE_ENV: 'production',
+      OAUTH_RELAY_ORIGINS:
+        'https://bpmn-builder.vercel.app,https://bpmn-builder-*.perlittens-projects.vercel.app',
+    } as NodeJS.ProcessEnv;
+    expect(isSafeRelayOrigin('https://bpmn-builder.vercel.app', env)).toBe(true);
+    expect(isSafeRelayOrigin('https://bpmn-builder-git-a.perlittens-projects.vercel.app', env)).toBe(true);
+    expect(isSafeRelayOrigin('https://attacker.vercel.app', env)).toBe(false);
+    expect(isSafeRelayOrigin('https://bpmn-builder.attacker.vercel.app', env)).toBe(false);
+    expect(isSafeRelayOrigin('https://bpmn-builder.vercel.app/path', env)).toBe(false);
+    expect(isSafeRelayOrigin('http://localhost:5173', env)).toBe(false);
+    expect(isSafeRelayOrigin('http://localhost:5173', { NODE_ENV: 'test' })).toBe(true);
   });
 
   afterEach(async () => {
@@ -86,10 +102,16 @@ describe('google auth and process isolation', () => {
 
     const status = await fetch(`${url}/api/auth/status`);
     expect(status.status).toBe(200);
-    const body = (await status.json()) as { configured: boolean; error: string; callbackUrl: string };
+    const body = (await status.json()) as {
+      configured: boolean;
+      error: string;
+      callbackUrl: string;
+      user: null;
+    };
     expect(body.configured).toBe(false);
     expect(body.error).toMatch(/GOOGLE_CLIENT_ID/);
     expect(body.callbackUrl).toMatch(/\/api\/auth\/google\/callback$/);
+    expect(body.user).toBeNull();
 
     const start = await fetch(`${url}/api/auth/google`, { redirect: 'manual' });
     expect(start.status).toBe(503);
@@ -166,9 +188,15 @@ describe('google auth and process isolation', () => {
     expect(user.name).toBe('Ada Lovelace');
     expect(user.id).toBeTruthy();
 
+    const bootstrap = await fetch(`${url}/api/auth/status`, {
+      headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` },
+    });
+    expect(bootstrap.status).toBe(200);
+    expect(((await bootstrap.json()) as { user: { email: string } | null }).user?.email).toBe('ada@example.com');
+
     const logout = await fetch(`${url}/api/auth/logout`, {
       method: 'POST',
-      headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` },
+      headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}`, 'X-BPMN-CSRF': '1' },
     });
     expect(logout.status).toBe(200);
     const after = await fetch(`${url}/api/auth/me`, { headers: { Cookie: `${SESSION_COOKIE}=${sessionToken}` } });
@@ -215,7 +243,7 @@ describe('google auth and process isolation', () => {
 
     const completed = await fetch(`${url}/api/auth/complete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-BPMN-CSRF': '1' },
       body: JSON.stringify({ token: handoff.token }),
     });
     expect(completed.status).toBe(200);
@@ -236,7 +264,7 @@ describe('google auth and process isolation', () => {
 
     const created = await fetch(`${url}/api/processes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: alice.cookie },
+      headers: { 'Content-Type': 'application/json', Cookie: alice.cookie, 'X-BPMN-CSRF': '1' },
       body: JSON.stringify({ name: 'Alice invoice' }),
     });
     expect(created.status).toBe(201);
@@ -253,7 +281,7 @@ describe('google auth and process isolation', () => {
 
     const bobPatch = await fetch(`${url}/api/processes/${process.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Cookie: bob.cookie },
+      headers: { 'Content-Type': 'application/json', Cookie: bob.cookie, 'X-BPMN-CSRF': '1' },
       body: JSON.stringify({ name: 'Stolen', version: 1 }),
     });
     expect(bobPatch.status).toBe(404);

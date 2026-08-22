@@ -134,9 +134,9 @@ describe('lintProcess', () => {
     p = splitExclusive(p, { after, name: 'One?' }).process;
     p = splitExclusive(p, { after: p.regions[0]!.join, name: 'Two?' }).process;
     const result = lintProcess(p, { gatewayWarnAt: 3 });
-    expect(result.warnings).toEqual([
+    expect(result.warnings).toContainEqual(
       expect.objectContaining({ id: 'quality.gateway-count', layer: 5 }),
-    ]);
+    );
     expect(result.scores.quality).toBeLessThan(100);
   });
 
@@ -612,6 +612,23 @@ describe('lintProcess', () => {
     const result = lintProcess(parallelModel);
     expect(result.scores.quality).toBe(100);
     expect(result.warnings.filter((f) => f.layer === 5)).toEqual([]);
+  });
+
+  it('fails Quality when requested gateway branches are empty split-to-join arms', () => {
+    const emptyParallel = xml(`
+      <bpmn:startEvent id="S" name="Start" />
+      <bpmn:parallelGateway id="G1" />
+      <bpmn:parallelGateway id="G2" />
+      <bpmn:endEvent id="E" name="End" />
+      <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="G1" />
+      <bpmn:sequenceFlow id="F2" name="Send invoice" sourceRef="G1" targetRef="G2" />
+      <bpmn:sequenceFlow id="F3" name="Notify customer" sourceRef="G1" targetRef="G2" />
+      <bpmn:sequenceFlow id="F4" sourceRef="G2" targetRef="E" />
+    `);
+
+    const result = lintProcess(emptyParallel);
+    expect(result.warnings.filter((finding) => finding.id === 'quality.empty-branch')).toHaveLength(2);
+    expect(result.scores.quality).toBeLessThan(100);
   });
 
   it('does not apply task-verb to an event subprocess, boundary, or gateway collapsed as task', () => {

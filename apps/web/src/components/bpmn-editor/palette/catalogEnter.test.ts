@@ -72,7 +72,7 @@ describe('catalog Enter markup', () => {
         onClose: () => undefined,
       }),
     );
-    expect(html).toMatch(/aria-modal="true"/);
+    expect(html).not.toMatch(/aria-modal="true"/);
     expect(html).toMatch(/role="dialog"/);
   });
 });

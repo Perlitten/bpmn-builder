@@ -15,6 +15,15 @@ const listen = (handler: http.RequestListener) =>
     });
   });
 
+function createAuthenticatedApp() {
+  const app = express();
+  app.use(express.json(), (req, _res, next) => {
+    req.user = { id: 'test-user', email: 'test@example.com', name: 'Test User', avatarUrl: null };
+    next();
+  });
+  return app;
+}
+
 describe('assistant routes', () => {
   const snapshot = { ...process.env };
   const servers: http.Server[] = [];
@@ -31,8 +40,7 @@ describe('assistant routes', () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     process.env.LLM_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => {
       throw new Error('should not call the model');
     });
@@ -50,8 +58,7 @@ describe('assistant routes', () => {
     process.env.AI_PROVIDER = 'nvidia';
     delete process.env.NVIDIA_API_KEY;
     process.env.LLM_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app);
     const { server, url } = await listen(app);
     servers.push(server);
@@ -67,8 +74,7 @@ describe('assistant routes', () => {
 
   it('executes a semantic tool plan without an LLM', async () => {
     delete process.env.NVIDIA_API_KEY;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => {
       throw new Error('should not call the model');
     });
@@ -105,8 +111,7 @@ describe('assistant routes', () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     process.env.LLM_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -132,8 +137,7 @@ describe('assistant routes', () => {
   it('applies LLM tools when the model only proposes names and args', async () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -159,8 +163,7 @@ describe('assistant routes', () => {
 
   it('refuses tools that mutate a locked branch or leave the posted scope', async () => {
     delete process.env.NVIDIA_API_KEY;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => {
       throw new Error('should not call the model');
     });
@@ -233,8 +236,7 @@ describe('assistant routes', () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     process.env.ASSISTANT_TIMEOUT_MS = '40';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -264,8 +266,7 @@ describe('assistant routes', () => {
     });
     servers.push(upstream.server);
     process.env.NVIDIA_BASE_URL = upstream.url;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app);
     const { server, url } = await listen(app);
     servers.push(server);
@@ -286,8 +287,7 @@ describe('assistant routes', () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     let called = 0;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -315,8 +315,7 @@ describe('assistant routes', () => {
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     process.env.ASSISTANT_TIMEOUT_MS = '40';
     let called = 0;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -342,8 +341,7 @@ describe('assistant routes', () => {
   it('returns 503 for a greeting when AI is not configured', async () => {
     process.env.AI_PROVIDER = 'nvidia';
     delete process.env.NVIDIA_API_KEY;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app);
     const { server, url } = await listen(app);
     servers.push(server);
@@ -362,8 +360,7 @@ describe('assistant routes', () => {
   it('returns 502 when the provider is silent', async () => {
     process.env.AI_PROVIDER = 'nvidia';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => ({
       provider: 'nvidia',
       model: 'nvidia/nemotron-3-super-120b-a12b',
@@ -386,8 +383,7 @@ describe('assistant routes', () => {
 
   it('returns 400 when posted BPMN XML cannot be read', async () => {
     delete process.env.NVIDIA_API_KEY;
-    const app = express();
-    app.use(express.json());
+    const app = createAuthenticatedApp();
     registerAssistantRoutes(app, () => {
       throw new Error('should not call the model');
     });

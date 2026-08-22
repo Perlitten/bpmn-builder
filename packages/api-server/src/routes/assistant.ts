@@ -10,6 +10,7 @@ import {
   whenAborted,
 } from '../ai/timeout.js';
 import type { AiModelClient, ChatTurn } from '../ai/types.js';
+import { createAssistantRequestGate } from '../ai/requestGate.js';
 
 type ClientFactory = () => AiModelClient;
 
@@ -41,7 +42,13 @@ function sendJson(res: Response, status: number, body: unknown): void {
 }
 
 function createAssistantHandler(getClient: ClientFactory = getAiClient) {
+  const requestGate = createAssistantRequestGate();
   return async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      sendJson(res, 401, { error: 'Sign in required' });
+      return;
+    }
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
     const tools = Array.isArray(req.body?.tools) ? req.body.tools : undefined;
     const hasTools = Boolean(tools?.length);
@@ -58,6 +65,13 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
         provider: info.provider,
         model: info.model,
       });
+      return;
+    }
+
+    const lease = requestGate.acquire(userId);
+    if (!lease.ok) {
+      res.setHeader('Retry-After', String(lease.retryAfterSeconds));
+      sendJson(res, 429, { error: 'Too many Architect requests. Try again shortly.' });
       return;
     }
 
@@ -119,6 +133,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     } finally {
       clearTimeout(timer);
       res.off('close', onClose);
+      lease.release();
     }
   };
 }

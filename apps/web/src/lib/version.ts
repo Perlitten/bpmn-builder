@@ -5,7 +5,9 @@ export function resolveCommitSha(sha?: string): string {
   if (!sha || !sha.trim()) {
     return 'dev';
   }
-  return sha.trim().slice(0, 7);
+  const cleanSha = sha.trim();
+  const dirty = cleanSha.endsWith('-dirty');
+  return `${cleanSha.replace(/-dirty$/, '').slice(0, 7)}${dirty ? '-dirty' : ''}`;
 }
 
 export function formatVersionInfo(version: string, sha?: string): string {
@@ -14,7 +16,5 @@ export function formatVersionInfo(version: string, sha?: string): string {
 }
 
 export function getBuildVersionInfo(): string {
-  const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.1.0';
-  const rawSha = typeof __COMMIT_SHA__ !== 'undefined' ? __COMMIT_SHA__ : undefined;
-  return formatVersionInfo(version, rawSha);
+  return formatVersionInfo(__APP_VERSION__, __COMMIT_SHA__);
 }

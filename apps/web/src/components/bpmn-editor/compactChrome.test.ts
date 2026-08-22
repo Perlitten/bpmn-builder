@@ -10,7 +10,7 @@ const dir = dirname(fileURLToPath(import.meta.url));
 
 const chromeProps = {
   name: 'Order',
-  saving: false,
+  savePhase: 'idle' as const,
   savedAt: null,
   busy: false,
   notice: null,
@@ -48,11 +48,6 @@ describe('compact editor chrome', () => {
     expect(css).toMatch(/\.architect-shell\.is-docked/);
     expect(css).toMatch(/\.architect-shell\.is-collapsed/);
     expect(css).toMatch(/--editor-compact-rail/);
-  });
-
-  it('hides the process-list Architect chip on compact so rows stay clickable', () => {
-    const css = readFileSync(join(dir, 'architect/architect.css'), 'utf8');
-    expect(css).toMatch(/@media \(max-width: 560px\)[\s\S]*\.architect-list-dock\s*\{\s*display:\s*none/);
   });
 
   it('keeps a single-row compact header with only Simulate and More as actions', () => {
@@ -98,8 +93,7 @@ describe('compact editor chrome', () => {
     );
     expect(html).toContain(status);
     expect(html).toContain('Stop');
-    expect(html).toMatch(/sm:inline/);
-    expect(html).not.toMatch(/lg:inline/);
+    expect(html).not.toMatch(/max-w-\[min\(28rem,40vw\)\]/);
     const css = readFileSync(join(dir, '../../index.css'), 'utf8');
     expect(css).toMatch(/sim-choice/);
     expect(css).toMatch(/stroke-dasharray/);

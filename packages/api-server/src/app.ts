@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import { attachCookies } from './auth/cookies.js';
+import { AuthConfigurationError } from './auth/env.js';
 import { attachSession, requireAuth } from './auth/middleware.js';
+import { csrfProtection } from './auth/csrf.js';
 import './auth/types.js';
 import { registerRoutes } from './routes/index.js';
 
@@ -39,6 +41,7 @@ export function createApp(): express.Express {
   app.use(attachCookies);
   app.use(attachSession);
   app.use(requireAuth);
+  app.use(csrfProtection);
   registerRoutes(app);
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'not found' });
@@ -53,6 +56,10 @@ export function createApp(): express.Express {
       (typeof err === 'object' && err !== null && (err as { type?: string }).type === 'entity.parse.failed');
     if (parseFailed) {
       res.status(400).json({ error: 'invalid JSON' });
+      return;
+    }
+    if (err instanceof AuthConfigurationError) {
+      res.status(503).json({ error: err.message });
       return;
     }
     const requestId = String(res.getHeader('X-Request-Id') ?? 'unknown');

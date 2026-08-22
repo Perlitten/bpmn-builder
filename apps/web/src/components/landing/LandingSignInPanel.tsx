@@ -20,9 +20,9 @@ export function LandingSignInPanel({
           <span className="absolute -top-3 left-5 bg-canvas px-2 font-mono text-xs font-medium leading-none tracking-[0.14em] text-ink-soft">
             PLAYER 1
           </span>
-          <h2 className="font-display text-3xl font-bold leading-tight text-ink">Sign in to save processes</h2>
+          <h2 className="font-display text-2xl font-bold leading-[1.3] text-ink">Sign in to save processes</h2>
           <p className="mt-3 text-pretty font-mono text-xs leading-7 text-ink-soft">
-            Google OAuth only. Saved diagrams stay private to this account, with no password or trial timer.
+            Signing in is what lets you save and manage your processes. Google OAuth only. Your BPMN diagrams stay private to this account.
           </p>
 
           {oauthError ? (
@@ -32,7 +32,7 @@ export function LandingSignInPanel({
             </div>
           ) : null}
 
-          <GoogleSignInAction configured={configured} className="mt-6" />
+          <GoogleSignInAction configured={configured} label="CONTINUE WITH GOOGLE" className="mt-6" />
 
           {setupError ? (
             <div className="mt-4 border-2 border-line-strong p-3 font-mono text-[11px] leading-5 text-ink-soft" role="alert">

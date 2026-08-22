@@ -35,15 +35,45 @@ const XOR = `<?xml version="1.0" encoding="UTF-8"?>
 </definitions>`;
 
 function summary(name: string, xml: string): ProcessSummary {
+  const branched = xml === XOR;
+  const nodes = branched
+    ? [
+        { id: 'S', type: 'startEvent', label: 'Start', x: 0, y: 60 },
+        { id: 'T1', type: 'task', label: 'Submit', x: 120, y: 54 },
+        { id: 'G', type: 'exclusiveGateway', label: '', x: 260, y: 56 },
+        { id: 'T2', type: 'task', label: 'Approve', x: 380, y: 0 },
+        { id: 'T3', type: 'task', label: 'Reject', x: 380, y: 110 },
+      ]
+    : [
+        { id: 'S', type: 'startEvent', label: 'Start', x: 0, y: 0 },
+        { id: 'T', type: 'task', label: 'Task', x: 120, y: 0 },
+        { id: 'E', type: 'endEvent', label: 'End', x: 260, y: 0 },
+      ];
   return {
     id: name,
     name,
     description: null,
     status: 'draft',
-    bpmnXml: xml,
     version: 1,
     createdAt: '2026-08-13T00:00:00.000Z',
     updatedAt: '2026-08-13T00:00:00.000Z',
+    structure: branched ? '3 tasks · 1 XOR · 2 branches · 2 ends' : 'Starter · 1 task · 1 end',
+    quality: { errors: 0, warnings: branched ? 3 : 0, style: 1 },
+    preview: {
+      caption: branched ? 'Start → Submit → Exclusive gateway' : 'Start → Task → End',
+      nodes,
+      edges: branched
+        ? [
+            { source: 'S', target: 'T1' },
+            { source: 'T1', target: 'G' },
+            { source: 'G', target: 'T2' },
+            { source: 'G', target: 'T3' },
+          ]
+        : [
+            { source: 'S', target: 'T' },
+            { source: 'T', target: 'E' },
+          ],
+    },
   };
 }
 
@@ -61,7 +91,7 @@ describe('ProcessRow', () => {
     expect(xor).toContain('Approval');
     expect(xor).toMatch(/XOR/);
     expect(xor).toMatch(/2 branches/);
-    expect(xor).not.toContain('role="img"');
+    expect(xor).toContain('role="img"');
     expect(xor).not.toContain('Starter · 1 task · 1 end');
     expect(starter).not.toMatch(/BPMN \d+|Style \d+|Quality \d+|Execution \d+|Layout /);
     expect(xor).not.toMatch(/BPMN \d+|Style \d+|Quality \d+|Execution \d+|Layout /);

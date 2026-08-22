@@ -1,4 +1,4 @@
-export { bpmnToWorkflow, workflowToBpmn } from './workflow.js';
+export { bpmnToWorkflow, workflowToBpmn, workflowToProcess } from './workflow.js';
 export {
   BPMN_20_MODEL_NS,
   BPMN_20_NS,

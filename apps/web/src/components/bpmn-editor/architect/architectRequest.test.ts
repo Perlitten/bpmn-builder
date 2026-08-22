@@ -88,11 +88,8 @@ describe('Architect chrome markup', () => {
 
   it('submits Architect compose on Enter, not only ⌘/Ctrl+Enter', () => {
     const panel = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
-    const list = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
     expect(panel).toMatch(/isArchitectComposeSubmitKey/);
-    expect(list).toMatch(/isArchitectComposeSubmitKey/);
     expect(panel).not.toMatch(/event\.key === 'Enter' && \(event\.metaKey \|\| event\.ctrlKey\)/);
-    expect(list).not.toMatch(/event\.key === 'Enter' && \(event\.metaKey \|\| event\.ctrlKey\)/);
   });
 
   it('sends greetings through the same Architect request path', () => {
@@ -103,35 +100,23 @@ describe('Architect chrome markup', () => {
     expect(src).toMatch(/ASSISTANT_TIMEOUT_MS/);
   });
 
-  it('lets list Architect create be cancelled', () => {
-    const src = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
-    expect(src).toMatch(/AbortController/);
-    expect(src).toMatch(/AbortSignal/);
-    expect(src).toMatch(/\bCancel\b/);
-    expect(src).toMatch(/aria-modal="true"/);
-    expect(src).not.toMatch(/board|process vibes|flow buddy/i);
+  it('shows a real transcript and only celebrates applied edits', () => {
+    const panel = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
+    expect(panel).toMatch(/className="architect-conversation"/);
+    expect(panel).toMatch(/role="log"/);
+    expect(panel).toMatch(/setSuccess\(result\.applied\)/);
+    expect(panel).not.toMatch(/setSuccess\(true\)/);
+    expect(css).toMatch(/\.architect-conversation \{[\s\S]*max-height:[\s\S]*overflow:\s*auto/);
+    expect(css).toMatch(/\.architect-turn p \{[\s\S]*white-space:\s*pre-wrap/);
   });
 
   it('keeps Architect panel chrome readable on white', () => {
     const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
     expect(css).toMatch(/\.architect-panel \{[\s\S]*--architect-edge:/);
     expect(css).toMatch(/\.architect-panel textarea::placeholder[\s\S]*opacity:\s*1/);
-    expect(css).toMatch(/\.architect-apply \{[\s\S]*background:\s*var\(--color-ink\)/);
-    expect(css).toMatch(/\.architect-apply:disabled \{[\s\S]*opacity:\s*1/);
     expect(css).toMatch(/\.architect-scope-options label \{[\s\S]*color:\s*var\(--color-ink\)/);
     expect(css).toMatch(/\.architect-scope-options label\.is-disabled \{[\s\S]*opacity:\s*1/);
     expect(css).not.toMatch(/label\.is-disabled \{[\s\S]*opacity:\s*0\./);
-    const list = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
-    expect(list).toMatch(/className="architect-meta"/);
-    expect(list).not.toMatch(/text-muted/);
-  });
-
-  it('portals the list Architect input below the header bar', () => {
-    const src = readFileSync(new URL('./ListArchitect.tsx', import.meta.url), 'utf8');
-    const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
-    expect(src).toMatch(/createPortal/);
-    expect(src).toMatch(/listArchitectPanelBox/);
-    expect(css).toMatch(/\.architect-panel\.architect-list-panel[\s\S]*position:\s*fixed/);
-    expect(css).toMatch(/z-index:\s*var\(--z-architect-list\)/);
   });
 });

@@ -18,6 +18,24 @@ describe('runAssistant greetings', () => {
     expect(data.message).toMatch(/hello|add|split|rename/i);
   });
 
+  it('does not present stale action prose as a successful edit when no tool ran', async () => {
+    const data = await runAssistant(
+      {
+        provider: 'nvidia',
+        model: 'test',
+        generateJson: vi.fn(async () => ({
+          message: 'Added a review task after Check.',
+          tools: [],
+        })),
+      },
+      { message: 'abracadabra', process: createProcess() },
+    );
+    expect(data.tools).toEqual([]);
+    expect(data.results).toEqual([]);
+    expect(data.message).toMatch(/couldn't map|describe/i);
+    expect(data.message).not.toMatch(/added a review task/i);
+  });
+
   it('still requires a configured model for a greeting or a real edit', async () => {
     await expect(runAssistant(null, { message: 'привет', process: createProcess() })).rejects.toThrow(
       /not configured/i,

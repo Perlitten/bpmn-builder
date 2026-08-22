@@ -45,6 +45,7 @@ export type QueryBuilderChain = {
   offset: (n: number) => QueryBuilderChain;
   set: (values: Record<string, unknown>) => QueryBuilderChain;
   values: (values: unknown) => QueryBuilderChain;
+  returning: (fields?: Record<string, unknown>) => Promise<Record<string, unknown>[]>;
   then: <TResult1 = unknown, TResult2 = never>(
     onfulfilled?: ((value: unknown) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
@@ -104,6 +105,9 @@ function createDb(): AppDb {
   }
   const file = resolveSqlitePath();
   sqlite = new Database(file);
+  sqlite.function('unicode_lower', { deterministic: true }, (value: unknown) =>
+    value == null ? '' : String(value).normalize('NFKC').toLocaleLowerCase(),
+  );
   sqlite.pragma('busy_timeout = 5000');
   sqlite.pragma('foreign_keys = ON');
   if (file !== ':memory:') sqlite.pragma('journal_mode = WAL');

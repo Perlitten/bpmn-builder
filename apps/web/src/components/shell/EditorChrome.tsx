@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button, ChromeMenu, ChromeMenuItem, ConfirmDialog, SaveStatus, TextField } from '../ui';
 import { useCompactViewport } from '../bpmn-editor/compactViewport';
+import type { ProcessSavePhase } from '../../lib/processSaveQueue';
 
 function MenuIcon({ icon: Icon }: { icon: LucideIcon }) {
   return <Icon size={14} strokeWidth={1.75} aria-hidden />;
@@ -20,7 +21,7 @@ function MenuIcon({ icon: Icon }: { icon: LucideIcon }) {
 
 type EditorChromeProps = {
   name: string;
-  saving: boolean;
+  savePhase: ProcessSavePhase;
   savedAt: string | null;
   busy: boolean;
   notice: string | null;
@@ -42,7 +43,7 @@ type EditorChromeProps = {
 
 export function EditorChrome({
   name,
-  saving,
+  savePhase,
   savedAt,
   busy,
   notice,
@@ -67,10 +68,10 @@ export function EditorChrome({
   const live = [notice, simulating ? simStatus : null].filter(Boolean).join(' · ');
 
   return (
-    <header className="editor-chrome z-20 flex h-11 shrink-0 flex-nowrap items-center gap-2 overflow-visible border-b border-border bg-canvas px-2 sm:px-3">
+    <header className="editor-chrome z-[var(--z-chrome)] flex h-11 shrink-0 flex-nowrap items-center gap-2 overflow-visible border-b border-border bg-canvas px-2 sm:px-3">
       <a
         href="#process-diagram"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[500] focus:bg-canvas focus:px-3 focus:py-1.5 focus:text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[var(--z-skip-link)] focus:bg-canvas focus:px-3 focus:py-1.5 focus:text-sm"
       >
         Skip to diagram
       </a>
@@ -91,21 +92,13 @@ export function EditorChrome({
           if (event.key === 'Enter') event.currentTarget.blur();
         }}
       />
-      <SaveStatus saving={saving} savedAt={savedAt} />
+      <SaveStatus phase={savePhase} savedAt={savedAt} />
       {live ? (
         <span className="sr-only" aria-live="polite">
           {live}
         </span>
       ) : null}
       {notice && !compact ? <span className="max-w-[10rem] truncate text-xs text-accent">{notice}</span> : null}
-      {simulating && simStatus && !compact ? (
-        <span
-          className="hidden min-w-0 max-w-[min(28rem,40vw)] truncate font-mono text-xs text-ink sm:inline"
-          title={simStatus}
-        >
-          {simStatus}
-        </span>
-      ) : null}
       <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
         <Button
           variant={simulating ? 'accent' : 'outline'}
