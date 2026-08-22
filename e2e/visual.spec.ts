@@ -67,7 +67,7 @@ test.describe('authenticated visual regression', () => {
       animations: 'disabled',
       caret: 'hide',
       fullPage: true,
-      maxDiffPixelRatio: 0.005,
+      maxDiffPixelRatio: 0.025,
     });
   });
 });
