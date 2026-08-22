@@ -88,7 +88,14 @@ export type BpmnEditorHandle = {
   resetSimulation: () => void;
 };
 
-type Viewbox = { x: number; y: number; width: number; height: number; scale?: number };
+type Viewbox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale?: number;
+  outer?: { width: number; height: number };
+};
 
 type CanvasService = {
   zoom: (scale?: string | number, center?: string) => number;
