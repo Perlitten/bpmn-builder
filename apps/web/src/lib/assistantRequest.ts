@@ -64,6 +64,10 @@ export function mapAssistantError(err: unknown, userCancelled: boolean): Error {
   if (isAbortError(err)) {
     return timeoutFailure(ASSISTANT_TIMEOUT_MS);
   }
+  const rawMessage = err instanceof Error ? err.message : String(err);
+  if (/failed to fetch|networkerror|network request failed/i.test(rawMessage)) {
+    return new Error('Architect could not reach the server. Check your connection and retry; the process was left unchanged.');
+  }
   const mapped = diagramImportError(err);
   if (mapped.message === 'Could not import the generated BPMN diagram') {
     return new Error('Could not apply the generated diagram. The process was left unchanged.');

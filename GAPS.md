@@ -15,6 +15,7 @@ Updated 2026-08-22. This is the maintained product/architecture gap list; histor
 
 - **bpmn-js fallback mutations** — replace, delete, and boundary attach still have a bpmn-js/adopt-XML fallback after the semantic operation fails. The fallback preserves usability but means the compiler is not yet the only editor.
 - **Full relayout** — semantic commits rebuild the full layout. Local relayout and a dedicated feedback-edge corridor are not implemented.
+- **Feedback-loop authoring** — the semantic editor and Architect have no operation for creating a backward sequence flow, and layout has no safe feedback corridor. Approval/rework loops therefore require an explicit graph-and-layout product change rather than a prompt-only fix.
 - **Legacy persistence projection** — records store canonical `bpmnXml` plus a derived `workflowJson` projection containing layout coordinates. Removing it requires an explicit data migration/compatibility plan.
 - **Multiple interpretation paths** — the canonical adapter uses `bpmn-moddle`, while rules and the legacy workflow projection retain their own model/parsing paths.
 - **Registry capability contract** — `implemented` gates the UI/kernel, while registry `canCreate` can still describe legal context for an unimplemented definition. Consolidating these semantics would change current fallback behavior and needs a deliberate migration.

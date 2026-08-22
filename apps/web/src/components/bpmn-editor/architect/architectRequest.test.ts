@@ -100,6 +100,17 @@ describe('Architect chrome markup', () => {
     expect(src).toMatch(/ASSISTANT_TIMEOUT_MS/);
   });
 
+  it('shows a real transcript and only celebrates applied edits', () => {
+    const panel = readFileSync(new URL('./ArchitectPanel.tsx', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
+    expect(panel).toMatch(/className="architect-conversation"/);
+    expect(panel).toMatch(/role="log"/);
+    expect(panel).toMatch(/setSuccess\(result\.applied\)/);
+    expect(panel).not.toMatch(/setSuccess\(true\)/);
+    expect(css).toMatch(/\.architect-conversation \{[\s\S]*max-height:[\s\S]*overflow:\s*auto/);
+    expect(css).toMatch(/\.architect-turn p \{[\s\S]*white-space:\s*pre-wrap/);
+  });
+
   it('keeps Architect panel chrome readable on white', () => {
     const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
     expect(css).toMatch(/\.architect-panel \{[\s\S]*--architect-edge:/);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, ne, or, sql } from 'drizzle-orm';
-import { getProcessesTable, getQueryDb } from '../../../db/src/index.js';
+import { getDbDriver, getProcessesTable, getQueryDb } from '../../../db/src/index.js';
 import {
   BpmnImportError,
   bpmnToWorkflow,
@@ -248,7 +248,7 @@ export type ProcessListResult = {
 };
 
 function likePattern(q: string): string {
-  return `%${q.toLowerCase().replace(/[%_]/g, '')}%`;
+  return `%${q.normalize('NFKC').toLocaleLowerCase().replace(/[%_]/g, '')}%`;
 }
 
 function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessListQuery, userId: string) {
@@ -257,9 +257,13 @@ function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessLi
   if (query.kind === 'process') parts.push(ne(table.status, 'template'));
   if (query.q) {
     const pattern = likePattern(query.q);
+    const normalizedName = getDbDriver() === 'sqlite' ? sql`unicode_lower(${table.name})` : sql`lower(${table.name})`;
+    const normalizedDescription = getDbDriver() === 'sqlite'
+      ? sql`unicode_lower(coalesce(${table.description}, ''))`
+      : sql`lower(coalesce(${table.description}, ''))`;
     const search = or(
-      sql`lower(${table.name}) like ${pattern}`,
-      sql`lower(coalesce(${table.description}, '')) like ${pattern}`,
+      sql`${normalizedName} like ${pattern}`,
+      sql`${normalizedDescription} like ${pattern}`,
     );
     if (search) parts.push(search);
   }
@@ -273,7 +277,7 @@ export async function listProcesses(query: ProcessListQuery, userId: string): Pr
   const table = getProcessesTable();
   const where = listWhere(table, query, userId);
   const offset = (query.page - 1) * query.limit;
-  const normalizedName = sql`lower(${table.name})`;
+  const normalizedName = getDbDriver() === 'sqlite' ? sql`unicode_lower(${table.name})` : sql`lower(${table.name})`;
   const order = (() => {
     if (query.sort === 'updated_asc') return [asc(table.updatedAt), asc(normalizedName), asc(table.id)];
     if (query.sort === 'name_asc') return [asc(normalizedName), desc(table.updatedAt), asc(table.id)];
@@ -349,7 +353,7 @@ export async function listTemplates(query: ProcessListQuery, userId: string): Pr
   const db = getQueryDb();
   const table = getProcessesTable();
   const where = listWhere(table, { ...query, kind: 'template' }, userId);
-  const q = query.q.toLocaleLowerCase();
+  const q = query.q.normalize('NFKC').toLocaleLowerCase();
   const builtins = builtinTemplateRows()
     .filter((row) => !q || `${row.name} ${row.description ?? ''}`.toLocaleLowerCase().includes(q))
     .sort((a, b) => compareBuiltinTemplates(a, b, query.sort));
@@ -357,7 +361,7 @@ export async function listTemplates(query: ProcessListQuery, userId: string): Pr
   const selectedBuiltins = builtins.slice(offset, offset + query.limit);
   const userOffset = Math.max(0, offset - builtins.length);
   const userLimit = Math.max(0, query.limit - selectedBuiltins.length);
-  const normalizedName = sql`lower(${table.name})`;
+  const normalizedName = getDbDriver() === 'sqlite' ? sql`unicode_lower(${table.name})` : sql`lower(${table.name})`;
   const order = (() => {
     if (query.sort === 'updated_asc') return [asc(table.updatedAt), asc(normalizedName), asc(table.id)];
     if (query.sort === 'name_asc') return [asc(normalizedName), desc(table.updatedAt), asc(table.id)];

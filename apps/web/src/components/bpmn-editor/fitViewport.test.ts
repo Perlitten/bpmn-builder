@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PALETTE_RAIL_WIDTH } from './layoutMetrics';
 import {
@@ -64,6 +65,14 @@ describe('remainingCanvas', () => {
     const remaining = remainingCanvas(canvas, [rect(720, 360, 1000, 600)]);
     expect(remaining.width * remaining.height).toBeGreaterThan(700 * 350);
     expect(remaining.right === 720 || remaining.bottom === 360).toBe(true);
+  });
+});
+
+describe('collectFitObstacles', () => {
+  it('does not shrink fit around a movable Architect overlay', () => {
+    const source = readFileSync(new URL('./fitViewport.ts', import.meta.url), 'utf8');
+    expect(source).toContain("querySelector('.architect-shell.is-docked.is-open')");
+    expect(source).not.toMatch(/querySelector\('\.architect-shell'\)/);
   });
 });
 

@@ -93,8 +93,7 @@ describe('compact editor chrome', () => {
     );
     expect(html).toContain(status);
     expect(html).toContain('Stop');
-    expect(html).toMatch(/sm:inline/);
-    expect(html).not.toMatch(/lg:inline/);
+    expect(html).not.toMatch(/max-w-\[min\(28rem,40vw\)\]/);
     const css = readFileSync(join(dir, '../../index.css'), 'utf8');
     expect(css).toMatch(/sim-choice/);
     expect(css).toMatch(/stroke-dasharray/);

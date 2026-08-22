@@ -50,6 +50,10 @@ describe('architect catalog prompt', () => {
     expect(prompt).toMatch(/inspect\* is the process graph, not the component catalog/);
     expect(prompt).toMatch(/assignLane \{ nodeId, laneId \}/);
     expect(prompt).toMatch(/not for boundary events/);
+    expect(prompt).toMatch(/Branch names label sequence flows; they do not create tasks/);
+    expect(prompt).toMatch(/call addTask once per unique branch name using branchId/);
+    expect(prompt).toMatch(/first addLane creates the host participant automatically/);
+    expect(prompt).toMatch(/never pass a Lane_\* id as participantId/);
   });
 
   it('drops unsolicited pool tools on a registration flow', () => {

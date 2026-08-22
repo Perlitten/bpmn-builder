@@ -51,7 +51,9 @@ import {
   applySpacePanDown,
   applySpacePanUp,
   bindKeyboardToHost,
+  canvasNavigationTarget,
   createSpacePanHold,
+  isCanvasNavigationKey,
   isCopyKey,
   isPasteKey,
   isRedoKey,
@@ -104,6 +106,11 @@ type Dragging = { cancel: () => void };
 type SelectionService = {
   get: () => DiagramElement[];
   select: (el: unknown) => void;
+};
+
+type ElementRegistry = {
+  filter: (fn: (el: DiagramElement) => boolean) => DiagramElement[];
+  get: (id: string) => DiagramElement | undefined;
 };
 
 type EventBus = {
@@ -174,6 +181,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [hint, setHint] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState(() => !readEditorOnboardingSeen());
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  const [canvasAnnouncement, setCanvasAnnouncement] = useState('');
   const compact = useCompactViewport();
 
   onSimStatusRef.current = onSimStatus;
@@ -357,7 +365,8 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     };
 
     let cancelled = false;
-    void createSemanticEditor(writer, usableXml(xmlRef.current)).then((session) => {
+    const sourceXml = usableXml(xmlRef.current);
+    void createSemanticEditor(writer, sourceXml).then((session) => {
       if (cancelled) return;
       sessionRef.current = session;
       if (simulatingRef.current) {
@@ -396,9 +405,14 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       };
       eventBus.on('commandStack.element.updateLabel.executed', onLabel);
 
-      void session.bootstrap().catch((error: Error) => {
-        console.error('Failed to import BPMN XML', error);
-      });
+      void session
+        .bootstrap()
+        .then((canonicalXml) => {
+          if (!cancelled && xmlRef.current === sourceXml && canonicalXml !== sourceXml) emit(canonicalXml);
+        })
+        .catch((error: Error) => {
+          console.error('Failed to import BPMN XML', error);
+        });
     });
 
     const onViewbox = (payload?: unknown) => {
@@ -471,6 +485,48 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       const modeler = modelerRef.current;
       const session = sessionRef.current;
       if (!modeler || !session) return;
+      const canvasFocused = event.target === canvasRef.current;
+      if (canvasFocused && isCanvasNavigationKey(event.key)) {
+        const registry = modeler.get('elementRegistry') as ElementRegistry;
+        const seen = new Set<string>();
+        const elements = registry
+          .filter((candidate) => !!selectableElement(candidate))
+          .map((candidate) => selectableElement(candidate))
+          .filter((candidate): candidate is DiagramElement => {
+            if (!candidate || seen.has(candidate.id)) return false;
+            seen.add(candidate.id);
+            return true;
+          })
+          .sort((a, b) => (a.y ?? Number.MAX_SAFE_INTEGER) - (b.y ?? Number.MAX_SAFE_INTEGER)
+            || (a.x ?? Number.MAX_SAFE_INTEGER) - (b.x ?? Number.MAX_SAFE_INTEGER)
+            || a.id.localeCompare(b.id));
+        const selectedId = (modeler.get('selection') as SelectionService).get().map(selectableElement)[0]?.id;
+        const nextId = canvasNavigationTarget(elements.map((element) => element.id), selectedId, event.key);
+        const next = nextId ? registry.get(nextId) : undefined;
+        if (!next) return;
+        event.preventDefault();
+        event.stopPropagation();
+        (modeler.get('selection') as SelectionService).select(next);
+        if (typeof next.x === 'number' && typeof next.y === 'number') {
+          panCanvasToShape(
+            modeler.get('canvas') as CanvasService,
+            { x: next.x, y: next.y, width: next.width ?? 0, height: next.height ?? 0 },
+            overlayRef.current,
+          );
+        }
+        const index = elements.findIndex((element) => element.id === next.id);
+        const name = next.businessObject?.name?.trim() || next.type.replace(/^bpmn:/, '') || next.id;
+        setCanvasAnnouncement(`${name}, ${index + 1} of ${elements.length}`);
+        return;
+      }
+      if (canvasFocused && event.key === 'Enter') {
+        const selected = (modeler.get('selection') as SelectionService).get().map(selectableElement)[0];
+        if (!selected) return;
+        event.preventDefault();
+        event.stopPropagation();
+        document.querySelector<HTMLInputElement>('.element-inspector [data-element-name]')?.focus();
+        return;
+      }
       if (isUndoKey(event)) {
         event.preventDefault();
         event.stopPropagation();
@@ -503,8 +559,8 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         return;
       }
       if (event.key !== 'Backspace' && event.key !== 'Delete') return;
-      if (!(event.target instanceof Element) || !event.target.closest('.djs-container')) return;
-      if (event.target.closest('button, a, input, textarea, select')) return;
+      if (!canvasFocused && (!(event.target instanceof Element) || !event.target.closest('.djs-container'))) return;
+      if (event.target instanceof Element && event.target.closest('button, a, input, textarea, select')) return;
       const selected = (modeler.get('selection') as SelectionService).get();
       const target = selected.map(selectableElement).find((el): el is DiagramElement => !!el);
       if (!target) return;
@@ -744,6 +800,9 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       />
       <div ref={overlayRef} className="bpmn-canvas-host">
         <BpmnCanvas ref={canvasRef} />
+        <span className="sr-only" role="status" aria-live="polite">
+          {canvasAnnouncement}
+        </span>
         {simulating ? (
           <ModeBar mode="Simulating" detail={hint ?? 'Pick an available path on the diagram.'} meta="Read-only" />
         ) : null}

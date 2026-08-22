@@ -17,6 +17,7 @@ import {
   writeArchitectOpen,
   writeArchitectPosition,
 } from './architectPosition';
+import { EDITOR_CHROME_HEIGHT, EDITOR_INSPECTOR_WIDTH } from '../layoutMetrics';
 
 const panel = { width: ARCHITECT_PANEL_WIDTH, height: 240 };
 const viewport = { width: 1280, height: 800 };
@@ -32,17 +33,17 @@ function memory() {
 }
 
 describe('architectPosition', () => {
-  it('defaults to bottom-right without covering the left rail', () => {
+  it('defaults above the canvas without covering chrome, rail, or inspector', () => {
     const pos = defaultArchitectPosition(viewport, panel);
-    expect(pos.x).toBe(viewport.width - panel.width - ARCHITECT_MARGIN);
-    expect(pos.y).toBe(viewport.height - panel.height - ARCHITECT_MARGIN);
+    expect(pos.x).toBe(viewport.width - panel.width - ARCHITECT_MARGIN - EDITOR_INSPECTOR_WIDTH);
+    expect(pos.y).toBe(EDITOR_CHROME_HEIGHT + ARCHITECT_MARGIN);
     expect(pos.x).toBeGreaterThanOrEqual(PALETTE_RAIL_WIDTH + ARCHITECT_MARGIN);
   });
 
   it('clamps stored positions that would cover the catalog rail', () => {
     const pos = clampArchitectPosition({ x: 0, y: 0 }, viewport, panel);
     expect(pos.x).toBe(PALETTE_RAIL_WIDTH + ARCHITECT_MARGIN);
-    expect(pos.y).toBe(ARCHITECT_MARGIN);
+    expect(pos.y).toBe(EDITOR_CHROME_HEIGHT + ARCHITECT_MARGIN);
   });
 
   it('persists and restores a clamped position from sessionStorage', () => {

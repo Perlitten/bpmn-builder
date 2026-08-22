@@ -443,8 +443,15 @@ export function executePlan(process: Process, calls: ToolCall[], options?: PlanO
   let lastId: string | undefined;
   const steps: ToolResult[] = [];
   const inverses: Array<(p: Process) => Process> = [];
-  for (const call of calls) {
-    const step = executeTool(current, call, lastId, options);
+  for (let index = 0; index < calls.length; index++) {
+    const call = calls[index]!;
+    let step: ToolResult;
+    try {
+      step = executeTool(current, call, lastId, options);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ToolPlanError(`Step ${index + 1} (${call.name}) failed: ${message}`);
+    }
     steps.push(step);
     inverses.push(step.inverse);
     current = step.process;

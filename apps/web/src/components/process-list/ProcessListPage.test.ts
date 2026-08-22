@@ -176,6 +176,8 @@ describe('ProcessListPage', () => {
     expect(header).not.toContain('Open Architect');
     expect(header).toContain('Describe the process');
     expect(header).toContain('Create process');
+    expect(header).toContain('<textarea');
+    expect(header).toContain('Ctrl/Command + Enter to create');
     expect(header).toContain('maxLength="20000"');
     expect(header).not.toContain('0/20,000');
     expect(header).toContain('New blank');

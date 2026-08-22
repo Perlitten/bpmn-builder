@@ -105,6 +105,9 @@ function createDb(): AppDb {
   }
   const file = resolveSqlitePath();
   sqlite = new Database(file);
+  sqlite.function('unicode_lower', { deterministic: true }, (value: unknown) =>
+    value == null ? '' : String(value).normalize('NFKC').toLocaleLowerCase(),
+  );
   sqlite.pragma('busy_timeout = 5000');
   sqlite.pragma('foreign_keys = ON');
   if (file !== ':memory:') sqlite.pragma('journal_mode = WAL');

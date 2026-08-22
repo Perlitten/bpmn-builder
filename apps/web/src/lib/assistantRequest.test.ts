@@ -63,4 +63,11 @@ describe('mapAssistantError', () => {
     expect(message).not.toMatch(/unknown branch: Region_1/);
     expect(message).toMatch(/gateway branch|region/i);
   });
+
+  it('maps raw browser network failures to actionable product copy', () => {
+    const message = mapAssistantError(new TypeError('Failed to fetch'), false).message;
+    expect(message).not.toMatch(/failed to fetch/i);
+    expect(message).toMatch(/connection|retry/i);
+    expect(message).toMatch(/left unchanged/i);
+  });
 });

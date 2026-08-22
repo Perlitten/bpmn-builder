@@ -310,12 +310,15 @@ function contains(outer: Bounds, inner: Bounds): boolean {
 
 function layerQuality(model: LintModel, warnings: Finding[], limit: number): void {
   const outgoing = new Map<string, LintFlow[]>();
+  const incomingCount = new Map<string, number>();
+  const nodeById = new Map(model.nodes.map((node) => [node.id, node]));
   for (const flow of model.flows) {
     if (flow.source) {
       const list = outgoing.get(flow.source) ?? [];
       list.push(flow);
       outgoing.set(flow.source, list);
     }
+    if (flow.target) incomingCount.set(flow.target, (incomingCount.get(flow.target) ?? 0) + 1);
   }
 
   const reachable = new Set(model.nodes.filter((node) => node.kind === 'start').map((node) => node.id));
@@ -364,6 +367,23 @@ function layerQuality(model: LintModel, warnings: Finding[], limit: number): voi
               elementId: flow.id,
             });
           }
+        }
+      }
+    }
+
+    if (node.kind === 'gateway') {
+      const flowsOut = outgoing.get(node.id) ?? [];
+      if (flowsOut.length >= 2) {
+        for (const flow of flowsOut) {
+          const target = flow.target ? nodeById.get(flow.target) : undefined;
+          if (target?.kind !== 'gateway' || (incomingCount.get(target.id) ?? 0) < 2) continue;
+          warnings.push({
+            id: 'quality.empty-branch',
+            layer: 5,
+            severity: 'warning',
+            message: `Branch ${flow.name.trim() ? `“${flow.name.trim()}”` : flow.id} contains no activity`,
+            elementId: flow.id,
+          });
         }
       }
     }

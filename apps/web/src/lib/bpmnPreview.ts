@@ -364,9 +364,17 @@ export function previewStructure(preview: BpmnPreview): string {
 }
 
 export function processNameFromDescription(text: string): string {
-  const line = text.trim().split('\n')[0]?.replace(/\s+/g, ' ') ?? '';
-  if (!line) return 'Untitled process';
-  return line.length > 80 ? `${line.slice(0, 77)}…` : line;
+  const firstLine = text.trim().split(/\r?\n/)[0]?.replace(/\s+/g, ' ') ?? '';
+  let name = firstLine.split(/[.!?。]/, 1)[0]?.trim() ?? '';
+  name = name
+    .replace(/^(?:please[,\s]+)?(?:create|make|build|draw|design)\s+(?:me\s+)?(?:an?\s+|the\s+)?/i, '')
+    .replace(/^(?:пожалуйста[,\s]+)?(?:сделай|создай|построй|нарисуй|спроектируй)(?:\s+мне)?\s+/iu, '')
+    .replace(/^(?:bpmn\s+)?(?:process|workflow|diagram|процесс|схем[ау]|диаграмм[ау])\s+(?:for\s+|для\s+)?/iu, '')
+    .split(/\s+(?:with|where|that|which|including|с|со|где|котор(?:ый|ая|ое|ые)|в котором)\s+/iu, 1)[0]!
+    .trim();
+  if (!name) return 'Untitled process';
+  name = `${name.charAt(0).toLocaleUpperCase()}${name.slice(1)}`;
+  return name.length > 56 ? `${name.slice(0, 53).trimEnd()}…` : name;
 }
 
 export function processNameFromBpmn(xml: string, fileName: string): string {

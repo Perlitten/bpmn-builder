@@ -3,6 +3,8 @@ import {
   ARCHITECT_PANEL_ESTIMATE_HEIGHT,
   ARCHITECT_PANEL_WIDTH,
   COMPACT_MAX_WIDTH,
+  EDITOR_CHROME_HEIGHT,
+  EDITOR_INSPECTOR_WIDTH,
   MOBILE_PALETTE_BAR,
   PALETTE_RAIL_WIDTH,
   isCompactViewport,
@@ -68,25 +70,29 @@ export function clampArchitectPosition(
   surface: ArchitectSurface = 'editor',
 ): Point {
   const compact = isCompactViewport(viewport.width);
+  const desktopEditor = surface === 'editor' && !compact;
   const minX = surface === 'list' || compact ? ARCHITECT_MARGIN : PALETTE_RAIL_WIDTH + ARCHITECT_MARGIN;
-  const maxX = viewport.width - panel.width - ARCHITECT_MARGIN;
+  const maxX = viewport.width - panel.width - ARCHITECT_MARGIN - (desktopEditor ? EDITOR_INSPECTOR_WIDTH : 0);
+  const minY = desktopEditor ? EDITOR_CHROME_HEIGHT + ARCHITECT_MARGIN : ARCHITECT_MARGIN;
   const bottomReserve = surface === 'editor' && compact ? MOBILE_PALETTE_BAR + ARCHITECT_MARGIN : ARCHITECT_MARGIN;
   return {
     x: maxX < minX ? minX : between(pos.x, minX, maxX),
-    y: between(pos.y, ARCHITECT_MARGIN, viewport.height - panel.height - bottomReserve),
+    y: between(pos.y, minY, viewport.height - panel.height - bottomReserve),
   };
 }
 
-/** Bottom-right. Editor desktop stays off the catalog rail. */
+/** Desktop editor starts above the canvas, clear of chrome and inspector. */
 export function defaultArchitectPosition(
   viewport: Size,
   panel: Size,
   surface: ArchitectSurface = 'editor',
 ): Point {
+  const compact = isCompactViewport(viewport.width);
+  const desktopEditor = surface === 'editor' && !compact;
   return clampArchitectPosition(
     {
-      x: viewport.width - panel.width - ARCHITECT_MARGIN,
-      y: viewport.height - panel.height - ARCHITECT_MARGIN,
+      x: viewport.width - panel.width - ARCHITECT_MARGIN - (desktopEditor ? EDITOR_INSPECTOR_WIDTH : 0),
+      y: desktopEditor ? EDITOR_CHROME_HEIGHT + ARCHITECT_MARGIN : viewport.height - panel.height - ARCHITECT_MARGIN,
     },
     viewport,
     panel,

@@ -9,4 +9,10 @@ describe('userFacingPlanError', () => {
     );
     expect(userFacingPlanError('unknown component: start.message')).toMatch(/cannot be added/i);
   });
+
+  it('preserves a batch step prefix while mapping the inner error', () => {
+    expect(userFacingPlanError('Step 3 (moveToBranch) failed: unknown element: Task_99')).toBe(
+      'Step 3 (moveToBranch) failed: That element is not in this process.',
+    );
+  });
 });

@@ -378,6 +378,28 @@ describe('process list query', () => {
     expect(badLimit.status).toBe(400);
   });
 
+  it('searches Cyrillic names and descriptions case-insensitively in sqlite', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const registration = await postProcess(
+      url,
+      'Базовая Регистрация',
+      'Создать учётную запись и подтвердить почту',
+    );
+
+    const byName = (await (
+      await authed(`${url}/api/processes?q=${encodeURIComponent('регистрация')}`)
+    ).json()) as { processes: { id: string }[]; total: number };
+    const byDescription = (await (
+      await authed(`${url}/api/processes?q=${encodeURIComponent('УЧЁТНУЮ')}`)
+    ).json()) as { processes: { id: string }[]; total: number };
+
+    expect(byName.total).toBe(1);
+    expect(byName.processes[0]?.id).toBe(registration.process.id);
+    expect(byDescription.total).toBe(1);
+    expect(byDescription.processes[0]?.id).toBe(registration.process.id);
+  });
+
   it('lints canonical XML and builds previews for legacy rows without workflow JSON', async () => {
     const { server, url } = await listen(createApp());
     servers.push(server);

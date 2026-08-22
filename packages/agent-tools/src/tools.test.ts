@@ -107,6 +107,29 @@ describe('agent tools', () => {
     expect(next.inverse(next.process)).toEqual(pooled.process);
   });
 
+  it('adds sibling lanes when participantId points at the previous lane', () => {
+    const plan = executePlan(createProcess(), [
+      { name: 'addLane', args: { name: 'Requester' } },
+      { name: 'addLane', args: { participantId: '$last', name: 'Approver' } },
+    ]);
+
+    expect(plan.process.participants).toHaveLength(1);
+    expect(plan.process.lanes.map((lane) => lane.name)).toEqual(['Requester', 'Approver']);
+    expect(new Set(plan.process.lanes.map((lane) => lane.participantId)).size).toBe(1);
+  });
+
+  it('reports the failing operation in an atomic batch', () => {
+    const origin = createProcess();
+    expect(() =>
+      executePlan(origin, [
+        { name: 'addTask', args: { name: 'Review' } },
+        { name: 'renameElement', args: { id: 'Missing', name: 'Approve' } },
+        { name: 'addTask', args: { name: 'Archive' } },
+      ]),
+    ).toThrow('Step 2 (renameElement) failed: That element is not in this process.');
+    expect(origin.nodes.map((node) => node.id)).toEqual(['StartEvent_1', 'EndEvent_1']);
+  });
+
   it('addTask branch alias accepts a region id after splitExclusive', () => {
     const origin = createProcess();
     const split = executePlan(origin, [

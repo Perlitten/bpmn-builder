@@ -177,6 +177,7 @@ export function ElementInspector({
             type="text"
             value={name}
             aria-label="Element name"
+            data-element-name
             onChange={(event) => setName(event.target.value)}
             onBlur={(event) => commitName(event.currentTarget.value)}
             onKeyDown={(event) => {

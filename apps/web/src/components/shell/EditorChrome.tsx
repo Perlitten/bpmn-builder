@@ -99,14 +99,6 @@ export function EditorChrome({
         </span>
       ) : null}
       {notice && !compact ? <span className="max-w-[10rem] truncate text-xs text-accent">{notice}</span> : null}
-      {simulating && simStatus && !compact ? (
-        <span
-          className="hidden min-w-0 max-w-[min(28rem,40vw)] truncate font-mono text-xs text-ink sm:inline"
-          title={simStatus}
-        >
-          {simStatus}
-        </span>
-      ) : null}
       <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
         <Button
           variant={simulating ? 'accent' : 'outline'}

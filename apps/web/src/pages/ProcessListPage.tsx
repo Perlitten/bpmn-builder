@@ -22,6 +22,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { SelectField } from '../components/ui/SelectField';
 import { Skeleton } from '../components/ui/Skeleton';
 import { TextField } from '../components/ui/TextField';
+import { TextAreaField } from '../components/ui/TextAreaField';
 import { UserMenu } from '../components/shell/UserMenu';
 import { api, type ProcessListSort } from '../lib/api';
 import { processNameFromBpmn, processNameFromDescription } from '../lib/bpmnPreview';
@@ -287,17 +288,21 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         </div>
         <div className="border-t border-border px-4 py-2">
           <div className="flex items-center gap-2">
-            <TextField
+            <TextAreaField
               value={prompt}
+              rows={2}
               maxLength={MAX_DESCRIPTION_CHARS}
               placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Describe the process. Text is saved as the description."
               aria-invalid={Boolean(promptIssue) || undefined}
               aria-describedby="process-description-meta"
-              className="min-w-0 flex-1"
+              className="min-w-0 flex-1 resize-none"
               onChange={(event) => setPrompt(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !promptIssue) handleDescribe(prompt);
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !promptIssue) {
+                  event.preventDefault();
+                  handleDescribe(prompt);
+                }
               }}
             />
             <Button
@@ -311,7 +316,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           </div>
           <div id="process-description-meta" className="ui-field-message flex justify-between gap-3">
             <span data-tone={promptIssue ? 'danger' : undefined}>
-              {promptIssue ?? ''}
+              {promptIssue ?? 'Ctrl/Command + Enter to create'}
             </span>
             {prompt.length > MAX_DESCRIPTION_CHARS * 0.7 ? (
               <span className="shrink-0 tabular-nums">{prompt.length.toLocaleString()}/{MAX_DESCRIPTION_CHARS.toLocaleString()}</span>
