@@ -126,6 +126,20 @@ function inMutable(process: SemanticProcess, scope: AgentScope | undefined, id: 
   return allowed.has(id);
 }
 
+/** A connector changes both ends, so every supplied endpoint must be scoped. */
+function assertMutableTargets(
+  process: SemanticProcess,
+  name: ToolName,
+  scope: AgentScope | undefined,
+  targets: ReadonlyArray<readonly [string, string | undefined]>,
+): void {
+  for (const [role, target] of targets) {
+    if (target && !inMutable(process, scope, target)) {
+      refuse(name, `is outside agent scope (${role})`);
+    }
+  }
+}
+
 function canInsertAfter(
   process: SemanticProcess,
   scope: AgentScope | undefined,
@@ -431,8 +445,12 @@ export function assertMutationAllowed(
       return;
     }
     if (place === 'sequenceFlow' || place === 'association') {
-      const target = flowId ?? after ?? from ?? to ?? id;
-      if (target && !inMutable(process, scope, target)) refuse(name, 'is outside agent scope');
+      assertMutableTargets(process, name, scope, [
+        ['from', from],
+        ['to', to],
+        ['flowId', flowId],
+        ['after', after],
+      ]);
       return;
     }
     if (after && !canInsertAfter(process, scope, after, branchId)) {
@@ -454,6 +472,14 @@ export function assertMutationAllowed(
   if (name === 'setFlowKind') {
     const target = flowId ?? id ?? after;
     if (!target || !inMutable(process, scope, target)) refuse(name, 'is outside agent scope');
+    return;
+  }
+
+  if (name === 'connectSequenceFlow') {
+    assertMutableTargets(process, name, scope, [
+      ['from', from],
+      ['to', to],
+    ]);
     return;
   }
 
@@ -532,7 +558,13 @@ function branchMutable(process: SemanticProcess, scope: AgentScope | undefined, 
   return (scope.ids ?? []).some((id) => branchHas(branch, id) || id === region.split || id === region.join);
 }
 
-export function assertOutsideScopeIntact(before: SemanticProcess, after: SemanticProcess, name: ToolName, scope?: AgentScope): void {
+export function assertOutsideScopeIntact(
+  before: SemanticProcess,
+  after: SemanticProcess,
+  name: ToolName,
+  scope?: AgentScope,
+  options?: { allowDerivedStructureChange?: boolean },
+): void {
   for (const node of before.nodes) {
     if (inMutable(before, scope, node.id)) continue;
     const next = after.nodes.find((item) => item.id === node.id);
@@ -541,6 +573,12 @@ export function assertOutsideScopeIntact(before: SemanticProcess, after: Semanti
       refuse(name, 'is outside agent scope');
     }
   }
+  // A legal rework edge inside one branch can make structure detection mark
+  // its surrounding region as unstructured. That is derived metadata, not a
+  // mutation of an unscoped node. Endpoints (and branch locks) were checked
+  // before applying the connector, so do not reject the valid scoped edge for
+  // a changed region classification.
+  if (name === 'connectSequenceFlow' || options?.allowDerivedStructureChange) return;
   for (const region of allRegions(before)) {
     for (const branch of region.branches) {
       if (branchMutable(before, scope, branch, region)) continue;

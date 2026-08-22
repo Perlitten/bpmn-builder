@@ -4,6 +4,7 @@ type GateRecord = {
 };
 
 const PRUNE_EVERY_ACQUIRES = 64;
+const MAX_TRACKED_RECORDS = 4_096;
 
 type GateLease =
   | { ok: true; release: () => void }
@@ -42,9 +43,18 @@ export function createAssistantRequestGate(env: NodeJS.ProcessEnv = process.env)
         if (candidate.inFlight === 0 && candidate.requests.length === 0) records.delete(recordKey);
       }
     }
-    const record = records.get(key) ?? { inFlight: 0, requests: [] };
+    let record = records.get(key);
+    if (!record && records.size >= MAX_TRACKED_RECORDS) {
+      // Never allow attacker-controlled user cardinality to grow this
+      // per-instance map without bound. Idle entries were already pruned
+      // above; if every slot is active, fail closed until capacity returns.
+      return { ok: false, retryAfterSeconds: 1 };
+    }
+    if (!record) {
+      record = { inFlight: 0, requests: [] };
+      records.set(key, record);
+    }
     record.requests = record.requests.filter((time) => time > cutoff);
-    records.set(key, record);
 
     if (record.inFlight >= maxConcurrent) return { ok: false, retryAfterSeconds: 1 };
     if (record.requests.length >= maxRequests) {

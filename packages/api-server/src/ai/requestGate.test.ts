@@ -51,4 +51,15 @@ describe('assistant request gate', () => {
     active.release();
     expect(gate.acquire('active', 60_004).ok).toBe(true);
   });
+
+  it('bounds cardinality when many user keys arrive concurrently', () => {
+    const gate = createAssistantRequestGate({
+      ASSISTANT_MAX_CONCURRENT_PER_USER: '1',
+      ASSISTANT_REQUESTS_PER_MINUTE: '10',
+    });
+    for (let i = 0; i < 4_096; i += 1) {
+      expect(gate.acquire(`user-${i}`, 10_000).ok).toBe(true);
+    }
+    expect(gate.acquire('overflow-user', 10_000)).toMatchObject({ ok: false, retryAfterSeconds: 1 });
+  });
 });

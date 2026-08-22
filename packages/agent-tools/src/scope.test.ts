@@ -13,6 +13,12 @@ function xorProcess() {
   ]).process;
 }
 
+function xorProcessWithYesTail() {
+  const origin = xorProcess();
+  const yes = origin.nodes.find((node) => node.name === 'Handle yes')!.id;
+  return executePlan(origin, [{ name: 'addAfter', args: { after: yes, name: 'Finish yes' } }]).process;
+}
+
 describe('agent scope and branch lock', () => {
   it('parseAgentScope accepts the four kinds', () => {
     expect(parseAgentScope(undefined)).toBeUndefined();
@@ -107,6 +113,98 @@ describe('agent scope and branch lock', () => {
     });
     expect(getNode(renamed.process, handleYes).name).toBe('Approved work');
     expect(getNode(renamed.process, handleNo).name).toBe('Handle no');
+  });
+
+  it('keeps both explicit sequence-flow endpoints inside branch, region, and selection scopes', () => {
+    const p = xorProcessWithYesTail();
+    const region = p.regions[0]!;
+    const yes = p.nodes.find((node) => node.name === 'Handle yes')!.id;
+    const yesTail = p.nodes.find((node) => node.name === 'Finish yes')!.id;
+    const no = p.nodes.find((node) => node.name === 'Handle no')!.id;
+    const review = p.nodes.find((node) => node.name === 'Review')!.id;
+    const branchScope = { kind: 'branch' as const, id: region.branches[0]!.id };
+    const regionScope = { kind: 'region' as const, id: region.id };
+    const selectionScope = { kind: 'selection' as const, ids: [yes, yesTail] };
+
+    expect(() =>
+      executePlan(p, [{ name: 'connectSequenceFlow', args: { from: yesTail, to: no } }], { scope: branchScope }),
+    ).toThrow(/outside agent scope \(to\)/);
+    expect(() =>
+      executePlan(p, [{ name: 'connectSequenceFlow', args: { from: review, to: yes } }], { scope: regionScope }),
+    ).toThrow(/outside agent scope \(from\)/);
+    expect(() =>
+      executePlan(p, [{ name: 'connectSequenceFlow', args: { from: yes, to: review } }], { scope: regionScope }),
+    ).toThrow(/outside agent scope \(to\)/);
+    expect(() =>
+      executePlan(p, [{ name: 'connectSequenceFlow', args: { from: no, to: yes } }], { scope: selectionScope }),
+    ).toThrow(/outside agent scope \(from\)/);
+
+    const insideBranch = executePlan(
+      p,
+      [{ name: 'connectSequenceFlow', args: { from: yesTail, to: yes, name: 'Rework' } }],
+      { scope: branchScope },
+    );
+    expect(insideBranch.process.flows.some((flow) => flow.source === yesTail && flow.target === yes)).toBe(true);
+
+    const insideRegion = executePlan(
+      p,
+      [{ name: 'connectSequenceFlow', args: { from: yesTail, to: no, name: 'Escalate' } }],
+      { scope: regionScope },
+    );
+    expect(insideRegion.process.flows.some((flow) => flow.source === yesTail && flow.target === no)).toBe(true);
+
+    const insideSelection = executePlan(
+      p,
+      [{ name: 'connectSequenceFlow', args: { from: yesTail, to: yes, name: 'Rework' } }],
+      { scope: selectionScope },
+    );
+    expect(insideSelection.process.flows.some((flow) => flow.source === yesTail && flow.target === yes)).toBe(true);
+  });
+
+  it('checks every connector argument when createComponent adds a sequence flow or association', () => {
+    const p = xorProcessWithYesTail();
+    const region = p.regions[0]!;
+    const yes = p.nodes.find((node) => node.name === 'Handle yes')!.id;
+    const yesTail = p.nodes.find((node) => node.name === 'Finish yes')!.id;
+    const no = p.nodes.find((node) => node.name === 'Handle no')!.id;
+    const outsideFlow = region.branches[1]!.entryFlowId;
+    const scope = { kind: 'branch' as const, id: region.branches[0]!.id };
+
+    expect(() =>
+      executePlan(
+        p,
+        [{ name: 'createComponent', args: { componentId: 'flow.sequence', from: yesTail, to: no } }],
+        { scope },
+      ),
+    ).toThrow(/outside agent scope \(to\)/);
+    expect(() =>
+      executePlan(
+        p,
+        [{ name: 'createComponent', args: { componentId: 'flow.sequence', from: yesTail, to: yes, after: no } }],
+        { scope },
+      ),
+    ).toThrow(/outside agent scope \(after\)/);
+    expect(() =>
+      executePlan(
+        p,
+        [{ name: 'createComponent', args: { componentId: 'flow.sequence', from: yesTail, to: yes, flowId: outsideFlow } }],
+        { scope },
+      ),
+    ).toThrow(/outside agent scope \(flowId\)/);
+    expect(() =>
+      executePlan(
+        p,
+        [{ name: 'createComponent', args: { componentId: 'flow.association', from: yesTail, to: no } }],
+        { scope },
+      ),
+    ).toThrow(/outside agent scope \(to\)/);
+
+    const inside = executePlan(
+      p,
+      [{ name: 'createComponent', args: { componentId: 'flow.sequence', from: yesTail, to: yes, name: 'Rework' } }],
+      { scope },
+    );
+    expect(inside.process.flows.some((flow) => flow.source === yesTail && flow.target === yes)).toBe(true);
   });
 
   it('assignLane stays inside selection scope', () => {

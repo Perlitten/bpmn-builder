@@ -43,6 +43,13 @@ pnpm dev   # Opens http://localhost:5173
 
 ---
 
+## BPMN semantics and Architect
+
+- `connectSequenceFlow` creates an explicit sequence flow between two nodes in the same process scope. It supports named, conditional, and default flows, including valid rework/back edges for cycles; cross-pool communication uses message flows instead.
+- Architect applies a best-effort plan: supported operations are committed in order, while an unsupported or invalid step is reported as a warning with the affected operation. A warning is not a green success, and the rejected step is never partially applied.
+- Events preserve BPMN execution semantics. Boundary events retain their attachment, interrupting/non-interrupting behavior, and event definition. Start events can set `isInterrupting=false`; timer, message, error, escalation, signal, conditional, and compensation definitions are represented where supported.
+- Data associations are preserved as BPMN artifacts and round-trip through the adapter. They describe data input/output relationships and do not create sequence-flow execution paths.
+
 ## Neon Database Layout & Migration Workflow
 
 ### Connection URLs

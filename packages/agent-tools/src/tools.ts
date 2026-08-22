@@ -444,7 +444,14 @@ export function executeTool(process: SemanticProcess, call: ToolCall, lastId?: s
     const result = HANDLERS[call.name](process, args, lastId);
     if (!isReadOnlyTool(call.name)) {
       assertLocksIntact(process, result.process, call.name);
-      assertOutsideScopeIntact(process, result.process, call.name, options?.scope);
+      const component = call.name === 'createComponent' && typeof args.componentId === 'string'
+        ? bpmnComponentRegistry.get(args.componentId)
+        : undefined;
+      const connectorComponent = component?.layoutBehavior.placement === 'sequenceFlow'
+        || component?.layoutBehavior.placement === 'association';
+      assertOutsideScopeIntact(process, result.process, call.name, options?.scope, {
+        allowDerivedStructureChange: connectorComponent,
+      });
     }
     return result;
   } catch (error) {
