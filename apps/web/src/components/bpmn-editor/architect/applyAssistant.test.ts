@@ -117,4 +117,28 @@ describe('applyAssistantResult', () => {
     ).rejects.toThrow(/root-0/);
     expect(applyProcess).toHaveBeenCalledTimes(1);
   });
+
+  it('reports structural warnings in the Architect result instead of a green success', async () => {
+    const origin = createProcess();
+    const next = executePlan(origin, [{ name: 'splitParallel', args: { after: 'StartEvent_1' } }]).process;
+    let current = origin;
+    const result = await applyAssistantResult(
+      {
+        process: () => current,
+        xml: () => '<before/>',
+        applyPlan: vi.fn(async () => '<plan/>'),
+        applyProcess: vi.fn(async (graph: ReturnType<typeof createProcess>) => {
+          current = graph;
+          return '<layout/>';
+        }),
+      },
+      {
+        message: 'Added a parallel split.',
+        tools: [{ name: 'splitParallel', args: { after: 'StartEvent_1' } }],
+        process: next,
+      },
+    );
+    expect(result.warnings).toEqual(expect.arrayContaining([expect.stringMatching(/contains no activity/)]));
+    expect(result.message).toMatch(/Applied with warnings/);
+  });
 });

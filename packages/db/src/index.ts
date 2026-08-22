@@ -1,6 +1,7 @@
 export {
   getDb,
   getDbDriver,
+  getFeedbackTable,
   getProcessesTable,
   getQueryDb,
   getSessionsTable,

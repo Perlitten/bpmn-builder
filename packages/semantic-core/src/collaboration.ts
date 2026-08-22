@@ -36,9 +36,12 @@ function ensureHostPool(draft: Process): Participant {
   const existing = draft.participants.find((p) => p.processId === draft.id);
   if (existing) return existing;
   if (!draft.collaborationId) draft.collaborationId = nextId(draft, 'Collaboration');
+  const processName = (draft.name ?? '').trim().replace(/\s+/g, ' ');
+  // A generated pool is a role/container label, not the full prompt sentence.
+  const shortName = (processName.split(/[.:!?]/, 1)[0]?.trim() || processName).slice(0, 48).trim();
   const host: Participant = {
     id: nextId(draft, 'Participant'),
-    name: draft.name || 'Pool',
+    name: shortName || 'Pool',
     processId: draft.id,
   };
   draft.participants.unshift(host);
@@ -239,6 +242,13 @@ export function addLane(
 export function assignLane(process: Process, nodeId: string, laneId: string): Applied {
   return apply(process, (draft) => {
     getNode(draft, nodeId);
+    // An empty lane id is the explicit “Not in a lane” choice in the
+    // inspector. Keep the operation reversible and remove the node from all
+    // lane bands instead of forcing it into a foreign/placeholder lane.
+    if (!laneId.trim()) {
+      for (const lane of draft.lanes) lane.nodeIds = lane.nodeIds.filter((id) => id !== nodeId);
+      return nodeId;
+    }
     const lane = draft.lanes.find((l) => l.id === laneId);
     if (!lane) throw new Error(`unknown lane: ${laneId}`);
     for (const other of draft.lanes) {

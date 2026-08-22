@@ -280,6 +280,23 @@ describe('layout', () => {
     expect(a).toMatchSnapshot();
   });
 
+  it('wraps a very long linear process into readable rows', () => {
+    const nodes = Array.from({ length: 60 }, (_, index) => ({ id: `task_${index}`, type: 'task' as const }));
+    const sequenceFlows = [
+      { id: 'start_task', source: 'start', target: 'task_0' },
+      ...nodes.slice(0, -1).map((node, index) => ({ id: `f_${index}`, source: node.id, target: nodes[index + 1]!.id })),
+      { id: 'task_end', source: 'task_59', target: 'end' },
+    ];
+    const result = layout({
+      nodes: [{ id: 'start', type: 'startEvent' }, ...nodes, { id: 'end', type: 'endEvent' }],
+      sequenceFlows,
+    });
+    const taskBoxes = nodes.map((node) => result.shapes[node.id]!);
+    expect(new Set(taskBoxes.map((box) => box.y)).size).toBeGreaterThan(1);
+    expect(Math.max(...taskBoxes.map((box) => box.x + box.width)) - Math.min(...taskBoxes.map((box) => box.x))).toBeLessThanOrEqual(1_900);
+    allOrthogonal(result);
+  });
+
   it('happy path shares one LTR baseline', () => {
     const result = layout(linear());
     expect(centerY(result.shapes.start!)).toBe(BASELINE_CY);
@@ -778,6 +795,26 @@ describe('layout', () => {
     expect(railY(poolYesPts)).toBeLessThan(railY(poolNoPts));
     expect(overlaps(poolDi.labels[poolYes.id]!, poolDi.labels[poolNo.id]!)).toBe(false);
     allOrthogonal(poolDi);
+  });
+
+  it('routes two-way gateway branches from the gateway top and bottom tips', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Review' }).process;
+    p = splitExclusive(p, { after: p.nodes.find((node) => node.name === 'Review')!.id }).process;
+    const [yesBranch, noBranch] = p.regions[0]!.branches;
+    p = addTask(p, { name: 'Approve', branchId: yesBranch!.id }).process;
+    p = addTask(p, { name: 'Reject', branchId: noBranch!.id }).process;
+
+    const result = layoutProcess(p);
+    const split = result.shapes[p.regions[0]!.split]!;
+    const yes = p.flows.find((flow) => flow.id === yesBranch!.entryFlowId)!;
+    const no = p.flows.find((flow) => flow.id === noBranch!.entryFlowId)!;
+
+    expect(result.edges[yes.id]![0]).toEqual({ x: split.x + split.width / 2, y: split.y });
+    expect(result.edges[no.id]![0]).toEqual({ x: split.x + split.width / 2, y: split.y + split.height });
+    expect(result.edges[yes.id]![1]!.x).toBe(result.edges[yes.id]![0]!.x);
+    expect(result.edges[no.id]![1]!.x).toBe(result.edges[no.id]![0]!.x);
+    allOrthogonal(result);
   });
 
   it('places data objects and annotations with canonical DI, not imported XY', () => {

@@ -9,6 +9,8 @@ type ChromeMenuProps = {
   disabled?: boolean;
   align?: 'left' | 'right';
   triggerVariant?: 'ghost' | 'outline';
+  triggerClassName?: string;
+  menuClassName?: string;
   children: ReactNode;
 };
 
@@ -27,6 +29,8 @@ export function ChromeMenu({
   disabled,
   align = 'right',
   triggerVariant = 'outline',
+  triggerClassName,
+  menuClassName,
   children,
 }: ChromeMenuProps) {
   const [open, setOpen] = useState(false);
@@ -77,6 +81,7 @@ export function ChromeMenu({
       <Button
         variant={triggerVariant}
         size="sm"
+        className={triggerClassName}
         disabled={disabled}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -100,7 +105,7 @@ export function ChromeMenu({
             aria-label={ariaLabel}
             tabIndex={-1}
             onKeyDown={onMenuKeyDown}
-            className={`ui-menu ${
+            className={`ui-menu ${menuClassName ?? ''} ${
               align === 'right' ? 'right-0' : 'left-0'
             }`}
           >
@@ -116,10 +121,11 @@ type ChromeMenuItemProps = {
   onSelect: () => void;
   disabled?: boolean;
   icon?: ReactNode;
+  tone?: 'default' | 'danger';
   children: ReactNode;
 };
 
-export function ChromeMenuItem({ onSelect, disabled, icon, children }: ChromeMenuItemProps) {
+export function ChromeMenuItem({ onSelect, disabled, icon, tone = 'default', children }: ChromeMenuItemProps) {
   const close = useContext(CloseMenu);
   return (
     <button
@@ -127,6 +133,7 @@ export function ChromeMenuItem({ onSelect, disabled, icon, children }: ChromeMen
       role="menuitem"
       disabled={disabled}
       className="ui-menu-item"
+      data-tone={tone}
       onClick={() => {
         close();
         onSelect();

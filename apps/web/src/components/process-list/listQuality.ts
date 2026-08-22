@@ -21,6 +21,9 @@ export function listQualitySignal(lint: LintResult | ProcessQualitySummary): Lis
   const errors = Array.isArray(lint.errors) ? lint.errors.length : lint.errors;
   const warnings = Array.isArray(lint.warnings) ? lint.warnings.length : lint.warnings;
   const style = Array.isArray(lint.style) ? lint.style.length : lint.style;
+  const suggestions = Array.isArray(lint.suggestions)
+    ? lint.suggestions.length
+    : ('suggestions' in lint ? lint.suggestions ?? 0 : 0);
   const labels: string[] = [];
   const titles: string[] = [];
   if (errors) {
@@ -34,6 +37,10 @@ export function listQualitySignal(lint: LintResult | ProcessQualitySummary): Lis
   if (style) {
     labels.push(counted(style, 'style finding', 'style findings'));
     titles.push('Style');
+  }
+  if (suggestions) {
+    labels.push(counted(suggestions, 'layout finding', 'layout findings'));
+    titles.push('Layout');
   }
   if (!labels.length) return null;
   const tone = errors ? 'error' : warnings ? 'warning' : 'style';

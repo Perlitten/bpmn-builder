@@ -209,6 +209,41 @@ describe('semantic-core', () => {
     expect(detectStructure(p).regions[0]!.join).toBe(and.join);
   });
 
+  it('removes an untouched split together with its join', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'A' }).process;
+    p = splitExclusive(p, { after: named(p, 'A') }).process;
+    const split = p.regions[0]!.split;
+    const after = p.regions[0]!.join;
+    p = removeElement(p, split).process;
+    expect(p.nodes.map((node) => node.id)).not.toContain(split);
+    expect(p.nodes.map((node) => node.id)).not.toContain(after);
+    expect(p.flows.filter((flow) => flow.source === named(p, 'A'))).toHaveLength(1);
+    expect(p.regions).toEqual([]);
+  });
+
+  it('splitParallel materialises named work arms without leaving empty branches', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Prepare' }).process;
+    p = splitParallel(p, {
+      after: named(p, 'Prepare'),
+      branches: [{ name: 'Check budget' }, { name: 'Check legal risk' }],
+    }).process;
+
+    const region = p.regions[0]!;
+    expect(region.branches.map((branch) => branch.nodeIds.map((id) => getNode(p, id).name))).toEqual([
+      ['Check budget'],
+      ['Check legal risk'],
+    ]);
+    expect(p.nodes.filter((node) => node.type === 'task').map((node) => node.name)).toEqual([
+      'Prepare',
+      'Check budget',
+      'Check legal risk',
+    ]);
+    expect(p.flows.filter((flow) => flow.source === region.split)).toHaveLength(2);
+    expect(p.flows.filter((flow) => flow.source === region.split).every((flow) => !flow.name)).toBe(true);
+  });
+
   it('splitInclusive creates an OR region; splitEventBased is marked event-based with XOR join', () => {
     let p = createProcess();
     p = addTask(p, { name: 'A' }).process;
@@ -329,6 +364,8 @@ describe('semantic-core', () => {
     p = assignLane(p, named(p, 'Review'), extra.id).process;
     expect(p.lanes[0]!.nodeIds).not.toContain(named(p, 'Review'));
     expect(p.lanes[1]!.nodeIds).toEqual([named(p, 'Review')]);
+    p = assignLane(p, named(p, 'Review'), '').process;
+    expect(p.lanes.every((item) => !item.nodeIds.includes(named(p, 'Review')))).toBe(true);
 
     const msg = addMessageInteraction(p, { from: host, to: partner, name: 'Request' });
     p = msg.process;

@@ -22,4 +22,10 @@ describe('userFacingPlanError', () => {
       'Step 12 (renameElement) failed: That element is not in this process.',
     );
   });
+
+  it('explains the current loop limitation instead of showing construction jargon', () => {
+    expect(userFacingPlanError('That construction cannot be added here: connect Return quote back to Review quote')).toMatch(
+      /Return flows are not supported yet/,
+    );
+  });
 });

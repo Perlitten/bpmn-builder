@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { ArchitectMascot } from './ArchitectMascot';
 import {
   ARCHITECT_COMPANION_HEIGHT,
@@ -234,6 +235,16 @@ export function ArchitectShell({
             {...dragBind}
           >
             <h2>Architect</h2>
+            <button
+              type="button"
+              className="architect-panel-close"
+              aria-label="Close Architect"
+              title="Close Architect"
+              disabled={busy}
+              onClick={() => setOpenState(false)}
+            >
+              <X size={16} strokeWidth={1.8} aria-hidden="true" />
+            </button>
           </div>
           {children}
         </section>

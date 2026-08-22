@@ -17,6 +17,7 @@ import {
   insertOnFlow,
   isActivity,
   makeNode,
+  removeEmptySplit,
   outgoingFlows,
   removeJoin,
   scopeOf,
@@ -143,6 +144,7 @@ export function removeElement(process: Process, id: string): Applied {
     const outs = outgoingFlows(draft, id);
     if (ins.length === 1 && outs.length === 1) detachLinear(draft, id);
     else if (ins.length >= 2 && outs.length === 1) removeJoin(draft, id);
+    else if (outs.length >= 2) removeEmptySplit(draft, id);
     else throw new Error(`cannot remove ${id}`);
     return id;
   });
@@ -249,6 +251,26 @@ function splitGateway(
       }
     }
     const entries = outgoingFlows(draft, split.id);
+    /*
+     * A named parallel arm is almost always an activity request (for example
+     * "Check budget" and "Check legal risk"), not a request for an empty
+     * sequence-flow label. Materialise those activities here so an agent can
+     * express the common parallel-work pattern in one operation. Blank arms
+     * remain intentionally empty for callers that want to populate them later.
+     */
+    const generatedTasks = new Map<number, string>();
+    if (spec.kind === 'parallel' && spec.branches) {
+      for (const [index, branch] of branches.entries()) {
+        const name = branch.name.trim();
+        if (!name || /^(?:yes|no|branch\s+\d+)$/i.test(name)) continue;
+        const entry = entries[index];
+        if (!entry) continue;
+        const task = makeNode(draft, 'task', name);
+        insertOnFlow(draft, entry.id, task);
+        entry.name = undefined;
+        generatedTasks.set(index, task.id);
+      }
+    }
     const regionId = nextId(draft, 'Region');
     draft.regions.push({
       id: regionId,
@@ -260,7 +282,7 @@ function splitGateway(
         id: nextId(draft, 'Branch', branch.id),
         name: branch.name,
         entryFlowId: entries[i].id,
-        nodeIds: [],
+        nodeIds: generatedTasks.has(i) ? [generatedTasks.get(i)!] : [],
       })),
     });
     return regionId;

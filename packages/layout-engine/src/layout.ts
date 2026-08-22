@@ -64,7 +64,10 @@ function layoutGraph(
 ): GraphResult {
   const ctx = index(input, flowGap);
   const placed = new Map<string, Bounds>();
-  placeChain(buildMainChain(input, ctx), ORIGIN_X, BASELINE_CY, placed, ctx);
+  // Keep very long linear processes navigable. Short diagrams retain the
+  // canonical one-row geometry; only chains wider than the viewport budget
+  // wrap into a readable snake of orthogonally connected rows.
+  placeChain(buildMainChain(input, ctx), ORIGIN_X, BASELINE_CY, placed, ctx, { maxRowWidth: 1_800 });
   placeLooseEventSubprocesses(input.regions ?? [], placed, ctx);
   placeRemainder(input, placed, ctx);
   placeArtifacts(input.artifacts ?? [], placed);
@@ -584,6 +587,11 @@ function routeSequenceFlows(
     for (let i = 0; i < n; i++) {
       const flow = group[i]!;
       const railY = emptyBranchRailY(flow, regions, ctx, placed);
+      const gatewayBranch = gatewayBranchRoute(flow, regions, ctx, placed, railY);
+      if (gatewayBranch) {
+        edges[flow.id] = gatewayBranch;
+        continue;
+      }
       let offset = 0;
       if (railY !== undefined) {
         const fromBox = placed.get(flow.source)!;
@@ -596,6 +604,64 @@ function routeSequenceFlows(
     }
   }
   return edges;
+}
+
+/**
+ * A two-way gateway reads as a split when each branch leaves from the gateway's
+ * top/bottom tip. Starting both edges from the right midpoint makes the two
+ * branches look like a single tangled rail and puts their labels on top of the
+ * junction. Keep the conventional right-facing target anchor, but use the
+ * gateway tips as the source anchors for a clear visual fork.
+ */
+function gatewayBranchRoute(
+  flow: SequenceFlow,
+  regions: StructuredRegion[],
+  ctx: Ctx,
+  placed: Map<string, Bounds>,
+  railY?: number,
+): Point[] | undefined {
+  for (const region of flattenRegions(regions)) {
+    if (region.split !== flow.source || region.branches.length !== 2) continue;
+    const split = ctx.nodes.get(region.split);
+    const from = placed.get(flow.source);
+    const to = placed.get(flow.target);
+    if (!split || !from || !to || !/gateway/i.test(split.type) || to.x <= from.x) continue;
+
+    let branchIndex = region.branches.findIndex((branch) => branch.entryFlowId === flow.id);
+    if (branchIndex === -1) {
+      const outgoing = (ctx.outgoing.get(region.split) ?? []).filter((item) => item.target === region.join);
+      const fallback = outgoing.findIndex((item) => item.id === flow.id);
+      if (fallback >= 0) branchIndex = fallback;
+    }
+    if (branchIndex < 0) continue;
+
+    const source = {
+      x: from.x + from.width / 2,
+      y: branchIndex === 0 ? from.y : from.y + from.height,
+    };
+    const target = { x: to.x, y: to.y + to.height / 2 };
+    if (railY !== undefined) {
+      const railX = target.x - TOKENS.edgeClearance;
+      return compactRoute([source, { x: source.x, y: railY }, { x: railX, y: railY }, { x: railX, y: target.y }, target]);
+    }
+    return source.y === target.y ? [source, target] : [source, { x: source.x, y: target.y }, target];
+  }
+  return undefined;
+}
+
+function compactRoute(points: Point[]): Point[] {
+  const out: Point[] = [];
+  for (const point of points) {
+    const last = out[out.length - 1];
+    if (last && last.x === point.x && last.y === point.y) continue;
+    const prev = out[out.length - 2];
+    if (prev && last && ((prev.x === last.x && last.x === point.x) || (prev.y === last.y && last.y === point.y))) {
+      out[out.length - 1] = point;
+      continue;
+    }
+    out.push(point);
+  }
+  return out;
 }
 
 function buildMainChain(input: Pick<LayoutInput, 'nodes' | 'sequenceFlows' | 'regions'>, ctx: Ctx): ChainItem[] {
@@ -662,22 +728,37 @@ function placeChain(
   cy: number,
   placed: Map<string, Bounds>,
   ctx: Ctx,
+  options: { maxRowWidth?: number } = {},
 ): number {
   let cursor = x;
+  let rowY = cy;
+  let rowHeight = 0;
+  const maxRowWidth = options.maxRowWidth;
   for (let i = 0; i < items.length; i++) {
-    if (i > 0) cursor += ctx.flowGap;
     const item = items[i]!;
+    const extent = measureChain([item], ctx);
+    const gap = i > 0 ? ctx.flowGap : 0;
+    if (maxRowWidth && cursor > x && cursor + gap + extent.width > x + maxRowWidth) {
+      cursor = x;
+      rowY += rowHeight + TOKENS.branchGap;
+      rowHeight = 0;
+    } else {
+      cursor += gap;
+    }
     if (item.kind === 'node') {
       const size = sizeOf(item.type);
       placed.set(item.id, {
         x: cursor,
-        y: cy - size.height / 2,
+        y: rowY - size.height / 2,
         width: size.width,
         height: size.height,
       });
       cursor += size.width;
+      rowHeight = Math.max(rowHeight, size.height);
     } else {
-      cursor = placeRegion(item.region, cursor, cy, placed, ctx);
+      cursor = placeRegion(item.region, cursor, rowY, placed, ctx);
+      const regionExtent = measureRegion(item.region, ctx);
+      rowHeight = Math.max(rowHeight, regionExtent.above + regionExtent.below);
     }
   }
   return cursor;
@@ -1186,9 +1267,28 @@ function externalLabelBox(shape: Bounds, name: string): Bounds {
 
 function flowLabelBox(points: Point[], name: string): Bounds {
   const size = labelSize(name);
-  const last = points.length - 1;
-  const a = points[Math.floor(last / 2)]!;
-  const b = points[Math.ceil(last / 2)]!;
+  const first = points[0]!;
+  const second = points[1] ?? first;
+  if (first.x === second.x && first.y !== second.y) {
+    const midY = (first.y + second.y) / 2;
+    return {
+      x: first.x + TOKENS.label.flowIndent,
+      y: midY - size.height / 2,
+      width: size.width,
+      height: size.height,
+    };
+  }
+
+  let best: { a: Point; b: Point; length: number } | undefined;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    if (a.y !== b.y) continue;
+    const length = Math.abs(a.x - b.x);
+    if (!best || length > best.length) best = { a, b, length };
+  }
+  const a = best?.a ?? points[Math.floor((points.length - 1) / 2)]!;
+  const b = best?.b ?? points[Math.ceil((points.length - 1) / 2)]!;
   const midX = (a.x + b.x) / 2;
   const midY = (a.y + b.y) / 2;
   return {

@@ -215,6 +215,14 @@ function leafLaneRows(
 }
 
 function participantIdForNode(graph: LaneGraph, nodeId: string): string | undefined {
+  // The process owns the node.  Prefer that owner over a stale lane
+  // assignment so a malformed/imported flow node cannot expose a partner
+  // pool's lanes in the inspector.
+  const processId = processIdForNode(graph, nodeId);
+  if (processId) {
+    const owner = graph.participants?.find((part) => part.processId === processId)?.id;
+    if (owner) return owner;
+  }
   const fromLane = graph.lanes.find((lane) => lane.nodeIds.includes(nodeId));
   if (fromLane?.participantId) return fromLane.participantId;
   if (graph.nodes.some((node) => node.id === nodeId)) {
@@ -251,10 +259,8 @@ export function flowNodeLaneAssignment(
   const ofProcess = processId ? leafLaneRows(lanes, (lane) => lane.processId === processId) : [];
   const rows = ofParticipant.length ? ofParticipant : ofProcess;
   const current = lanes.find((lane) => lane.nodeIds.includes(element.id));
-  if (current && !rows.some((row) => row.id === current.id)) {
-    rows.unshift({ id: current.id, name: current.name ?? '' });
-  }
-  return current ? { lanes: rows, currentLaneId: current.id } : { lanes: rows };
+  const currentInScope = current && rows.some((row) => row.id === current.id) ? current.id : undefined;
+  return currentInScope ? { lanes: rows, currentLaneId: currentInScope } : { lanes: rows };
 }
 
 export function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {

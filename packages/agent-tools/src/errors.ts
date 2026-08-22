@@ -44,6 +44,9 @@ export function userFacingPlanError(raw: string): string {
   if (/is not on branch/i.test(text)) {
     return 'That element is not on the chosen gateway branch.';
   }
+  if (/(?:loop|return|back|cycle)/i.test(text) && /(?:flow|connect|add|construct|cannot)/i.test(text)) {
+    return 'Return flows are not supported yet. Keep this as a separate branch, or add the return connection manually in the editor.';
+  }
   if (/not in modeling profile yet|no semantic create op|unknown component/i.test(text)) {
     return 'That construction cannot be added here. Use a task, a gateway split, or a pool only if you need another participant.';
   }

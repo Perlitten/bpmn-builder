@@ -35,10 +35,17 @@ export type ProcessQualitySummary = {
   errors: number;
   warnings: number;
   style: number;
+  /** Geometry/layout suggestions are surfaced so list and editor counts agree. */
+  suggestions?: number;
 };
 
 export type ProcessMiniPreview = {
   caption: string;
+  /** Collaboration metadata keeps list previews honest without flattening it into a fake chain. */
+  participants?: number;
+  lanes?: number;
+  messageFlows?: number;
+  boundaryEvents?: number;
   nodes: Array<{
     id: string;
     type: string;

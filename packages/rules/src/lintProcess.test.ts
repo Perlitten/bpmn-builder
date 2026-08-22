@@ -512,6 +512,40 @@ describe('lintProcess', () => {
     expect(result.suggestions.some((f) => f.id.startsWith('geometry.'))).toBe(true);
   });
 
+  it('does not treat participant or lane containers as overlapping nodes', () => {
+    const result = lintProcess(
+      xml(
+        `
+        <bpmn:participant id="Part_A" name="Acme" />
+        <bpmn:lane id="Lane_A" name="Finance" />
+        <bpmn:startEvent id="S" name="Start" />
+        <bpmn:task id="T" name="Review request" />
+        <bpmn:endEvent id="E" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="S" targetRef="T" />
+        <bpmn:sequenceFlow id="F2" sourceRef="T" targetRef="E" />
+      `,
+        `
+        <bpmndi:BPMNShape id="Part_di" bpmnElement="Part_A">
+          <dc:Bounds x="0" y="0" width="700" height="240" />
+          <bpmndi:BPMNLabel><dc:Bounds x="8" y="8" width="120" height="20" /></bpmndi:BPMNLabel>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="Lane_di" bpmnElement="Lane_A">
+          <dc:Bounds x="30" y="0" width="670" height="240" />
+          <bpmndi:BPMNLabel><dc:Bounds x="34" y="10" width="80" height="20" /></bpmndi:BPMNLabel>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="S_di" bpmnElement="S">
+          <dc:Bounds x="100" y="100" width="36" height="36" />
+          <bpmndi:BPMNLabel><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNLabel>
+        </bpmndi:BPMNShape>
+      `,
+      ),
+    );
+    const containerNoise = result.suggestions.filter(
+      (finding) => finding.id === 'geometry.label-overlaps-node' && /Part_A|Lane_A/.test(finding.message),
+    );
+    expect(containerNoise).toEqual([]);
+  });
+
   it('reports canonical layout with no geometry findings for a model laid out by layout-engine', () => {
     let p = createProcess();
     p = addTask(p, { name: 'Submit request' }).process;
@@ -540,6 +574,25 @@ describe('lintProcess', () => {
         .map((finding) => finding.elementId)
         .sort(),
     ).toEqual(['A', 'B']);
+  });
+
+  it('follows an attached boundary event when checking reachability', () => {
+    const result = lintProcess(
+      xml(`
+        <bpmn:startEvent id="Start" name="Start" />
+        <bpmn:task id="Receive" name="Receive goods" />
+        <bpmn:boundaryEvent id="Timer" name="After 48h" attachedToRef="Receive">
+          <bpmn:timerEventDefinition />
+        </bpmn:boundaryEvent>
+        <bpmn:task id="Chase" name="Chase supplier" />
+        <bpmn:endEvent id="End" name="End" />
+        <bpmn:sequenceFlow id="F1" sourceRef="Start" targetRef="Receive" />
+        <bpmn:sequenceFlow id="F2" sourceRef="Receive" targetRef="End" />
+        <bpmn:sequenceFlow id="F3" sourceRef="Timer" targetRef="Chase" />
+        <bpmn:sequenceFlow id="F4" sourceRef="Chase" targetRef="End" />
+      `),
+    );
+    expect(result.warnings.filter((finding) => finding.id === 'quality.unreachable-node')).toEqual([]);
   });
 
   it('does not report intentional subprocess containment or boundary attachment as node overlap', () => {

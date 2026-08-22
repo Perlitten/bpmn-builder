@@ -2,7 +2,7 @@ import type { Finding } from './types.js';
 
 /** Infinitive verbs used for Camunda-style task names (object + action). */
 export const ACTION_VERBS = new Set(
-  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue notify open pay pick prepare print process publish quote receive record refund register reject release report request resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
+  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check chase close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue match notify open pay pick prepare print process publish quote receive record refund register reject release report request reserve resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
     ' ',
   ),
 );
@@ -177,7 +177,13 @@ function suggestFlow(ctx: NameContext, current: string): NameSuggestion | undefi
 function suggestTask(ctx: NameContext, current: string, findings: Finding[]): NameSuggestion | undefined {
   const fromNext = stripQuestion(firstMeaningful(ctx.outgoing));
   const fromPrev = firstMeaningful(ctx.incoming);
-  if (isPlaceholderName(current, ctx.id)) {
+  const placeholder = isPlaceholderName(current, ctx.id);
+  // Do not manufacture English verbs for names written in another script or
+  // for actor-prefixed labels such as “Sales: check stock”. The suggestion is
+  // optional guidance; hiding a bad transformation is safer than corrupting a
+  // user's wording.
+  if (!placeholder && (!shouldCheckActionVerb(current) || current.includes(':'))) return undefined;
+  if (placeholder) {
     const proposed = asTask(fromNext || fromPrev || 'Validate customer');
     return { name: proposed, reason: 'Task names are object + action' };
   }

@@ -304,7 +304,24 @@ html.is-editor #root {
 }
 
 .lint-score-chips {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  overflow-wrap: anywhere;
   font: inherit;
+}
+
+.lint-score-chips > span { min-width: 0; }
+
+.editor-notice {
+  display: inline-block;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  line-height: 1.2;
 }
 
 .lint-score-chips span + span::before {

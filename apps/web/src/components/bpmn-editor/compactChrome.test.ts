@@ -102,6 +102,19 @@ describe('compact editor chrome', () => {
     expect(palette).toMatch(/\.palette-hint\.is-sim/);
   });
 
+  it('shows the designed loading state while the simulation bootstraps', () => {
+    const html = renderToStaticMarkup(
+      createElement(EditorChrome, {
+        ...chromeProps,
+        simulating: true,
+        simulationStarting: true,
+      }),
+    );
+    expect(html).toContain('Starting simulation…');
+    expect(html).toMatch(/aria-busy="true"/);
+    expect(html).toMatch(/disabled/);
+  });
+
   it('gives zoom controls a focus-visible ring', () => {
     const css = readFileSync(join(dir, 'zoomControls.css'), 'utf8');
     const ui = readFileSync(join(dir, '../ui/ui.css'), 'utf8');

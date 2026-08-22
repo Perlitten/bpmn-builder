@@ -12,6 +12,23 @@ import type { GenerateJsonInput } from './types.js';
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
 
+export function nvidiaBaseUrl(): string {
+  const override = process.env.NVIDIA_BASE_URL?.trim();
+  if (!override) return NVIDIA_BASE_URL;
+  try {
+    const url = new URL(override);
+    const localTest = process.env.NODE_ENV === 'test' && (url.hostname === '127.0.0.1' || url.hostname === 'localhost');
+    if (url.protocol !== 'https:' && !localTest) return NVIDIA_BASE_URL;
+    // Production traffic is pinned to NVIDIA's integration host. This prevents
+    // an env override from turning the API client into an SSRF primitive.
+    if (!localTest && url.hostname.toLowerCase() !== 'integrate.api.nvidia.com') return NVIDIA_BASE_URL;
+    if (url.username || url.password || url.search || url.hash) return NVIDIA_BASE_URL;
+    return `${url.origin}${url.pathname.replace(/\/$/, '')}`;
+  } catch {
+    return NVIDIA_BASE_URL;
+  }
+}
+
 type NvidiaResponse = {
   choices?: Array<{ message?: { content?: string | null } }>;
   error?: { message?: string };
@@ -92,7 +109,7 @@ export function createNvidiaClient(apiKey: string, model: string) {
       void stop.catch(() => undefined);
       try {
         const response = await Promise.race([
-          fetch(`${process.env.NVIDIA_BASE_URL || NVIDIA_BASE_URL}/chat/completions`, {
+          fetch(`${nvidiaBaseUrl()}/chat/completions`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${apiKey}`,

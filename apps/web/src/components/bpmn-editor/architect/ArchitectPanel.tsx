@@ -92,7 +92,7 @@ export function ArchitectPanel({
           ),
         );
         setDiff(result.diff);
-        setSuccess(result.applied);
+        setSuccess(result.applied && !result.warnings?.length);
         setDraft('');
       })
       .catch((err: unknown) => {

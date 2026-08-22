@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Button } from '../ui/Button';
 import { TextAreaField } from '../ui/TextAreaField';
 
@@ -22,10 +22,18 @@ export function ProcessComposer({
   onCreate,
 }: ProcessComposerProps) {
   const messageId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(180, Math.max(58, textarea.scrollHeight))}px`;
+  }, [value]);
   return (
     <section className="process-composer" aria-labelledby={`${messageId}-label`}>
       <span id={`${messageId}-label`} className="process-section-label">Describe → BPMN</span>
       <TextAreaField
+        ref={textareaRef}
         value={value}
         rows={2}
         maxLength={maxLength}
@@ -55,7 +63,7 @@ export function ProcessComposer({
         <span aria-hidden="true">⌘⏎</span>
       </div>
       <span id={messageId} className="process-composer-message" data-tone={issue ? 'danger' : undefined}>
-        {issue ?? (value.length > maxLength * 0.7 ? `${value.length.toLocaleString()}/${maxLength.toLocaleString()}` : '')}
+        {issue ?? `${value.length.toLocaleString()}/${maxLength.toLocaleString()}`}
       </span>
     </section>
   );

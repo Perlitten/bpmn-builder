@@ -21,6 +21,16 @@ export function createAssistantRequestGate(env: NodeJS.ProcessEnv = process.env)
 
   const acquire = (key: string, now = Date.now()): GateLease => {
     const cutoff = now - windowMs;
+    // A long-lived Node instance can see many one-off users. Evict idle
+    // records whose sliding window is over before accepting a new lease.
+    if (records.size > 1_000) {
+      let checked = 0;
+      for (const [knownKey, known] of records) {
+        if (known.inFlight === 0 && known.requests.every((time) => time <= cutoff)) records.delete(knownKey);
+        checked += 1;
+        if (checked >= 64) break;
+      }
+    }
     const record = records.get(key) ?? { inFlight: 0, requests: [] };
     record.requests = record.requests.filter((time) => time > cutoff);
     records.set(key, record);

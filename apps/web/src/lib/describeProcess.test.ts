@@ -108,7 +108,7 @@ describe('multilingual conditional descriptions', () => {
       input:
         'Клиент оставляет заявку. Менеджер проверяет данные. Если данные верны, оформить договор, иначе вернуть на доработку.',
       decisionName: 'Данные верны?',
-      branchLabels: ['Данные верны', 'Otherwise'],
+      branchLabels: ['Данные верны', 'Иначе'],
       taskCounts: [1, 1],
     },
     {
@@ -204,7 +204,7 @@ describe('multilingual conditional descriptions', () => {
       name: 'Данные клиента полностью…?',
       branches: [
         { name: 'Данные клиента полностью…', tasks: ['оформить договор'] },
-        { name: 'Otherwise', tasks: ['вернуть на доработку'] },
+        { name: 'Иначе', tasks: ['вернуть на доработку'] },
       ],
     });
   });
@@ -244,12 +244,18 @@ describe('multilingual conditional descriptions', () => {
       'Chinese process',
       '客户提交申请。经理检查数据。如果数据有效，创建合同，否则退回',
     );
-    expect(process.nodes.filter((node) => node.type === 'task').map((node) => node.name)).toEqual([
+      expect(process.nodes.filter((node) => node.type === 'task').map((node) => node.name)).toEqual([
       '客户提交申请',
       '经理检查数据',
       '创建合同',
       '退回',
     ]);
+  });
+
+  it('uses a localized otherwise label for Cyrillic decisions', () => {
+    expect(detectExclusiveDecision('Если товар есть, отгрузить, иначе уведомить')).toMatchObject({
+      branches: [{ name: 'Товар есть' }, { name: 'Иначе' }],
+    });
   });
 
 describe('parallel descriptions', () => {
@@ -302,6 +308,18 @@ describe('describeSemanticProcess', () => {
     const text = 'Review request, then go back to step 2';
     expect(descriptionInputIssue(text)).toMatch(/Loops are not generated/);
     expect(() => describeSemanticProcess('Loop', text)).toThrow(/Loops are not generated/);
+  });
+
+  it('rejects collaboration and event constructs instead of flattening them into tasks', () => {
+    const description = 'Pool Acme has lanes Requester and Finance. Add a boundary timer and send task.';
+    expect(descriptionInputIssue(description)).toMatch(/Pools, lanes, collaboration/i);
+    expect(() => describeSemanticProcess('Unsupported', description)).toThrow(/not generated from prose yet/i);
+  });
+
+  it('rejects a continuation after otherwise instead of attaching it to one branch', () => {
+    const description = 'If in stock, pick items, otherwise notify customer. Finally close order.';
+    expect(descriptionInputIssue(description)).toMatch(/continuation after an if\/otherwise branch/i);
+    expect(() => describeSemanticProcess('Ambiguous continuation', description)).toThrow(/continuation after/i);
   });
   it('correctly parses the description placeholder constant into a decision diagram', () => {
     const process = describeSemanticProcess('Invoice Process', DESCRIPTION_PLACEHOLDER);

@@ -9,6 +9,14 @@
   z-index: var(--z-inspector);
 }
 
+/* Simulation exposes the inspector as context, never as an accidental edit
+   surface. Keep it visible for orientation while making every control inert. */
+.element-inspector.is-readonly .element-inspector-body,
+.element-inspector-main.is-readonly .element-inspector-body {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .element-inspector-head {
   padding: 8px 10px 6px;
   border-bottom: 1px solid var(--color-border);
@@ -27,7 +35,13 @@
   margin-top: 2px;
   font: var(--fs-10)/var(--lh-base) ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
+
+.element-inspector-lanes label,
+.element-inspector-flow-name { overflow-wrap: anywhere; }
+
+.element-inspector-lanes input { text-overflow: ellipsis; }
 
 .element-inspector-body {
   flex: 1;

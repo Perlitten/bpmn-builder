@@ -26,6 +26,7 @@ type EditorChromeProps = {
   busy: boolean;
   notice: string | null;
   simulating: boolean;
+  simulationStarting?: boolean;
   simStatus: string | null;
   compact?: boolean;
   onBack: () => void;
@@ -48,6 +49,7 @@ export function EditorChrome({
   busy,
   notice,
   simulating,
+  simulationStarting = false,
   simStatus,
   compact: compactProp,
   onBack,
@@ -68,7 +70,7 @@ export function EditorChrome({
   const live = [notice, simulating ? simStatus : null].filter(Boolean).join(' · ');
 
   return (
-    <header className="editor-chrome z-[var(--z-chrome)] flex h-11 shrink-0 flex-nowrap items-center gap-2 overflow-visible border-b border-border bg-canvas px-2 sm:px-3">
+    <header className="editor-chrome z-[var(--z-menu)] flex h-11 shrink-0 flex-nowrap items-center gap-2 overflow-visible border-b border-border bg-canvas px-2 sm:px-3">
       <a
         href="#process-diagram"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[var(--z-skip-link)] focus:bg-canvas focus:px-3 focus:py-1.5 focus:text-sm"
@@ -98,12 +100,14 @@ export function EditorChrome({
           {live}
         </span>
       ) : null}
-      {notice && !compact ? <span className="max-w-[10rem] truncate text-xs text-accent">{notice}</span> : null}
+      {notice && !compact ? <span className="editor-notice max-w-[min(18rem,32vw)] truncate text-xs text-accent" role="status">{notice}</span> : null}
       <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
         <Button
           variant={simulating ? 'accent' : 'outline'}
           size="sm"
-          disabled={busy}
+          disabled={busy || simulationStarting}
+          loading={simulationStarting}
+          loadingLabel="Starting simulation…"
           aria-pressed={simulating}
           aria-label={
             simulating

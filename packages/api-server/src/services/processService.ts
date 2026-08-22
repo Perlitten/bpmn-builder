@@ -6,6 +6,7 @@ import {
   bpmnToWorkflow,
   importBpmnXml,
   workflowToBpmn,
+  xmlToProcess,
 } from '../../../bpmn-adapter/src/index.js';
 import type { Process, ProcessPatch, ProcessSummary, WorkflowDocument } from '../../../domain/src/index.js';
 import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
@@ -111,6 +112,19 @@ const BUILTIN_TEMPLATES: Array<{
 
 const BUILTIN_TEMPLATE_BY_ID = new Map(BUILTIN_TEMPLATES.map((template) => [template.id, template]));
 
+/**
+ * A normal single-process summary needs only the persisted workflow DTO and
+ * the lint pass. Parsing it into the semantic collaboration graph as well is
+ * redundant. Keep that heavier pass for the BPMN constructs whose summary
+ * actually exposes collaboration metadata.
+ */
+const SUMMARY_SEMANTIC_MARKER =
+  /<(?:[A-Za-z_][\w.-]*:)?(?:collaboration|participant|lane|messageFlow|boundaryEvent)\b/i;
+
+function needsSemanticSummary(bpmnXml: string): boolean {
+  return SUMMARY_SEMANTIC_MARKER.test(bpmnXml);
+}
+
 function parseStoredWorkflow(raw: string | null): WorkflowDocument | null {
   if (!raw) return null;
   try {
@@ -148,8 +162,17 @@ async function toSummary(row: ProcessRow): Promise<ProcessSummary> {
   const workflow = await workflowForSummary(row);
   const quality = lintProcess(row.bpmnXml, {
     executionProfile: DEFAULT_EXECUTION_PROFILE,
-    geometry: 'skip',
   });
+  let collaboration: Awaited<ReturnType<typeof xmlToProcess>> | null = null;
+  if (needsSemanticSummary(row.bpmnXml)) {
+    try {
+      collaboration = await xmlToProcess(row.bpmnXml);
+    } catch {
+      /* The lint result still carries the useful parse error for malformed XML. */
+    }
+  }
+  const peerNodes = collaboration?.processes?.flatMap((process) => process.nodes) ?? [];
+  const semanticNodes = [...(collaboration?.nodes ?? []), ...peerNodes];
   const allNodes = workflow?.nodes ?? [];
   const allEdges = workflow?.edges ?? [];
   const nodes = allNodes.slice(0, 16);
@@ -178,6 +201,18 @@ async function toSummary(row: ProcessRow): Promise<ProcessSummary> {
       : null,
     branches > 1 ? `${branches} branches` : null,
     ends ? `${ends} ${ends === 1 ? 'end' : 'ends'}` : null,
+    collaboration?.participants?.length
+      ? `${collaboration.participants.length} ${collaboration.participants.length === 1 ? 'pool' : 'pools'}`
+      : null,
+    collaboration?.lanes?.length
+      ? `${collaboration.lanes.length} ${collaboration.lanes.length === 1 ? 'lane' : 'lanes'}`
+      : null,
+    collaboration?.messageFlows?.length
+      ? `${collaboration.messageFlows.length} ${collaboration.messageFlows.length === 1 ? 'message flow' : 'message flows'}`
+      : null,
+    semanticNodes.filter((node) => node.type === 'boundaryEvent').length
+      ? `${semanticNodes.filter((node) => node.type === 'boundaryEvent').length} boundary events`
+      : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -200,9 +235,16 @@ async function toSummary(row: ProcessRow): Promise<ProcessSummary> {
       errors: quality.errors.length,
       warnings: quality.warnings.length,
       style: quality.style.length,
+      ...(quality.suggestions.length ? { suggestions: quality.suggestions.length } : {}),
     },
-    preview: {
-      caption: caption || 'Empty process',
+      preview: {
+        caption: caption || 'Empty process',
+        ...(collaboration?.participants?.length ? { participants: collaboration.participants.length } : {}),
+        ...(collaboration?.lanes?.length ? { lanes: collaboration.lanes.length } : {}),
+        ...(collaboration?.messageFlows?.length ? { messageFlows: collaboration.messageFlows.length } : {}),
+        ...(semanticNodes.some((node) => node.type === 'boundaryEvent')
+          ? { boundaryEvents: semanticNodes.filter((node) => node.type === 'boundaryEvent').length }
+          : {}),
       nodes: nodes.map((node) => ({
         id: node.id,
         type: node.type,
@@ -248,7 +290,10 @@ export type ProcessListResult = {
 };
 
 function likePattern(q: string): string {
-  return `%${q.normalize('NFKC').toLocaleLowerCase().replace(/[%_]/g, '')}%`;
+  // Wildcards are intentionally treated as literal search text. Backslash is
+  // removed as well because SQLite/Postgres differ in their implicit LIKE
+  // escape rules when no explicit ESCAPE clause is supplied.
+  return `%${q.normalize('NFKC').toLocaleLowerCase().replace(/[\\%_]/g, '')}%`;
 }
 
 function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessListQuery, userId: string) {
@@ -261,9 +306,13 @@ function listWhere(table: ReturnType<typeof getProcessesTable>, query: ProcessLi
     const normalizedDescription = getDbDriver() === 'sqlite'
       ? sql`unicode_lower(coalesce(${table.description}, ''))`
       : sql`lower(coalesce(${table.description}, ''))`;
+    const normalizedXml = getDbDriver() === 'sqlite'
+      ? sql`unicode_lower(${table.bpmnXml})`
+      : sql`lower(${table.bpmnXml})`;
     const search = or(
       sql`${normalizedName} like ${pattern}`,
       sql`${normalizedDescription} like ${pattern}`,
+      sql`${normalizedXml} like ${pattern}`,
     );
     if (search) parts.push(search);
   }
@@ -298,14 +347,13 @@ export async function listProcesses(query: ProcessListQuery, userId: string): Pr
 
   const countQuery = db.select({ total: sql<number>`cast(count(*) as int)` }).from(table);
   const listQuery = db.select(columns).from(table);
-  const countRows = (where ? await countQuery.where(where) : await countQuery) as {
-    total: number;
-  }[];
-  const rows = (
-    where
-      ? await listQuery.where(where).orderBy(...order).limit(query.limit).offset(offset)
-      : await listQuery.orderBy(...order).limit(query.limit).offset(offset)
-  ) as ProcessRow[];
+  const [countRows, rows] = await Promise.all([
+    (async () => (await (where ? countQuery.where(where) : countQuery)) as { total: number }[])(),
+    (async () =>
+      (await (where
+        ? listQuery.where(where).orderBy(...order).limit(query.limit).offset(offset)
+        : listQuery.orderBy(...order).limit(query.limit).offset(offset))) as ProcessRow[])(),
+  ]);
 
   return {
     processes: await Promise.all(rows.map(toSummary)),
@@ -380,16 +428,16 @@ export async function listTemplates(query: ProcessListQuery, userId: string): Pr
     updatedAt: table.updatedAt,
   };
   const countQuery = db.select({ total: sql<number>`cast(count(*) as int)` }).from(table);
-  const countRows = (where ? await countQuery.where(where) : await countQuery) as { total: number }[];
-  let rows: ProcessRow[] = [];
-  if (userLimit > 0) {
-    const listQuery = db.select(columns).from(table);
-    rows = (
-      where
-        ? await listQuery.where(where).orderBy(...order).limit(userLimit).offset(userOffset)
-        : await listQuery.orderBy(...order).limit(userLimit).offset(userOffset)
-    ) as ProcessRow[];
-  }
+  const listQuery = db.select(columns).from(table);
+  const [countRows, rows] = await Promise.all([
+    (async () => (await (where ? countQuery.where(where) : countQuery)) as { total: number }[])(),
+    userLimit > 0
+      ? (async () =>
+          (await (where
+            ? listQuery.where(where).orderBy(...order).limit(userLimit).offset(userOffset)
+            : listQuery.orderBy(...order).limit(userLimit).offset(userOffset))) as ProcessRow[])()
+      : Promise.resolve([] as ProcessRow[]),
+  ]);
   return {
     processes: await Promise.all([...selectedBuiltins, ...rows].map(toSummary)),
     total: builtins.length + Number(countRows[0]?.total ?? 0),

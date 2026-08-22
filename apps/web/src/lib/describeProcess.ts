@@ -40,6 +40,18 @@ const CONDITIONAL_OTHERWISE_PATTERN =
   /(?:(?:otherwise|else|иначе|в\s+противном\s+случае|sonst|ansonsten|sinon)(?=[^\p{L}\p{N}_]|$)|否则)/iu;
 const CONDITIONAL_LABEL_PATTERN = /(?:passed|прошла|пройдена|успешно|yes|да)\s*:/iu;
 
+/**
+ * The sentence parser deliberately supports only a single executable process
+ * with tasks and the small XOR/AND patterns below.  These constructs need
+ * collaboration/event semantics; treating their prose as task names creates
+ * a valid-looking but incorrect diagram, so fail closed with an actionable
+ * message instead.
+ */
+const UNSUPPORTED_CONSTRUCTION_PATTERN =
+  /\b(?:pools?|participants?|lanes?|swimlanes?|message\s+(?:start|flow|event)|boundary\s+(?:timer|error|event)|subprocess(?:es)?|send\s+tasks?|receive\s+tasks?|inclusive\s+(?:gateway|branch)|or[-\s]gateway|pool|participant|lane|swimlane|пул(?:ы|а)?|участник(?:и|а)?|дорожк(?:а|и|е|ами)|подпроцесс(?:ы|а)?|граничн(?:ое|ый|ая)\s+(?:событи[ея]|таймер)|включающ(?:ий|его)\s+шлюз|шлюз\s+или|поток\s+сообщени)/iu;
+const CONTINUATION_AFTER_BRANCH_PATTERN =
+  /[.!?;]\s*(?:finally|afterwards|then|next|in\s+parallel|meanwhile|at\s+the\s+same\s+time|одновременно|параллельно|затем|далее|потом|наконец|после\s+этого)\b/iu;
+
 function shortName(condition: string): string {
   const core = condition.replace(/^(?:the|a|an)\s+/i, '').replace(/\s+/g, ' ').trim();
   if (!core) return 'Yes';
@@ -136,9 +148,13 @@ function fromCondition(
     return twoBranches('Passed?', 'Passed', aTask, otherwise ? 'Otherwise' : 'Failed', bTask);
   }
   if (kind === 'yes') {
-    return twoBranches('Yes?', 'Yes', aTask, otherwise ? 'Otherwise' : 'No', bTask);
+    return twoBranches('Yes?', 'Yes', aTask, otherwise ? otherwiseLabel(condition, bTask) : 'No', bTask);
   }
-  return twoBranches(questionName(condition), shortName(condition), aTask, 'Otherwise', bTask);
+  return twoBranches(questionName(condition), shortName(condition), aTask, otherwiseLabel(condition, bTask), bTask);
+}
+
+function otherwiseLabel(condition: string, body: string): string {
+  return /[А-ЯЁа-яё]/u.test(`${condition} ${body}`) ? 'Иначе' : 'Otherwise';
 }
 
 function fromPair(c1: string, t1: string, c2: string, t2: string): Omit<ExclusiveDecision, 'prefix'> | null {
@@ -209,6 +225,11 @@ function parseIfDecision(rest: string): Omit<ExclusiveDecision, 'prefix'> | null
     const trueBody = first.body
       .slice(0, at)
       .replace(/[.!?;,\s\u3002\uFF0C\uFF01\uFF1F\uFF1B]+$/u, '');
+    if (CONTINUATION_AFTER_BRANCH_PATTERN.test(falseBody)) {
+      throw new DescriptionParseError(
+        'A continuation after an if/otherwise branch is ambiguous. Describe the decision first, then add the following steps in the editor.',
+      );
+    }
     if (new RegExp('^(?:' + CONDITIONAL_IF_PATTERN.source + ')', 'iu').test(falseBody.trim())) {
       throw new DescriptionParseError(
         'Nested conditions are not generated automatically yet. Describe one decision at a time.',
@@ -359,6 +380,11 @@ function assertSupportedDescription(text: string): void {
   if (LOOP_PATTERN.test(text)) {
     throw new DescriptionParseError(
       'Loops are not generated automatically yet. Create the process, then add the return flow in the editor.',
+    );
+  }
+  if (UNSUPPORTED_CONSTRUCTION_PATTERN.test(text)) {
+    throw new DescriptionParseError(
+      'Pools, lanes, collaboration, boundary/events, subprocesses, send/receive tasks, and inclusive gateways are not generated from prose yet. Create the basic process first, then add these elements in the editor.',
     );
   }
 }
