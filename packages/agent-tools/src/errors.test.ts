@@ -15,4 +15,11 @@ describe('userFacingPlanError', () => {
       'Step 3 (moveToBranch) failed: That element is not in this process.',
     );
   });
+
+  it('parses an untrusted step error without a backtracking regular expression', () => {
+    const padded = `Step 12 (renameElement) failed:${' '.repeat(20_000)}unknown element: Task_404`;
+    expect(userFacingPlanError(padded)).toBe(
+      'Step 12 (renameElement) failed: That element is not in this process.',
+    );
+  });
 });
