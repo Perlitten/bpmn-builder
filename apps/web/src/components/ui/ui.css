@@ -177,6 +177,11 @@
   padding-inline: 0;
 }
 
+.user-menu-trigger {
+  padding-left: var(--space-2);
+  padding-right: var(--space-4);
+}
+
 .ui-tooltip {
   pointer-events: none;
   position: absolute;

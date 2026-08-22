@@ -475,12 +475,12 @@ describe('process list query', () => {
     };
     const expectedQuality = lintProcess(boundaryXml, {
       executionProfile: DEFAULT_EXECUTION_PROFILE,
-      geometry: 'skip',
     });
     expect(body.processes.find((process) => process.id === 'boundary-process')?.quality).toEqual({
       errors: expectedQuality.errors.length,
       warnings: expectedQuality.warnings.length,
       style: expectedQuality.style.length,
+      ...(expectedQuality.suggestions.length ? { suggestions: expectedQuality.suggestions.length } : {}),
     });
     const legacy = body.processes.find((process) => process.id === 'legacy-no-workflow');
     expect(legacy?.structure).not.toBe('Empty process');

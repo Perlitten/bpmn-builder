@@ -33,6 +33,13 @@ function named(process: ReturnType<typeof createProcess>, name: string): string 
 }
 
 describe('pool / lane mutations', () => {
+  it('shortens an automatically-created host pool without changing explicit pools', () => {
+    let p = createProcess({ name: 'Customer: submit order and await approval' });
+    p = addLane(p, { name: 'Requester' }).process;
+    expect(p.participants[0]?.name).toBe('Customer');
+    p = addPool(p, { name: 'Accounts payable: external team' }).process;
+    expect(p.participants.at(-1)?.name).toBe('Accounts payable: external team');
+  });
   it('addLane ×3 then rename keeps three sibling names; click-only does not invent a task', () => {
     let p = createProcess();
     p = addTask(p, { name: 'Register' }).process;

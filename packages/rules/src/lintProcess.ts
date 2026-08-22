@@ -216,8 +216,9 @@ function layerStyle(model: LintModel, style: Finding[]): void {
 function layerGeometry(model: LintModel, suggestions: Finding[]): LayoutSource {
   if (!model.hasDi) return 'none';
 
-  const labelEntries = Object.entries(model.labels);
-  const nodeEntries = Object.entries(model.bounds);
+  const containers = new Set(model.containerIds);
+  const labelEntries = Object.entries(model.labels).filter(([id]) => !containers.has(id));
+  const nodeEntries = Object.entries(model.bounds).filter(([id]) => !containers.has(id));
 
   for (const [labelId, labelBox] of labelEntries) {
     for (const [nodeId, nodeBox] of nodeEntries) {
@@ -322,9 +323,22 @@ function layerQuality(model: LintModel, warnings: Finding[], limit: number): voi
   }
 
   const reachable = new Set(model.nodes.filter((node) => node.kind === 'start').map((node) => node.id));
+  const attachedBoundaries = new Map<string, string[]>();
+  for (const node of model.nodes) {
+    if (node.coreType !== 'boundaryEvent' || !node.attachedTo) continue;
+    const list = attachedBoundaries.get(node.attachedTo) ?? [];
+    list.push(node.id);
+    attachedBoundaries.set(node.attachedTo, list);
+  }
   const queue = [...reachable];
   for (let cursor = 0; cursor < queue.length; cursor++) {
-    for (const flow of outgoing.get(queue[cursor]!) ?? []) {
+    const current = queue[cursor]!;
+    for (const boundaryId of attachedBoundaries.get(current) ?? []) {
+      if (reachable.has(boundaryId)) continue;
+      reachable.add(boundaryId);
+      queue.push(boundaryId);
+    }
+    for (const flow of outgoing.get(current) ?? []) {
       if (!flow.target || reachable.has(flow.target)) continue;
       reachable.add(flow.target);
       queue.push(flow.target);

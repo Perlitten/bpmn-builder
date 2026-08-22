@@ -10,6 +10,12 @@
   z-index: var(--z-inspector);
 }
 
+/* Simulation exposes the inspector as context, never as an edit surface. */
+.element-inspector.is-readonly .element-inspector-body,
+.element-inspector-main.is-readonly .element-inspector-body {
+  pointer-events: none;
+}
+
 .element-inspector.is-collapsed {
   width: var(--editor-inspector-stub);
 }

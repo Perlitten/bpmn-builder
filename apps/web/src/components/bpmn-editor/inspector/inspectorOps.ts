@@ -170,11 +170,21 @@ export function attachBoundary(modeler: Getter, hostId: string, def: BpmnCompone
   if (!host) return;
   const factory = modeler.get('elementFactory') as ElementFactory;
   const nonInt = def.id.includes('nonInterrupting');
+  const isTimer = def.id.includes('timer');
+  const isError = def.id.includes('error');
   const shape = factory.createShape({
     type: def.bpmnType,
     eventDefinitionType: def.eventDefinition ? `bpmn:${def.eventDefinition}` : undefined,
-    cancelActivity: def.id.includes('error') ? true : !nonInt,
-  });
+    name: isTimer ? 'Timer boundary event' : isError ? 'Error boundary event' : 'Boundary event',
+    cancelActivity: isError ? true : !nonInt,
+  }) as DiagramElement & {
+    businessObject?: DiagramElement['businessObject'] & {
+      eventDefinitions?: Array<{ timeDuration?: string }>;
+    };
+  };
+  if (isTimer && shape.businessObject?.eventDefinitions?.[0]) {
+    shape.businessObject.eventDefinitions[0].timeDuration = 'PT1H';
+  }
   const x = (host.x ?? 0) + (host.width ?? 100) / 2;
   const y = (host.y ?? 0) + (host.height ?? 80);
   modeling(modeler).createShape(shape, { x, y }, host, { attach: true });

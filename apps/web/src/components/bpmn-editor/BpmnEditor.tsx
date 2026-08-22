@@ -6,6 +6,7 @@ import {
   describeSimulation,
   describeSimulationError,
   resolveClick,
+  simulationMarks,
   type TokenSimulation,
 } from '@bpmn/simulate';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
@@ -75,6 +76,7 @@ type BpmnEditorProps = {
   processId: string;
   xml: string;
   simulating?: boolean;
+  onExitSimulation?: () => void;
   onChange?: (xml: string) => void;
   onSimStatus?: (status: string) => void;
 };
@@ -86,7 +88,14 @@ export type BpmnEditorHandle = {
   resetSimulation: () => void;
 };
 
-type Viewbox = { x: number; y: number; width: number; height: number; scale?: number };
+type Viewbox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale?: number;
+  outer?: { width: number; height: number };
+};
 
 type CanvasService = {
   zoom: (scale?: string | number, center?: string) => number;
@@ -213,7 +222,7 @@ function movedShape(payload: unknown): MovedShape | undefined {
 }
 
 export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function BpmnEditor(
-  { processId, xml, simulating = false, onChange, onSimStatus },
+  { processId, xml, simulating = false, onExitSimulation, onChange, onSimStatus },
   ref,
 ) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -223,7 +232,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const sessionRef = useRef<SemanticEditor | null>(null);
   const simRef = useRef<TokenSimulation | null>(null);
   const tokenViewRef = useRef<TokenView | null>(null);
+  const simChoiceIdsRef = useRef<string[]>([]);
+  const simChoiceIndexRef = useRef(0);
   const simulatingRef = useRef(simulating);
+  const onExitSimulationRef = useRef(onExitSimulation);
   const onSimStatusRef = useRef(onSimStatus);
   const { xmlRef, currentXml, revision: graphRev, emit } = useLiveBpmnXml(processId, xml, onChange);
   const [scale, setScale] = useState(1);
@@ -253,6 +265,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
 
   onSimStatusRef.current = onSimStatus;
   simulatingRef.current = simulating;
+  onExitSimulationRef.current = onExitSimulation;
   toolRef.current = tool;
 
   useEffect(() => {
@@ -276,6 +289,9 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     }
     const process = session.process();
     const snap = sim.snapshot();
+    const marks = simulationMarks(process, snap);
+    simChoiceIdsRef.current = marks.choice;
+    if (simChoiceIndexRef.current >= marks.choice.length) simChoiceIndexRef.current = 0;
     tokenViewRef.current?.sync(process, snap);
     onSimStatusRef.current?.(describeSimulation(process, snap));
     setHint(describeSimulation(process, snap));
@@ -555,6 +571,8 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       tokenViewRef.current?.clear();
       tokenViewRef.current = null;
       simRef.current = null;
+      simChoiceIdsRef.current = [];
+      simChoiceIndexRef.current = 0;
       modeler.destroy();
       modelerRef.current = null;
       sessionRef.current = null;
@@ -566,17 +584,78 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       if (event.key === 'Escape') {
         if (isEditorChromeKeyTarget(event.target)) return;
         setCatalogView(null);
+        if (simulatingRef.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          onExitSimulationRef.current?.();
+          return;
+        }
         setValidating(false);
-        if (!simulatingRef.current) setHint(null);
+        setHint(null);
         const dragging = modelerRef.current?.get('dragging') as Dragging | undefined;
         dragging?.cancel();
         return;
       }
-      if (isEditorChromeKeyTarget(event.target) || simulatingRef.current) return;
+      if (isEditorChromeKeyTarget(event.target)) return;
       const modeler = modelerRef.current;
       const session = sessionRef.current;
       if (!modeler || !session) return;
       const canvasFocused = event.target === canvasKeyboardRef.current;
+      if (simulatingRef.current) {
+        if (!canvasFocused) return;
+        const sim = simRef.current;
+        if (!sim) return;
+        const process = session.process();
+        const marks = simulationMarks(process, sim.snapshot());
+        const activeIds = marks.choice.length ? marks.choice : marks.click;
+        if (!activeIds.length) return;
+        const selectedId = (modeler.get('selection') as SelectionService).get().map(selectableElement)[0]?.id;
+        const selectedIndex = selectedId ? activeIds.indexOf(selectedId) : -1;
+        const currentIndex = selectedIndex >= 0 ? selectedIndex : Math.min(simChoiceIndexRef.current, activeIds.length - 1);
+        const move = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1
+          : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1
+            : event.key === 'Home' ? -activeIds.length
+              : event.key === 'End' ? activeIds.length
+                : 0;
+        if (move !== 0) {
+          const nextIndex = move === -activeIds.length
+            ? 0
+            : move === activeIds.length
+              ? activeIds.length - 1
+              : (currentIndex + move + activeIds.length) % activeIds.length;
+          const nextId = activeIds[nextIndex]!;
+          simChoiceIndexRef.current = nextIndex;
+          const next = (modeler.get('elementRegistry') as ElementRegistry).get(nextId);
+          if (next) (modeler.get('selection') as SelectionService).select(next);
+          const flow = process.flows.find((item) => item.id === nextId);
+          const node = process.nodes.find((item) => item.id === nextId);
+          const label = flow?.name?.trim() || node?.name?.trim() || (flow ? `Branch ${nextIndex + 1}` : node?.type ?? nextId);
+          event.preventDefault();
+          event.stopPropagation();
+          setCanvasAnnouncement(`${label}, ${nextIndex + 1} of ${activeIds.length}`);
+          setHint(marks.choice.length
+            ? `Choose branch: ${label} (${nextIndex + 1} of ${activeIds.length})`
+            : `Token on ${label} (${nextIndex + 1} of ${activeIds.length})`);
+          return;
+        }
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const targetId = activeIds[currentIndex]!;
+        const target = resolveClick(process, sim.snapshot(), targetId);
+        if (!target) return;
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          sim.signal(target.nodeId, target.flowId);
+          simChoiceIndexRef.current = 0;
+          publishSim();
+        } catch (err) {
+          tokenViewRef.current?.sync(process, sim.snapshot());
+          const status = describeSimulationError(err);
+          onSimStatusRef.current?.(status);
+          setHint(status);
+        }
+        return;
+      }
       if (canvasFocused && isCanvasNavigationKey(event.key)) {
         const registry = modeler.get('elementRegistry') as ElementRegistry;
         const elements = navigableElements(registry);
@@ -659,6 +738,39 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [applyRedo, applyUndo, emit]);
+
+  useEffect(() => {
+    const host = overlayRef.current;
+    const canvas = modelerRef.current?.get('canvas') as CanvasService | undefined;
+    if (!host || !canvas) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.element-inspector, .bpmn-zoom-controls, button, input, textarea, select')) return;
+      event.preventDefault();
+      if (event.ctrlKey || event.metaKey) {
+        (modelerRef.current?.get('zoomScroll') as ZoomScrollService | undefined)?.stepZoom(event.deltaY < 0 ? 1 : -1);
+        return;
+      }
+      let viewbox: Viewbox;
+      try {
+        viewbox = canvas.viewbox();
+      } catch {
+        return;
+      }
+      const outer = viewbox.outer ?? { width: host.clientWidth, height: host.clientHeight };
+      const line = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? outer.height : 1;
+      const dx = event.deltaX * line * (viewbox.width / Math.max(1, outer.width));
+      const dy = event.deltaY * line * (viewbox.height / Math.max(1, outer.height));
+      try {
+        canvas.viewbox({ ...viewbox, x: viewbox.x + dx, y: viewbox.y + dy });
+      } catch {
+        /* The canvas can be between imports; the next wheel event will retry. */
+      }
+    };
+    host.addEventListener('wheel', onWheel, { passive: false });
+    return () => host.removeEventListener('wheel', onWheel);
+  }, [simulating]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLintXml(currentXml), 250);
@@ -924,6 +1036,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
           keyboardRef={canvasKeyboardRef}
           items={canvasItems}
           selectedIds={selectedIds}
+          simulating={simulating}
         />
         <span className="sr-only" role="status" aria-live="polite">
           {canvasAnnouncement}
@@ -985,6 +1098,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
           <ElementInspector
             framed={false}
             element={selection}
+            readOnly={simulating}
             canDelete={canDelete && !simulating}
             lint={lint}
             replaceWorks={replaceWorks}

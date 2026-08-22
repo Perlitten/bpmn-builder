@@ -19,7 +19,20 @@ type ProcessListResponse = {
   limit: number;
 };
 
-class ApiError extends Error {
+export type FeedbackCategory = 'general' | 'bug' | 'idea' | 'ux' | 'question';
+
+export type FeedbackItem = {
+  id: string;
+  category: FeedbackCategory;
+  message: string;
+  page: string | null;
+  processId: string | null;
+  status: 'new' | 'reviewed' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+};
+
+export class ApiError extends Error {
   readonly status: number;
   readonly currentVersion?: number;
   constructor(message: string, status: number, body?: Record<string, unknown>) {
@@ -45,6 +58,13 @@ type ApiClient = {
   renameProcess: (id: string, name: string, version: number, signal?: AbortSignal) => Promise<StoredProcess>;
   duplicateProcess: (id: string, name?: string, signal?: AbortSignal) => Promise<{ id: string }>;
   deleteProcess: (id: string, signal?: AbortSignal) => Promise<void>;
+  sendFeedback: (input: {
+    category: FeedbackCategory;
+    message: string;
+    page?: string;
+    processId?: string;
+  }, signal?: AbortSignal) => Promise<FeedbackItem>;
+  listFeedback: (signal?: AbortSignal) => Promise<FeedbackItem[]>;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -139,6 +159,18 @@ export const api: ApiClient = {
       method: 'DELETE',
       signal,
     });
+  },
+  sendFeedback: async (input, signal) => {
+    const data = await request<{ feedback: FeedbackItem }>('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify(input),
+      signal,
+    });
+    return data.feedback;
+  },
+  listFeedback: async (signal) => {
+    const data = await request<{ feedback: FeedbackItem[] }>('/api/feedback', { signal });
+    return data.feedback;
   },
 };
 

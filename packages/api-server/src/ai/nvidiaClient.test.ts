@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createNvidiaClient } from './nvidiaClient.js';
+import { createNvidiaClient, nvidiaBaseUrl } from './nvidiaClient.js';
 import { assistantTimeoutError } from './timeout.js';
 
 const streamResponse = (content: string) =>
@@ -17,6 +17,14 @@ describe('NVIDIA client', () => {
       if (!(key in snapshot)) delete process.env[key];
     }
     Object.assign(process.env, snapshot);
+  });
+
+  it('ignores private or non-NVIDIA endpoint overrides outside local tests', () => {
+    process.env.NODE_ENV = 'production';
+    for (const value of ['https://169.254.169.254/latest', 'https://10.0.0.1/v1', 'http://localhost:8080/v1']) {
+      process.env.NVIDIA_BASE_URL = value;
+      expect(nvidiaBaseUrl()).toBe('https://integrate.api.nvidia.com/v1');
+    }
   });
 
   it('parses streamed JSON without leaking the key into the body', async () => {

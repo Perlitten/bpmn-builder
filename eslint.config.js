@@ -12,6 +12,8 @@ export default tseslint.config(
       '**/build/**',
       '**/coverage/**',
       '**/graphify-out/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
       'packages/db/migrations/**',
     ],
   },

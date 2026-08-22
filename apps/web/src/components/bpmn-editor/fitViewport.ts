@@ -161,10 +161,9 @@ export function collectFitObstacles(host: HTMLElement): Rect[] {
   if (zoom) obstacles.push(zoom);
   const inspector = elementRect(stage?.querySelector('.element-inspector') ?? null);
   if (inspector && intersects(canvas, inspector)) obstacles.push(inspector);
-  // Floating Architect is draggable and must not collapse Fit to viewport to
-  // the largest rectangle around a temporary overlay. Only its compact dock is
-  // fixed chrome that reduces the usable canvas.
-  const architect = elementRect(doc.querySelector('.architect-shell.is-docked.is-open'));
+  // Architect is a real editing surface, not a decoration: when open it must
+  // be excluded from the fit area even if the user dragged it over the canvas.
+  const architect = elementRect(doc.querySelector('.architect-shell.is-open'));
   if (architect && intersects(canvas, architect)) obstacles.push(architect);
   return obstacles;
 }

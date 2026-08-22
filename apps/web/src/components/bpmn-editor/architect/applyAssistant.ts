@@ -6,6 +6,7 @@ import {
   type AgentScope,
   type ToolCall,
 } from '@bpmn/agent-tools';
+import { lintProcess } from '@bpmn/rules';
 import type { SemanticProcess } from '@bpmn/semantic-core';
 
 export type AssistantPayload = {
@@ -29,6 +30,7 @@ export type AssistantApplyResult = {
   diff: string[];
   message: string;
   applied: boolean;
+  warnings?: string[];
 };
 
 function mutating(tools: ToolCall[]): boolean {
@@ -62,10 +64,20 @@ export async function applyAssistantResult(
     ? await session.applyProcess(data.process, selectId)
     : await session.applyPlan(tools, scope);
 
+  const lint = lintProcess(session.process(), { geometry: 'skip' });
+  const findings = [...lint.errors, ...lint.warnings, ...lint.style]
+    .filter((finding) => finding.id === 'quality.empty-branch' || finding.id === 'bpmn.dangling' || finding.id === 'bpmn.flow-source-target')
+    .map((finding) => finding.message)
+    .slice(0, 4);
+  const warningMessage = findings.length
+    ? ` Applied with warnings: ${findings.join(' · ')}${findings.length >= 4 ? ' · …' : ''}`
+    : '';
+
   return {
     xml,
     diff: semanticDiff(before, session.process()),
-    message,
+    message: `${message || 'Updated the process from your request.'}${warningMessage}`,
     applied: true,
+    ...(findings.length ? { warnings: findings } : {}),
   };
 }

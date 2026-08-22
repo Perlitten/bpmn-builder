@@ -206,6 +206,37 @@ export function removeJoin(p: SemanticProcess, nodeId: string): void {
   dropFromLanes(p, nodeId);
 }
 
+/** Remove an untouched split/join pair without discarding branch work. */
+export function removeEmptySplit(p: SemanticProcess, nodeId: string): void {
+  const region = allRegions(p).find((candidate) => candidate.split === nodeId);
+  if (!region || region.split === region.join || region.type === 'subprocess' || region.type === 'eventSubprocess') {
+    throw new Error(`cannot remove split ${nodeId}: no empty split region`);
+  }
+  const ins = incomingFlows(p, nodeId);
+  const outs = outgoingFlows(p, nodeId);
+  const joinOuts = outgoingFlows(p, region.join);
+  const joinIns = incomingFlows(p, region.join);
+  const emptyBranches = region.branches.every((branch) => branch.nodeIds.length === 0);
+  const directToJoin = outs.length >= 2 && outs.every((flow) => flow.target === region.join);
+  const joinOnlyFromSplit = joinIns.length === outs.length && joinIns.every((flow) => flow.source === nodeId);
+  if (ins.length !== 1 || !emptyBranches || !directToJoin || !joinOnlyFromSplit || joinOuts.length !== 1) {
+    throw new Error(`cannot remove split ${nodeId}: remove branch activities first`);
+  }
+  const incoming = ins[0];
+  const afterJoin = joinOuts[0];
+  incoming.target = afterJoin.target;
+  const removedFlowIds = new Set([...outs.map((flow) => flow.id), afterJoin.id]);
+  p.flows = p.flows.filter((flow) => !removedFlowIds.has(flow.id));
+  const removedNodeIds = new Set([nodeId, region.join]);
+  p.nodes = p.nodes.filter((node) => !removedNodeIds.has(node.id));
+  for (const scope of p.scopes) {
+    scope.nodeIds = scope.nodeIds.filter((id) => !removedNodeIds.has(id));
+    scope.flowIds = scope.flowIds.filter((id) => !removedFlowIds.has(id));
+  }
+  dropFromLanes(p, nodeId);
+  dropFromLanes(p, region.join);
+}
+
 export function flowAfter(p: SemanticProcess, afterId: string, branchId?: string): SequenceFlow {
   if (branchId) {
     const { region, branch } = findBranch(p, branchId);

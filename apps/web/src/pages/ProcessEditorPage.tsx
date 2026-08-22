@@ -48,7 +48,18 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   });
   const [busy, setBusy] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const [simulationStarting, setSimulationStarting] = useState(false);
   const [simStatus, setSimStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!simulating) {
+      setSimulationStarting(false);
+      return;
+    }
+    setSimulationStarting(true);
+    const timer = window.setTimeout(() => setSimulationStarting(false), 450);
+    return () => window.clearTimeout(timer);
+  }, [simulating]);
 
   useEffect(() => {
     document.title = pageTitle('editor', name);
@@ -239,6 +250,7 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
         busy={busy}
         notice={notice}
         simulating={simulating}
+        simulationStarting={simulationStarting}
         simStatus={simStatus}
         onBack={() => {
           void saveQueueRef.current?.flush();
@@ -264,11 +276,12 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
           processId={processId}
           xml={process.bpmnXml}
           simulating={simulating}
+          onExitSimulation={() => setSimulating(false)}
           onChange={handleXmlChange}
           onSimStatus={(status) => setSimStatus(status || null)}
         />
         {error ? (
-          <p className="absolute bottom-4 right-4 z-[var(--z-zoom)] border border-danger bg-canvas px-3 py-2 text-xs text-danger">
+          <p className="editor-import-error absolute bottom-4 right-4 z-[var(--z-zoom)] border border-danger bg-canvas px-3 py-2 text-xs text-danger">
             {error}
           </p>
         ) : null}

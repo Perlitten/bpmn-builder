@@ -43,3 +43,22 @@ export const processes = pgTable(
     index("processes_updated_at_idx").on(table.updatedAt),
   ],
 );
+
+export const feedback = pgTable(
+  'feedback',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    category: text('category').notNull().default('general'),
+    message: text('message').notNull(),
+    page: text('page'),
+    processId: text('process_id'),
+    status: text('status').notNull().default('new'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [
+    index('feedback_user_id_idx').on(table.userId),
+    index('feedback_created_at_idx').on(table.createdAt),
+  ],
+);

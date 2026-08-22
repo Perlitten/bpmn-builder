@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
-import { ArrowRight, ChevronLeft, MoreHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowRight, ChevronLeft, MoreHorizontal, Pencil, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   absoluteTime,
   relativeTime,
@@ -40,7 +40,7 @@ function structureMetrics(process: ProcessSummary): StructureMetric[] {
       const match = /^(\d+)\s+(.+)$/.exec(part);
       return match ? [{ value: match[1], label: match[2] }] : [];
     });
-  return metrics.slice(0, 4);
+  return metrics.slice(0, 6);
 }
 
 function shortDate(value: string): string {
@@ -119,9 +119,25 @@ export function ProcessDetailPanel({
             </Button>
           ) : null}
           {canManage ? (
-            <ChromeMenu label={<MoreHorizontal size={16} aria-hidden="true" />} ariaLabel={`More actions for ${process.name}`}>
-              {onRename ? <ChromeMenuItem onSelect={() => onRename(process)}>Rename</ChromeMenuItem> : null}
-              {onDelete ? <ChromeMenuItem onSelect={() => onDelete(process)}>Delete</ChromeMenuItem> : null}
+            <ChromeMenu
+              label={<MoreHorizontal size={16} aria-hidden="true" />}
+              ariaLabel={`More actions for ${process.name}`}
+              menuClassName="process-detail-menu"
+            >
+              {onRename ? (
+                <ChromeMenuItem icon={<Pencil size={14} strokeWidth={1.8} />} onSelect={() => onRename(process)}>
+                  Rename
+                </ChromeMenuItem>
+              ) : null}
+              {onDelete ? (
+                <ChromeMenuItem
+                  icon={<Trash2 size={14} strokeWidth={1.8} />}
+                  tone="danger"
+                  onSelect={() => onDelete(process)}
+                >
+                  Delete
+                </ChromeMenuItem>
+              ) : null}
             </ChromeMenu>
           ) : null}
           {onClose ? (

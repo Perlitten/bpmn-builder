@@ -144,6 +144,83 @@ function NodeShape({ node, detail }: { node: PositionedNode; detail: boolean }) 
   );
 }
 
+function CollaborationFrame({
+  preview,
+  minX,
+  minY,
+  maxX,
+  maxY,
+}: {
+  preview: ProcessMiniPreview;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}) {
+  // We only know aggregate collaboration counts in a list preview. A pool
+  // outline is truthful for one participant; drawing one outline around a
+  // multi-pool collaboration would incorrectly imply that all nodes share a
+  // pool (and that sequence flows cross its boundary).
+  if (preview.participants !== 1) return null;
+  const x = minX + 4;
+  const y = minY + 4;
+  const width = Math.max(1, maxX - minX - 8);
+  const height = Math.max(1, maxY - minY - 8);
+  const header = Math.min(20, height / 3);
+  const lanes = Math.max(0, preview.lanes ?? 0);
+  return (
+    <g aria-hidden="true" opacity="0.65">
+      <rect x={x} y={y} width={width} height={height} fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <line x1={x} y1={y + header} x2={x + width} y2={y + header} stroke="currentColor" strokeWidth="1" />
+      {lanes > 1
+        ? Array.from({ length: lanes - 1 }, (_, index) => {
+            const laneY = y + header + ((height - header) * (index + 1)) / lanes;
+            return <line key={laneY} x1={x} y1={laneY} x2={x + width} y2={laneY} stroke="currentColor" strokeWidth="0.75" strokeDasharray="3 3" />;
+          })
+        : null}
+    </g>
+  );
+}
+
+function collaborationDescription(preview: ProcessMiniPreview): string {
+  return [
+    preview.participants ? `${preview.participants} ${preview.participants === 1 ? 'pool' : 'pools'}` : '',
+    preview.lanes ? `${preview.lanes} ${preview.lanes === 1 ? 'lane' : 'lanes'}` : '',
+    preview.messageFlows ? `${preview.messageFlows} message ${preview.messageFlows === 1 ? 'flow' : 'flows'}` : '',
+    preview.boundaryEvents ? `${preview.boundaryEvents} boundary ${preview.boundaryEvents === 1 ? 'event' : 'events'}` : '',
+  ].filter(Boolean).join(' · ');
+}
+
+/**
+ * This is intentionally a legend, not a guessed pool layout. The preview DTO
+ * has counts but no node-to-participant/lane ownership, so a separate summary
+ * prevents the sequence-flow thumbnail from masquerading as a full
+ * collaboration diagram.
+ */
+function CollaborationSummary({
+  label,
+  minX,
+  minY,
+  maxX,
+}: {
+  label: string;
+  minX: number;
+  minY: number;
+  maxX: number;
+}) {
+  if (!label) return null;
+  const x = minX + 4;
+  const y = minY + 2;
+  const width = Math.max(1, maxX - minX - 8);
+  return (
+    <g aria-hidden="true" opacity="0.75">
+      <rect x={x} y={y} width={width} height="14" fill="var(--color-canvas)" stroke="currentColor" strokeWidth="0.75" />
+      <path d={`M ${x + 5} ${y + 4} H ${x + 13} V ${y + 10} H ${x + 5} Z M ${x + 8} ${y + 2} H ${x + 16} V ${y + 8} H ${x + 8} Z`} fill="none" stroke="currentColor" strokeWidth="0.75" />
+      <text x={x + 21} y={y + 10} fontSize="8" fill="currentColor">{label}</text>
+    </g>
+  );
+}
+
 export function BpmnSchematic({
   preview,
   className = '',
@@ -157,16 +234,21 @@ export function BpmnSchematic({
 
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const minX = Math.min(...nodes.map((node) => node.px)) - 8;
-  const minY = Math.min(...nodes.map((node) => node.py)) - 8;
+  const contentMinY = Math.min(...nodes.map((node) => node.py)) - 8;
   const maxX = Math.max(...nodes.map((node) => node.px + node.width)) + 12;
   const maxY = Math.max(...nodes.map((node) => node.py + node.height)) + 8;
+  const collaborationLabel = collaborationDescription(preview);
+  const minY = contentMinY - (collaborationLabel ? 18 : 0);
+  const ariaLabel = collaborationLabel
+    ? `${preview.caption} · Sequence-flow preview; collaboration: ${collaborationLabel}`
+    : preview.caption;
 
   return (
     <svg
       viewBox={`${minX} ${minY} ${Math.max(1, maxX - minX)} ${Math.max(1, maxY - minY)}`}
       className={`bpmn-schematic block h-9 w-full text-ink ${className}`}
       role="img"
-      aria-label={preview.caption}
+      aria-label={ariaLabel}
       preserveAspectRatio="xMidYMid meet"
       style={{ '--schematic-zoom': zoom } as CSSProperties}
     >
@@ -175,6 +257,8 @@ export function BpmnSchematic({
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
         </marker>
       </defs>
+      <CollaborationSummary label={collaborationLabel} minX={minX} minY={minY} maxX={maxX} />
+      <CollaborationFrame preview={preview} minX={minX} minY={contentMinY} maxX={maxX} maxY={maxY} />
       {preview.edges.map((edge, index) => {
         const source = byId.get(edge.source);
         const target = byId.get(edge.target);

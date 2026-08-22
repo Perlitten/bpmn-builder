@@ -3,6 +3,14 @@ import { assistantTimeoutMs, assistantUpstreamError, isTimeoutError } from './ti
 import type { GenerateJsonInput } from './types.js';
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
+const MAX_OUTPUT_TOKENS = 32768;
+
+export function geminiMaxOutputTokens(env: NodeJS.ProcessEnv = process.env): number {
+  const value = Number(env.GEMINI_MAX_OUTPUT_TOKENS);
+  if (!Number.isInteger(value) || value < 256) return DEFAULT_MAX_OUTPUT_TOKENS;
+  return Math.min(value, MAX_OUTPUT_TOKENS);
+}
 
 export function createGeminiClient(apiKey: string, model: string) {
   return {
@@ -22,7 +30,7 @@ export function createGeminiClient(apiKey: string, model: string) {
             generationConfig: {
               temperature: input.temperature ?? 0.3,
               responseMimeType: 'application/json',
-              maxOutputTokens: 8192,
+              maxOutputTokens: geminiMaxOutputTokens(),
             },
           }),
           signal: input.signal ?? AbortSignal.timeout(assistantTimeoutMs()),

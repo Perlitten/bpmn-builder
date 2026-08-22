@@ -19,7 +19,7 @@ import {
 } from '../auth/session.js';
 import { OAUTH_HANDOFF_TTL_MS, OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { issueTestSession } from '../auth/testSession.js';
-import { upsertGoogleUser } from '../auth/users.js';
+import { updateUserName, upsertGoogleUser } from '../auth/users.js';
 
 function redirectHome(res: Response, origin: string, error?: string): void {
   const url = new URL('/', origin);
@@ -113,6 +113,28 @@ export function registerAuthRoutes(app: Application): void {
       return;
     }
     res.json({ user: req.user });
+  });
+
+  app.patch('/api/auth/me', authRateLimit, async (req: Request, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Sign in required' });
+      return;
+    }
+    const name = typeof req.body?.name === 'string' ? req.body.name : '';
+    if (name.trim().length > 80) {
+      res.status(400).json({ error: 'name must be at most 80 characters' });
+      return;
+    }
+    try {
+      const user = await updateUserName(req.user.id, name);
+      if (!user) {
+        res.status(404).json({ error: 'not found' });
+        return;
+      }
+      res.json({ user });
+    } catch {
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
   });
 
   app.get('/api/auth/google', authRateLimit, (req: Request, res: Response) => {

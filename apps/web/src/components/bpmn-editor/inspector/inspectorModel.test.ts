@@ -192,11 +192,18 @@ describe('inspector model', () => {
     };
     expect(flowNodeLaneAssignment(task, graph)).toEqual({
       lanes: [
-        { id: 'Lane_1', name: 'Clerk' },
         { id: 'Lane_2', name: 'Manager' },
         { id: 'Lane_4', name: 'Nested' },
       ],
-      currentLaneId: 'Lane_1',
+    });
+    expect(flowNodeLaneAssignment(task, {
+      ...graph,
+      lanes: graph.lanes.map((lane) => lane.id === 'Lane_1' ? { ...lane, participantId: 'Participant_2', processId: 'Process_2' } : lane),
+    })).toEqual({
+      lanes: [
+        { id: 'Lane_2', name: 'Manager' },
+        { id: 'Lane_4', name: 'Nested' },
+      ],
     });
     expect(flowNodeLaneAssignment(task, { ...graph, lanes: [] })).toEqual({ lanes: [] });
     expect(flowNodeLaneAssignment({ id: 'Participant_1', type: 'bpmn:Participant' }, graph).lanes).toEqual([]);

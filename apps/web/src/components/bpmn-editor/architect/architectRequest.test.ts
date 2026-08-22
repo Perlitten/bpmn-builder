@@ -15,7 +15,8 @@ describe('Architect chrome markup', () => {
     expect(src).toMatch(/role="button"/);
     const headStart = src.indexOf('architect-panel-head');
     const head = src.slice(headStart, src.indexOf('</div>', headStart) + 6);
-    expect(head).not.toMatch(/<button\b/);
+    expect(head).toMatch(/className="architect-panel-close"/);
+    expect(head).toMatch(/aria-label="Close Architect"/);
     const hitStart = src.indexOf('className="architect-mascot-btn"');
     const inner = src.slice(src.indexOf('>', hitStart), src.indexOf('</div>', hitStart));
     expect(inner).toMatch(/ArchitectMascot/);
@@ -105,7 +106,7 @@ describe('Architect chrome markup', () => {
     const css = readFileSync(new URL('./architect.css', import.meta.url), 'utf8');
     expect(panel).toMatch(/className="architect-conversation"/);
     expect(panel).toMatch(/role="log"/);
-    expect(panel).toMatch(/setSuccess\(result\.applied\)/);
+    expect(panel).toMatch(/setSuccess\(result\.applied\s*&&\s*!result\.warnings\?\.length\)/);
     expect(panel).not.toMatch(/setSuccess\(true\)/);
     expect(css).toMatch(/\.architect-conversation \{[\s\S]*max-height:[\s\S]*overflow:\s*auto/);
     expect(css).toMatch(/\.architect-turn p \{[\s\S]*white-space:\s*pre-wrap/);

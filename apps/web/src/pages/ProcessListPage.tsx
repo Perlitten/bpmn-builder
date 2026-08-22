@@ -169,7 +169,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   }, [debouncedQuery, kind, sort, page, reloadToken]);
 
   const attentionCount = useMemo(
-    () => processes.filter((process) => process.quality.errors + process.quality.warnings > 0).length,
+    () => processes.filter((process) => process.quality.errors + process.quality.warnings + (process.quality.suggestions ?? 0) > 0).length,
     [processes],
   );
   const draftCount = useMemo(
@@ -179,7 +179,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const visibleProcesses = useMemo(() => {
     if (kind !== 'process' || mobileFilter === 'all') return processes;
     if (mobileFilter === 'draft') return processes.filter((process) => process.status === 'draft');
-    return processes.filter((process) => process.quality.errors + process.quality.warnings > 0);
+    return processes.filter((process) => process.quality.errors + process.quality.warnings + (process.quality.suggestions ?? 0) > 0);
   }, [kind, mobileFilter, processes]);
   const selectedProcess = visibleProcesses.find((process) => process.id === selectedId) ?? visibleProcesses[0] ?? null;
 
@@ -356,7 +356,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             </Button>
           </div>
         )}
-        account={<UserMenu compact />}
+        account={<UserMenu compact diagramCount={total} />}
       />
 
       {(loadError || actionError) && !importFailure ? (
@@ -470,6 +470,10 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
                         setPreviewOpen(true);
                         setMobileDetail(true);
                       }}
+                      onDuplicate={kind === 'process' ? setDuplicateTarget : undefined}
+                      onExport={kind === 'process' || !process.builtin ? (item) => void handleExport(item) : undefined}
+                      onRename={!process.builtin ? setRenameTarget : undefined}
+                      onDelete={!process.builtin ? setDeleteTarget : undefined}
                     />
                   ))}
                 </div>

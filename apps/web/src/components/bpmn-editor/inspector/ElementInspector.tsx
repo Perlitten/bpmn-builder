@@ -52,6 +52,7 @@ type ElementInspectorProps = {
   currentLaneId?: string;
   onAssignLane?: (laneId: string) => void;
   onValidate?: () => void;
+  readOnly?: boolean;
 };
 
 function LaneNameField({
@@ -115,6 +116,7 @@ export function ElementInspector({
   currentLaneId,
   onAssignLane,
   onValidate,
+  readOnly = false,
 }: ElementInspectorProps) {
   const registry = bpmnComponentRegistry;
   const [query, setQuery] = useState('');
@@ -135,8 +137,8 @@ export function ElementInspector({
   const outgoing = isXorOr(element.type) ? outgoingFlowRows(element) : [];
   const suggestion = useMemo(() => {
     const focused = lint.style.filter((finding) => finding.elementId === element.id);
-    return suggestName(nameContextFromElement(element), focused);
-  }, [element, lint.style]);
+    return suggestName({ ...nameContextFromElement(element), name }, focused);
+  }, [element, lint.style, name]);
 
   useEffect(() => {
     setQuery('');
@@ -159,11 +161,11 @@ export function ElementInspector({
 
   const root = (children: ReactNode) =>
     framed ? (
-      <aside className="element-inspector" aria-label="Element inspector">
+      <aside className={`element-inspector${readOnly ? ' is-readonly' : ''}`} aria-label="Element inspector">
         {children}
       </aside>
     ) : (
-      <div className="element-inspector-main">{children}</div>
+      <div className={`element-inspector-main${readOnly ? ' is-readonly' : ''}`}>{children}</div>
     );
 
   return root(
@@ -195,6 +197,10 @@ export function ElementInspector({
             <button
               type="button"
               className="element-inspector-suggest"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                commitName();
+              }}
               onClick={() => {
                 setName(suggestion.name);
                 committedName.current = commitInspectorName(suggestion.name, committedName.current, onRename);
@@ -222,10 +228,10 @@ export function ElementInspector({
                 value={currentLaneId ?? ''}
                 onChange={(event) => {
                   const laneId = event.target.value;
-                  if (laneId) onAssignLane?.(laneId);
+                  onAssignLane?.(laneId);
                 }}
               >
-                {!currentLaneId ? <option value="">Not in a lane</option> : null}
+                <option value="">Not in a lane</option>
                 {nodeLanes.map((lane) => (
                   <option key={lane.id} value={lane.id}>
                     {lane.name.trim() ? lane.name : lane.id}
@@ -243,9 +249,9 @@ export function ElementInspector({
               <p className="element-inspector-empty">No lanes yet</p>
             ) : (
               <ul className="element-inspector-lanes">
-                {poolLanes.map((lane) => (
+                {poolLanes.map((lane, index) => (
                   <li key={lane.id}>
-                    <LaneNameField laneId={lane.id} name={lane.name} onRename={onRenameLane} />
+                    <LaneNameField laneId={lane.id} name={lane.name.trim() ? lane.name : `Lane ${index + 1}`} onRename={onRenameLane} />
                   </li>
                 ))}
               </ul>
@@ -259,6 +265,7 @@ export function ElementInspector({
               onPointerDown={(event) => {
                 if (!addLaneGate.current.pointerDown(event.button)) return;
                 event.stopPropagation();
+                (document.activeElement as HTMLElement | null)?.blur();
                 onCreate(poolLane.def);
               }}
               onClick={(event) => {

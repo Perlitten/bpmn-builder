@@ -625,6 +625,7 @@
 .architect-panel-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin: 0 -10px 2px;
   padding: 8px 10px 6px;
   border-bottom: 1px solid var(--architect-edge);
@@ -640,6 +641,37 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   pointer-events: none;
+}
+
+.architect-panel-close {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  margin: -3px -4px -3px 8px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-0);
+  background: transparent;
+  color: var(--architect-quiet);
+  cursor: pointer;
+}
+
+.architect-panel-close:hover:not(:disabled),
+.architect-panel-close:focus-visible:not(:disabled) {
+  border-color: var(--architect-edge);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.architect-panel-close:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 1px;
+}
+
+.architect-panel-close:disabled {
+  color: var(--color-ink-disabled);
+  cursor: default;
 }
 
 .architect-panel textarea {

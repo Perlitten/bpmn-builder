@@ -69,6 +69,14 @@ describe('suggestName', () => {
     expect(hasActionVerb('Return quote for edits')).toBe(true);
     expect(hasActionVerb('Pick items')).toBe(true);
     expect(shouldCheckActionVerb('Проверить документы')).toBe(false);
+    expect(hasActionVerb('Match invoice to PO')).toBe(true);
+    expect(hasActionVerb('Reserve budget')).toBe(true);
+    expect(hasActionVerb('Chase supplier')).toBe(true);
+  });
+
+  it('does not suggest an English prefix for actor or Cyrillic task names', () => {
+    expect(suggestName(ctx({ id: 'T1', type: 'bpmn:Task', name: 'Sales: check stock' }))).toBeUndefined();
+    expect(suggestName(ctx({ id: 'T2', type: 'bpmn:Task', name: 'Клиент оформляет заявку' }))).toBeUndefined();
   });
 
   it('clears join/parallel labels and answers XOR flows', () => {

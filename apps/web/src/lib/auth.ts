@@ -76,3 +76,15 @@ export async function signOut(): Promise<void> {
   });
   if (!response.ok) throw new Error('Failed to sign out');
 }
+
+export async function updateProfileName(name: string): Promise<SessionUser> {
+  const response = await fetch('/api/auth/me', {
+    method: 'PATCH',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-BPMN-CSRF': '1' },
+    body: JSON.stringify({ name }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || 'Failed to update profile');
+  return (body as { user: SessionUser }).user;
+}

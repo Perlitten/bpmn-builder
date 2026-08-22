@@ -25,6 +25,17 @@ export function createAssistantRequestGate(env: NodeJS.ProcessEnv = process.env)
   const acquire = (key: string, now = Date.now()): GateLease => {
     const cutoff = now - windowMs;
     acquires += 1;
+    // A long-lived serverless instance can see many one-off users. Evict a
+    // bounded number of idle records eagerly once the map grows large; the
+    // regular cadence below still keeps the common path cheap.
+    if (records.size > 1_000) {
+      let checked = 0;
+      for (const [knownKey, known] of records) {
+        if (known.inFlight === 0 && known.requests.every((time) => time <= cutoff)) records.delete(knownKey);
+        checked += 1;
+        if (checked >= 64) break;
+      }
+    }
     if (acquires % PRUNE_EVERY_ACQUIRES === 0) {
       for (const [recordKey, candidate] of records) {
         candidate.requests = candidate.requests.filter((time) => time > cutoff);

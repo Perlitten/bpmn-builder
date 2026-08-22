@@ -126,3 +126,7 @@ export function getUsersTable() {
 export function getSessionsTable() {
   return getDbProvider() === 'postgres' ? pgSchema.sessions : sqliteSchema.sessions;
 }
+
+export function getFeedbackTable() {
+  return getDbProvider() === 'postgres' ? pgSchema.feedback : sqliteSchema.feedback;
+}

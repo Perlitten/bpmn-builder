@@ -578,7 +578,7 @@
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
-  transform: translateY(-50%);
+  transform: translate(2px, -50%);
 }
 
 .continue-plus:hover,

@@ -1,10 +1,10 @@
 import {
   bpmnComponentRegistry,
-  collectXmlElements,
   DEFAULT_BPMN_TYPE,
   type FlowNode,
   type FlowNodeType,
   parseXmlAttributes,
+  scanXmlTags,
   type SemanticProcess,
   type SequenceFlow,
 } from '../../semantic-core/src/index.js';
@@ -56,6 +56,8 @@ export type LintModel = {
   adHocInnerIds: string[];
   bounds: Record<string, Bounds>;
   labels: Record<string, Bounds>;
+  /** BPMNShape ids for visual containers; their bounds contain child nodes. */
+  containerIds: string[];
   hasDi: boolean;
   parseError?: string;
 };
@@ -119,7 +121,10 @@ export function toLintModel(input: unknown): LintModel {
 }
 
 function emptyModel(parseError?: string): LintModel {
-  return { nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, labels: {}, hasDi: false, ...(parseError ? { parseError } : {}) };
+  return {
+    nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, labels: {}, containerIds: [], hasDi: false,
+    ...(parseError ? { parseError } : {}),
+  };
 }
 
 function fromGraph(process: SemanticProcess): LintModel {
@@ -134,6 +139,7 @@ function fromGraph(process: SemanticProcess): LintModel {
     adHocInnerIds,
     bounds: {},
     labels: {},
+    containerIds: [],
     hasDi: false,
   };
 }
@@ -266,20 +272,23 @@ function decode(value: string): string {
 }
 
 function collect(xml: string, tagAlt: string): { tag: string; attr: Record<string, string>; inner: string }[] {
-  const parts = tagAlt.split('|');
-  const found: { tag: string; attr: Record<string, string>; inner: string }[] = [];
-  for (const part of parts) {
-    const elements = collectXmlElements(xml, part);
-    for (const el of elements) {
-      const attrs = Object.fromEntries(parseXmlAttributes(el.rawAttributes));
-      found.push({
-        tag: el.localName,
-        attr: attrs,
-        inner: el.inner,
-      });
+  const wanted = new Set(tagAlt.split('|').map((part) => localTag(part)));
+  const found: Array<{ start: number; tag: string; attr: Record<string, string>; inner: string }> = [];
+  const stack: Array<{ start: number; end: number; localName: string; rawAttributes: string }> = [];
+  for (const tag of scanXmlTags(xml)) {
+    if (!wanted.has(tag.localName)) continue;
+    if (tag.closing) {
+      const opening = stack.pop();
+      if (opening) {
+        found.push({ start: opening.start, tag: opening.localName, attr: Object.fromEntries(parseXmlAttributes(opening.rawAttributes)), inner: xml.slice(opening.end, tag.start) });
+      }
+    } else if (tag.selfClosing) {
+      found.push({ start: tag.start, tag: tag.localName, attr: Object.fromEntries(parseXmlAttributes(tag.rawAttributes)), inner: '' });
+    } else {
+      stack.push(tag);
     }
   }
-  return found;
+  return found.sort((a, b) => a.start - b.start).map(({ start: _start, ...element }) => element);
 }
 
 function stripXmlComments(xml: string): string {
@@ -336,15 +345,18 @@ function processBodies(xml: string): string[] {
   return bodies;
 }
 
-function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; labels: Record<string, Bounds> } {
+function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; labels: Record<string, Bounds>; containerIds: string[] } {
   const bounds: Record<string, Bounds> = Object.create(null);
   const labels: Record<string, Bounds> = Object.create(null);
+  const containerIds = new Set<string>();
+  const containerElementIds = new Set(collect(xml, 'participant|lane').map((item) => item.attr.id).filter(Boolean));
 
   const shapeRe = /<(?:[\w.-]+:)?BPMNShape\b([^>]*)>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNShape>/gi;
   let match: RegExpExecArray | null;
   while ((match = shapeRe.exec(xml))) {
     const id = attrs(match[1] ?? '').bpmnelement;
     if (!id || id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
+    if (containerElementIds.has(id)) containerIds.add(id);
     const body = match[2] ?? '';
     const labelMatch = /<(?:[\w.-]+:)?BPMNLabel\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?BPMNLabel>/i.exec(body);
     if (labelMatch) {
@@ -377,7 +389,7 @@ function parseBoundsAndLabels(xml: string): { bounds: Record<string, Bounds>; la
     }
   }
 
-  return { bounds, labels };
+  return { bounds, labels, containerIds: [...containerIds] };
 }
 
 function parseBoxAttrs(raw: string): Bounds | null {
@@ -455,6 +467,6 @@ function fromXml(xml: string): LintModel {
     }
   }
 
-  const { bounds, labels } = parseBoundsAndLabels(trimmed);
-  return { nodes, flows, associations, adHocInnerIds, bounds, labels, hasDi: Object.keys(bounds).length > 0 };
+  const { bounds, labels, containerIds } = parseBoundsAndLabels(trimmed);
+  return { nodes, flows, associations, adHocInnerIds, bounds, labels, containerIds, hasDi: Object.keys(bounds).length > 0 };
 }

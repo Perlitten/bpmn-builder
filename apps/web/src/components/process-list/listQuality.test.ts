@@ -71,4 +71,10 @@ describe('listQualitySignal', () => {
     expect(signal?.label).toBe('1 error · 1 warning · 1 style finding');
     expect(signal?.title).toBe('BPMN · Quality · Style');
   });
+
+  it('surfaces layout findings so list and editor totals do not disagree', () => {
+    const signal = listQualitySignal({ errors: 0, warnings: 1, style: 2, suggestions: 3 });
+    expect(signal?.label).toBe('1 warning · 2 style findings · 3 layout findings');
+    expect(signal?.title).toBe('Quality · Style · Layout');
+  });
 });

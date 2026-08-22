@@ -69,10 +69,9 @@ describe('remainingCanvas', () => {
 });
 
 describe('collectFitObstacles', () => {
-  it('does not shrink fit around a movable Architect overlay', () => {
+  it('accounts for an open Architect overlay wherever it is docked or dragged', () => {
     const source = readFileSync(new URL('./fitViewport.ts', import.meta.url), 'utf8');
-    expect(source).toContain("querySelector('.architect-shell.is-docked.is-open')");
-    expect(source).not.toMatch(/querySelector\('\.architect-shell'\)/);
+    expect(source).toContain("querySelector('.architect-shell.is-open')");
   });
 });
 

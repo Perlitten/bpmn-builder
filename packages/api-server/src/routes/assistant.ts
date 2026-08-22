@@ -24,13 +24,33 @@ function writeAssistantWarning(event: string, error: unknown): void {
 
 const parseHistory = (value: unknown): ChatTurn[] => {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
+  const turns: ChatTurn[] = [];
+  for (const item of value) {
     if (!item || typeof item !== 'object') return [];
     const row = item as { role?: string; text?: string };
     if ((row.role !== 'user' && row.role !== 'assistant') || typeof row.text !== 'string') return [];
-    return [{ role: row.role, text: row.text }];
-  });
+    const text = row.text.trim();
+    if (!text) return [];
+    const expectedRole = turns.length % 2 === 0 ? 'user' : 'assistant';
+    if (row.role !== expectedRole) return [];
+    turns.push({ role: row.role, text: text.slice(0, MAX_HISTORY_ITEM_CHARS) });
+  }
+  return turns;
 };
+
+export const MAX_ASSISTANT_MESSAGE_CHARS = 12_000;
+export const MAX_HISTORY_ITEMS = 12;
+export const MAX_HISTORY_ITEM_CHARS = 4_000;
+export const MAX_ASSISTANT_CONTEXT_CHARS = 1_000_000;
+
+function contextSize(value: unknown): number {
+  if (value == null) return 0;
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
 
 function sendJson(res: Response, status: number, body: unknown): void {
   if (res.headersSent || res.writableEnded) return;
@@ -50,6 +70,33 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
       return;
     }
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (message.length > MAX_ASSISTANT_MESSAGE_CHARS) {
+      sendJson(res, 413, { error: `Message is too long (maximum ${MAX_ASSISTANT_MESSAGE_CHARS} characters).` });
+      return;
+    }
+    const rawHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+    if (rawHistory.length > MAX_HISTORY_ITEMS) {
+      sendJson(res, 413, { error: `Too much chat history (maximum ${MAX_HISTORY_ITEMS} turns).` });
+      return;
+    }
+    const history = parseHistory(rawHistory);
+    if (rawHistory.length !== history.length) {
+      sendJson(res, 400, { error: 'Chat history must contain alternating user and assistant turns.' });
+      return;
+    }
+    if (history.reduce((total, turn) => total + turn.text.length, 0) > MAX_ASSISTANT_MESSAGE_CHARS * 2) {
+      sendJson(res, 413, { error: 'Chat history is too large.' });
+      return;
+    }
+    const bpmnXml = typeof req.body?.bpmnXml === 'string' ? req.body.bpmnXml : undefined;
+    if (bpmnXml && bpmnXml.length > MAX_ASSISTANT_CONTEXT_CHARS) {
+      sendJson(res, 413, { error: 'Posted BPMN XML is too large.' });
+      return;
+    }
+    if (contextSize(req.body?.process) > MAX_ASSISTANT_CONTEXT_CHARS) {
+      sendJson(res, 413, { error: 'Posted process graph is too large.' });
+      return;
+    }
     const tools = Array.isArray(req.body?.tools) ? req.body.tools : undefined;
     const hasTools = Boolean(tools?.length);
     if (!message && !hasTools) {
@@ -95,10 +142,10 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     const work = runAssistant(hasTools ? null : getClient(), {
       message,
       tools,
-      history: parseHistory(req.body?.history),
+      history,
       processName: typeof req.body?.processName === 'string' ? req.body.processName : undefined,
       process: req.body?.process,
-      bpmnXml: typeof req.body?.bpmnXml === 'string' ? req.body.bpmnXml : undefined,
+      bpmnXml,
       scope: req.body?.scope,
       signal: ac.signal,
     });

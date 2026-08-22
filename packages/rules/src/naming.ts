@@ -1,8 +1,8 @@
 import type { Finding } from './types.js';
 
 /** Infinitive verbs used for Camunda-style task names (object + action). */
-const ACTION_VERBS = new Set(
-  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue notify open pay pick prepare print process publish quote receive record refund register reject release report request resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
+export const ACTION_VERBS = new Set(
+  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check chase close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue match notify open pay pick prepare print process publish quote receive record refund register reject release report request reserve resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
     ' ',
   ),
 );
@@ -181,6 +181,9 @@ function suggestTask(ctx: NameContext, current: string, findings: Finding[]): Na
     const proposed = asTask(fromNext || fromPrev || 'Validate customer');
     return { name: proposed, reason: 'Task names are object + action' };
   }
+  // Swimlane/actor prefixes ("Sales: …") are intentional ownership labels,
+  // not malformed task names. Non-Latin names are outside this English rule.
+  if (!shouldCheckActionVerb(current) || /^[^:]{1,80}:\s*\S/.test(current)) return undefined;
   if (findings.some((f) => f.id === 'style.task-verb') || !hasActionVerb(current)) {
     const proposed = asTask(current);
     if (proposed === current) return undefined;
