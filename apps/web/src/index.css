@@ -20,6 +20,8 @@ body {
 }
 
 .landing-shell {
+  width: 100%;
+  overflow-x: clip;
   font-family: var(--font-mono);
   -webkit-font-smoothing: none;
 }

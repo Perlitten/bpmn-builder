@@ -26,7 +26,9 @@ function localCommitVersion(): string {
   }
 }
 
-const commitVersion = process.env.VERCEL_GIT_COMMIT_SHA?.trim() || localCommitVersion();
+const commitVersion = process.env.NODE_ENV === 'test'
+  ? 'test'
+  : process.env.VERCEL_GIT_COMMIT_SHA?.trim() || localCommitVersion();
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
