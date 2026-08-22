@@ -75,10 +75,16 @@ describe('catalog events (slice 1)', () => {
     expect(getNode(p, 'StartEvent_1').eventDefinition).toBe('ConditionalEventDefinition');
   });
 
-  it('does not invent compensation or link events', () => {
-    const p = createProcess();
-    expect(() => createFromComponent(p, 'boundary.compensation')).toThrow(/no semantic create op/);
-    expect(() => createFromComponent(p, 'intermediate.catch.link')).toThrow(/no semantic create op/);
-    expect(() => createFromComponent(p, 'end.cancel')).toThrow(/no semantic create op/);
+  it('creates the remaining event families without downgrading their BPMN type', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Charge' }).process;
+    const boundary = createFromComponent(p, 'boundary.compensation', { after: named(p, 'Charge') });
+    p = boundary.process;
+    expect(getNode(p, boundary.id)).toMatchObject({ type: 'boundaryEvent', eventDefinition: 'CompensateEventDefinition' });
+    const catchEvent = createFromComponent(p, 'intermediate.catch.link', { after: named(p, 'Charge') });
+    p = catchEvent.process;
+    expect(getNode(p, catchEvent.id)).toMatchObject({ type: 'intermediateCatch', eventDefinition: 'LinkEventDefinition' });
+    p = createFromComponent(p, 'end.cancel').process;
+    expect(getNode(p, 'EndEvent_1').eventDefinition).toBe('CancelEventDefinition');
   });
 });

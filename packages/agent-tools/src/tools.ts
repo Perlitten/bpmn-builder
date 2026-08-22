@@ -21,6 +21,7 @@ import {
   splitParallel as coreSplitParallel,
   attachBoundaryError as coreAttachBoundaryError,
   attachBoundaryTimer as coreAttachBoundaryTimer,
+  connectSequenceFlow as coreConnectSequenceFlow,
   createEventSubprocess as coreCreateEventSubprocess,
   createFromComponent,
   addAssociation as coreAddAssociation,
@@ -46,7 +47,7 @@ import {
   assertOutsideScopeIntact,
   isReadOnlyTool,
 } from './scope.js';
-import type { PlanOptions, PlanResult, ToolCall, ToolName, ToolResult } from './types.js';
+import type { BestEffortPlanResult, PlanFailure, PlanOptions, PlanResult, ToolCall, ToolName, ToolResult } from './types.js';
 import { TOOL_NAMES } from './types.js';
 
 const TOOL_NAME_SET = new Set<string>(TOOL_NAMES);
@@ -307,6 +308,25 @@ const HANDLERS: Record<ToolName, (process: SemanticProcess, args: Record<string,
     if (!resolved) throw new ToolPlanError('Select a sequence flow or a source with one outgoing flow');
     return wrap('setFlowKind', coreSetFlowKind(process, resolved, kind, str(args, 'condition')));
   },
+  connectSequenceFlow: (process, args, lastId) => {
+    const from = reqRef(process, args, 'from', lastId);
+    const to = reqRef(process, args, 'to', lastId);
+    const kind = str(args, 'kind') ?? 'sequence';
+    if (kind !== 'sequence' && kind !== 'conditional' && kind !== 'default') {
+      throw new ToolPlanError('kind must be sequence, conditional, or default');
+    }
+    return wrap(
+      'connectSequenceFlow',
+      coreConnectSequenceFlow(process, {
+        from,
+        to,
+        name: str(args, 'name'),
+        condition: str(args, 'condition'),
+        kind,
+        id: str(args, 'id'),
+      }),
+    );
+  },
   setCalledElement: (process, args, lastId) =>
     wrap('setCalledElement', coreSetCalledElement(process, reqRef(process, args, 'id', lastId), req(args, 'calledElement'))),
   addDataObject: (process, args) => wrap('addDataObject', coreAddDataObject(process, { name: str(args, 'name') })),
@@ -461,6 +481,51 @@ export function executePlan(process: SemanticProcess, calls: ToolCall[], options
     process: current,
     id: lastId ?? process.id,
     steps,
+    inverse: (p) => {
+      let cur = p;
+      for (let i = inverses.length - 1; i >= 0; i--) cur = inverses[i](cur);
+      return cur;
+    },
+  };
+}
+
+/** Execute as much of an Architect plan as possible and report failed steps. */
+export function executePlanBestEffort(
+  process: SemanticProcess,
+  calls: ToolCall[],
+  options?: PlanOptions,
+): BestEffortPlanResult {
+  let current = process;
+  let lastId: string | undefined;
+  const steps: ToolResult[] = [];
+  const stepIndices: number[] = [];
+  const failures: PlanFailure[] = [];
+  const inverses: Array<(p: SemanticProcess) => SemanticProcess> = [];
+  for (let index = 0; index < calls.length; index++) {
+    const call = calls[index]!;
+    try {
+      const step = executeTool(current, call, lastId, options);
+      steps.push(step);
+      stepIndices.push(index);
+      inverses.push(step.inverse);
+      current = step.process;
+      if (!isReadOnlyTool(call.name)) lastId = step.id;
+    } catch (error) {
+      if (error instanceof ToolPlanError && error.fatal) throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push({
+        index,
+        name: call.name,
+        message: message.replace(/^Step \d+ \([^)]*\) failed:\s*/i, ''),
+      });
+    }
+  }
+  return {
+    process: current,
+    id: lastId ?? process.id,
+    steps,
+    stepIndices,
+    failures,
     inverse: (p) => {
       let cur = p;
       for (let i = inverses.length - 1; i >= 0; i--) cur = inverses[i](cur);

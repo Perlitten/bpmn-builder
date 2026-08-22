@@ -37,10 +37,16 @@ function expandFragment(p: SemanticProcess, nodeIds: string[]): Set<string> {
   return set;
 }
 
-function seedInnerProcess(draft: SemanticProcess, subId: string, event: boolean): void {
+function seedInnerProcess(
+  draft: SemanticProcess,
+  subId: string,
+  event: boolean,
+  eventDefinition = 'MessageEventDefinition',
+  interrupting = true,
+): void {
   const parent = scopeOf(draft, subId);
   const start = makeNode(draft, 'start', event ? 'Message' : 'Start', undefined, 'bpmn:StartEvent', {
-    ...(event ? { eventDefinition: 'MessageEventDefinition' } : {}),
+    ...(event ? { eventDefinition, ...(interrupting === false ? { isInterrupting: false } : {}) } : {}),
   });
   const end = makeNode(draft, 'end', 'End');
   const flow = { id: nextId(draft, 'SequenceFlow'), source: start.id, target: end.id };
@@ -81,7 +87,7 @@ export function addSubProcess(process: SemanticProcess, spec: PlaceSpec = {}): A
 /** Event subprocess of `parent` (process or subprocess). Not on sequence flow. */
 export function createEventSubprocess(
   process: SemanticProcess,
-  spec: { parent?: string; name?: string; id?: string } = {},
+  spec: { parent?: string; name?: string; id?: string; eventDefinition?: string; interrupting?: boolean } = {},
 ): Applied {
   return apply(process, (draft) => {
     const parentScope = resolveParentScope(draft, spec.parent);
@@ -90,7 +96,7 @@ export function createEventSubprocess(
     });
     draft.nodes.push(node);
     parentScope.nodeIds.push(node.id);
-    seedInnerProcess(draft, node.id, true);
+    seedInnerProcess(draft, node.id, true, spec.eventDefinition, spec.interrupting !== false);
     return node.id;
   });
 }

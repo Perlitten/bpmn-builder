@@ -1,13 +1,29 @@
 import { createProcess, getNode, happyPathIds } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { ToolPlanError } from './errors.js';
-import { executePlan, parseToolPlan } from './tools.js';
+import { executePlan, executePlanBestEffort, parseToolPlan } from './tools.js';
 
 function pathNames(process: ReturnType<typeof createProcess>): string[] {
   return happyPathIds(process).map((id) => getNode(process, id).name);
 }
 
 describe('agent tools', () => {
+  it('supports explicit loop connections and keeps successful batch steps', () => {
+    const origin = createProcess();
+    const first = executePlan(origin, [{ name: 'addTask', args: { name: 'Review quote' } }]);
+    const second = executePlan(first.process, [{ name: 'addTask', args: { name: 'Approve quote' } }]);
+    const review = second.process.nodes.find((node) => node.name === 'Review quote')!.id;
+    const approve = second.process.nodes.find((node) => node.name === 'Approve quote')!.id;
+    const plan = executePlanBestEffort(second.process, [
+      { name: 'connectSequenceFlow', args: { from: approve, to: review, name: 'Return for edits' } },
+      { name: 'renameElement', args: { id: 'Task_404', name: 'Missing' } },
+    ]);
+    expect(plan.steps).toHaveLength(1);
+    expect(plan.failures).toEqual([
+      expect.objectContaining({ index: 1, name: 'renameElement', message: expect.stringMatching(/not in this process/i) }),
+    ]);
+    expect(plan.process.flows.some((flow) => flow.source === approve && flow.target === review)).toBe(true);
+  });
   it('addAfter inserts a task and is undoable', () => {
     const origin = createProcess({ name: 'Linear' });
     const plan = executePlan(origin, [{ name: 'addAfter', args: { after: 'StartEvent_1', name: 'Review' } }]);
@@ -237,9 +253,10 @@ describe('agent tools', () => {
     const eventSub = executePlan(origin, [{ name: 'createEventSubprocess', args: { name: 'On error' } }]);
     expect(getNode(eventSub.process, eventSub.id).type).toBe('subProcess');
 
-    expect(() =>
-      executePlan(origin, [{ name: 'createComponent', args: { componentId: 'boundary.compensation' } }]),
-    ).toThrow(/cannot be added/i);
+    const compensation = executePlan(withTask.process, [
+      { name: 'createComponent', args: { componentId: 'boundary.compensation', after: 'Review' } },
+    ]);
+    expect(getNode(compensation.process, compensation.id).eventDefinition).toBe('CompensateEventDefinition');
   });
 
   it('splitComplex, setFlowKind, and artifacts are first-class tools', () => {

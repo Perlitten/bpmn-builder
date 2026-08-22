@@ -21,7 +21,7 @@ describe('modeling catalog', () => {
     expect(bpmnComponentRegistry.get('event.start.none')).toBeUndefined();
   });
 
-  it('keeps unimplemented elements findable in registry search', () => {
+  it('keeps context-dependent elements findable in registry search', () => {
     const hits = bpmnComponentRegistry.search('compensation handler');
     const blocked = hits.find((item) => item.id === 'boundary.compensation');
     expect(blocked).toBeDefined();
@@ -31,7 +31,7 @@ describe('modeling catalog', () => {
       searching: true,
     });
     expect(resolved.enabled).toBe(false);
-    expect(resolved.reason).toMatch(/modeling profile/i);
+    expect(resolved.reason).toMatch(/activity to attach/i);
   });
 
   it('searches semanticMeaning and agentHints, not a second keyword list', () => {
@@ -64,7 +64,7 @@ describe('modeling catalog', () => {
 });
 
 describe('context filter', () => {
-  it('lists unimplemented items in the category flyout, disabled', () => {
+  it('lists context-dependent items in the category flyout, disabled without a host', () => {
     const idle = catalogForFlyout('activities', '', { selection: null, hasParticipant: false });
     const items = idle.groups.flatMap((group) => group.items);
     expect(items.some((entry) => entry.item.id === 'activity.task')).toBe(true);
@@ -72,7 +72,7 @@ describe('context filter', () => {
       .groups.flatMap((group) => group.items)
       .find((entry) => entry.item.id === 'boundary.compensation');
     expect(blocked?.enabled).toBe(false);
-    expect(blocked?.reason).toMatch(/modeling profile/i);
+    expect(blocked?.reason).toMatch(/activity to attach/i);
     const transaction = items.find((entry) => entry.item.id === 'activity.transaction');
     expect(transaction?.enabled).toBe(true);
   });

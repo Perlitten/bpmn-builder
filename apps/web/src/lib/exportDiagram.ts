@@ -116,3 +116,35 @@ export async function svgToPdfBlob(svg: string): Promise<Blob> {
   }
   return doc.output('blob');
 }
+
+/** Raster diagram export for tickets and presentations. Keeps the canonical SVG bounds. */
+export async function svgToPngBlob(svg: string, scale = 2): Promise<Blob> {
+  const box = parseSvgViewBox(svg) ?? { x: 0, y: 0, width: 800, height: 600 };
+  const factor = Number.isFinite(scale) && scale > 0 ? Math.min(4, scale) : 2;
+  const width = Math.max(1, Math.ceil(box.width * factor));
+  const height = Math.max(1, Math.ceil(box.height * factor));
+  const source = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(source);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = url;
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Could not rasterize diagram SVG'));
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not create PNG canvas');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Could not encode diagram PNG');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

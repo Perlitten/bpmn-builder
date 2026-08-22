@@ -161,7 +161,7 @@ export function makeNode(
   name: string,
   id?: string,
   bpmnType?: string,
-  extra?: Pick<FlowNode, 'attachedTo' | 'eventDefinition' | 'cancelActivity' | 'triggeredByEvent' | 'calledElement'>,
+  extra?: Pick<FlowNode, 'attachedTo' | 'eventDefinition' | 'cancelActivity' | 'isInterrupting' | 'triggeredByEvent' | 'calledElement'>,
 ): FlowNode {
   return {
     id: nextId(p, ID_PREFIX[type], id),

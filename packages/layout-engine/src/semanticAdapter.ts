@@ -31,7 +31,7 @@ function artifactsFromExtras(extras: unknown[]): LayoutArtifact[] {
     const id = typeof item.id === 'string' ? item.id : '';
     if (!id) continue;
     const type = String(item.$type ?? '');
-    if (type.endsWith(':Association')) {
+    if (type.endsWith(':Association') || /:Data(?:Input|Output)?Association$/i.test(type)) {
       out.push({
         id,
         kind: 'association',

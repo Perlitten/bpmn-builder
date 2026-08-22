@@ -56,6 +56,7 @@ export {
   attachBoundaryTimer,
   attachBoundaryEvent,
   attachBoundaryError,
+  connectSequenceFlow,
   createProcess,
   defaultFlowNodeName,
   visibleNodeName,
@@ -92,7 +93,15 @@ export {
 export type { MultiInstanceSpec } from './preserve.js';
 export { addLane, addMessageInteraction, addPool, applyInPool, assignLane, poolTargetOf } from './collaboration.js';
 export { addSubProcess, createEventSubprocess, wrapInSubprocess } from './subprocess.js';
-export { addAssociation, addDataObject, addDataStore, addGroup, addTextAnnotation, resolveAssociationEnds } from './artifacts.js';
+export {
+  addAssociation,
+  addDataAssociation,
+  addDataObject,
+  addDataStore,
+  addGroup,
+  addTextAnnotation,
+  resolveAssociationEnds,
+} from './artifacts.js';
 export { createFromComponent } from './create.js';
 export { extractSubgraph, pasteSubgraph } from './clipboard.js';
 export type { PasteApplied, SemanticClip } from './clipboard.js';

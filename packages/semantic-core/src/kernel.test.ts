@@ -11,6 +11,7 @@ import {
   attachBoundaryTimer,
   createFromComponent,
   createProcess,
+  connectSequenceFlow,
   detectStructure,
   FEEDBACK,
   getNode,
@@ -43,6 +44,18 @@ function pathNames(p: SemanticProcess): string[] {
 }
 
 describe('semantic-core', () => {
+  it('connects an explicit back edge and keeps it through XML semantics', () => {
+    let p = createProcess();
+    p = addTask(p, { name: 'Review quote' }).process;
+    p = addTask(p, { name: 'Approve quote' }).process;
+    const review = named(p, 'Review quote');
+    const approve = named(p, 'Approve quote');
+    const added = connectSequenceFlow(p, { from: approve, to: review, name: 'Return for edits' });
+    expect(added.process.flows.some((flow) => flow.source === approve && flow.target === review)).toBe(true);
+    expect(added.id).toMatch(/^SequenceFlow_/);
+    expect(added.process.unstructured.length).toBeGreaterThanOrEqual(0);
+  });
+
   it('builds a linear A→B→C chain with stable ids', () => {
     let p = createProcess({ name: 'Linear' });
     expect(p.nodes.map((n) => n.id)).toEqual(['StartEvent_1', 'EndEvent_1']);
@@ -157,11 +170,11 @@ describe('semantic-core', () => {
     ]);
   });
 
-  it('createFromComponent rejects start/end/unimplemented ids', () => {
+  it('createFromComponent rejects only structural placeholders', () => {
     const p = createProcess();
     expect(() => createFromComponent(p, 'start.none')).toThrow(/already has a start/i);
     expect(() => createFromComponent(p, 'end.none')).toThrow(/cannot be inserted/i);
-    expect(() => createFromComponent(p, 'boundary.compensation')).toThrow(/no semantic create op/i);
+    expect(() => createFromComponent(p, 'boundary.compensation')).toThrow(/select an activity/i);
     expect(() => createFromComponent(p, 'event.start.none')).toThrow(/unknown component/);
   });
 

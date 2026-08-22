@@ -17,16 +17,18 @@ export {
   toolSystemPrompt,
   userFacingAssistantMessage,
 } from './prompt.js';
-export { executePlan, executeTool, parseToolPlan } from './tools.js';
+export { executePlan, executePlanBestEffort, executeTool, parseToolPlan } from './tools.js';
 export { AGENT_SCOPE_KINDS, READ_ONLY_TOOLS, TOOL_NAMES } from './types.js';
 export type {
   AgentScope,
   AgentScopeKind,
+  BestEffortPlanResult,
   BranchView,
   FlowView,
   NodeView,
   PlanOptions,
   PlanResult,
+  PlanFailure,
   ProcessView,
   RegionView,
   ToolCall,

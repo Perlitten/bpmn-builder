@@ -1,9 +1,11 @@
 export class ToolPlanError extends Error {
   readonly code = 'TOOL_PLAN';
+  readonly fatal: boolean;
 
-  constructor(message: string) {
+  constructor(message: string, options: { fatal?: boolean } = {}) {
     super(message);
     this.name = 'ToolPlanError';
+    this.fatal = options.fatal === true;
   }
 }
 
@@ -44,8 +46,11 @@ export function userFacingPlanError(raw: string): string {
   if (/is not on branch/i.test(text)) {
     return 'That element is not on the chosen gateway branch.';
   }
-  if (/(?:loop|return|back|cycle)/i.test(text) && /(?:flow|connect|add|construct|cannot)/i.test(text)) {
-    return 'Return flows are not supported yet. Keep this as a separate branch, or add the return connection manually in the editor.';
+  if (/sequence flow must stay inside one process scope/i.test(text)) {
+    return 'A sequence flow must stay inside one process scope. Use a message flow to cross pools.';
+  }
+  if (/sequence flow already exists/i.test(text)) {
+    return 'That sequence flow already exists between these elements.';
   }
   if (/not in modeling profile yet|no semantic create op|unknown component/i.test(text)) {
     return 'That construction cannot be added here. Use a task, a gateway split, or a pool only if you need another participant.';

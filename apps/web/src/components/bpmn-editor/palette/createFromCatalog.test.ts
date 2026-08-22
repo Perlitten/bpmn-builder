@@ -41,11 +41,11 @@ describe('pickCatalogItem', () => {
     expect(result).toBeUndefined();
   });
 
-  it('does not start a free-form create for unimplemented types', async () => {
+  it('creates compensation boundary events through the semantic op', async () => {
     const create = vi.fn(async () => true);
     const result = await pickCatalogItem(def('boundary.compensation'), { id: 'A', type: 'bpmn:Task' }, { create });
-    expect(create).not.toHaveBeenCalled();
-    expect(result?.hint).toMatch(/not in the semantic first slice/i);
+    expect(create).toHaveBeenCalledWith('boundary.compensation', 'A');
+    expect(result).toBeUndefined();
   });
 
   it('creates implemented gateways via split ops', async () => {
@@ -92,11 +92,11 @@ describe('pickCatalogItem', () => {
     expect(create).toHaveBeenCalledWith('participant.lane', 'Lane_1');
   });
 
-  it('does not start unimplemented catalog types from a selected lane', async () => {
+  it('keeps boundary events disabled without an activity host', async () => {
     const create = vi.fn(async () => true);
     const result = await pickCatalogItem(def('boundary.compensation'), { id: 'Lane_1', type: 'bpmn:Lane' }, { create });
     expect(create).not.toHaveBeenCalled();
-    expect(result?.hint).toMatch(/not in the semantic first slice/i);
+    expect(result?.hint).toMatch(/activity to attach/i);
   });
 
   it('creates conditional / default flow via setFlowKind, not global connect', async () => {

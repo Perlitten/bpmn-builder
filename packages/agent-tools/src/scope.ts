@@ -180,7 +180,7 @@ function canInsertBefore(
 }
 
 function refuse(name: ToolName, reason: string): never {
-  throw new ToolPlanError(`${name} ${reason}`);
+  throw new ToolPlanError(`${name} ${reason}`, { fatal: true });
 }
 
 const PLACE_TOOLS = new Set<ToolName>([

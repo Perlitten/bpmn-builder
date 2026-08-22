@@ -50,6 +50,7 @@ const NODE_SKIP = new Set([
   'outgoing',
   'attachedToRef',
   'cancelActivity',
+  'isInterrupting',
   'triggeredByEvent',
   'extensionElements',
   'default',
@@ -57,6 +58,8 @@ const NODE_SKIP = new Set([
   'laneSets',
   'lanes',
   'artifacts',
+  'dataInputAssociations',
+  'dataOutputAssociations',
   'childLaneSet',
   'calledElement',
 ]);
@@ -71,6 +74,14 @@ const PROCESS_SKIP = new Set([
   'isExecutable',
 ]);
 const FLOW_SKIP = new Set(['id', 'name', 'sourceRef', 'targetRef', 'conditionExpression', 'extensionElements']);
+
+function isDataAssociationType(type: string): boolean {
+  return /:Data(?:Input|Output)?Association$/i.test(type);
+}
+
+function isAssociationType(type: string): boolean {
+  return type.endsWith(':Association') || isDataAssociationType(type);
+}
 
 function withPreserve<T extends object>(obj: T, preserve?: BpmnPreserve): T {
   return preserve ? { ...obj, bpmnPreserve: preserve } : obj;
@@ -152,6 +163,9 @@ function mapNode(el: ModdleEl): FlowNode | null {
 
   if (node.type === 'start' || node.type === 'end') {
     node = { ...node, name: visibleNodeName(node.type, node.name) };
+  }
+  if (node.type === 'start' && el.get('isInterrupting') === false) {
+    node = { ...node, isInterrupting: false };
   }
   const called = el.get('calledElement');
   if (typeof called === 'string' && called.trim()) node = { ...node, calledElement: called.trim() };
@@ -251,6 +265,13 @@ function collectFlowExtras(containerEl: ModdleEl): ExtensionValue[] {
   return extras;
 }
 
+function dataAssociationsOf(nodeEl: ModdleEl): ExtensionValue[] {
+  return [
+    ...readMany(nodeEl, 'dataInputAssociations'),
+    ...readMany(nodeEl, 'dataOutputAssociations'),
+  ].map(toPlain);
+}
+
 function attachExtras(owner: FlowNode | undefined, extras: ExtensionValue[]): void {
   if (!owner || !extras.length) return;
   owner.bpmnPreserve = {
@@ -289,6 +310,7 @@ function mapContainer(
     if (!node) continue;
     acc.nodes.push(node);
     nodeIds.push(node.id);
+    acc.artifacts.push(...dataAssociationsOf(child));
     const def = idOf(child.get('default'));
     if (def) defaults.set(node.id, def);
     if (isType(child, 'bpmn:SubProcess')) nested.push(child);
@@ -591,6 +613,7 @@ function createNodeEl(moddle: Moddle, node: FlowNode, resolve: ResolveRef, regis
   if (name) attrs.name = name;
   if (node.calledElement) attrs.calledElement = node.calledElement;
   if (node.type === 'boundaryEvent' && node.cancelActivity === false) attrs.cancelActivity = false;
+  if (node.type === 'start' && node.isInterrupting === false) attrs.isInterrupting = false;
   if (node.type === 'subProcess' && node.triggeredByEvent) attrs.triggeredByEvent = true;
   const el = moddle.create(bpmnType, attrs);
   registerEl(registry, el);
@@ -720,7 +743,23 @@ function writeGraph(
   };
 
   writeScope(processEl, root);
-  appendExtras(moddle, processEl, graph.artifacts, resolve, registry);
+  const dataAssociations = (graph.artifacts ?? []).filter((item) => isDataAssociationType(String(item.$type)));
+  appendExtras(
+    moddle,
+    processEl,
+    (graph.artifacts ?? []).filter((item) => !isDataAssociationType(String(item.$type))),
+    resolve,
+    registry,
+  );
+  for (const item of dataAssociations) {
+    const targetId = refId(item.targetRef);
+    const target = targetId ? nodeEls.get(targetId) : undefined;
+    if (!target) continue;
+    const association = fromPlain(moddle, item, resolve);
+    registerTree(registry, association);
+    const property = String(item.$type).includes('Output') ? 'dataOutputAssociations' : 'dataInputAssociations';
+    many(target, property).push(association);
+  }
   writeLaneSets(moddle, processEl, lanes, graph.id, nodeEls, laneEls);
   return { processEl, nodeEls, flowEls, flows };
 }
@@ -898,7 +937,7 @@ export function processToXml(process: SemanticProcess, di: LayoutResult): string
     const el = registry.get(id);
     if (!el) continue;
     const type = String(item.$type ?? '');
-    if (type.endsWith(':Association')) pushEdge(moddle, planeElement, di, id, el);
+    if (isAssociationType(type)) pushEdge(moddle, planeElement, di, id, el);
     else pushShape(moddle, planeElement, di, id, el);
   }
 

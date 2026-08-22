@@ -24,8 +24,8 @@ describe('architect catalog prompt', () => {
     expect(ids).toContain('participant.pool');
     expect(ids).not.toContain('start.none');
     expect(ids).not.toContain('end.none');
-    expect(ids).not.toContain('flow.sequence');
-    expect(ids).not.toContain('boundary.compensation');
+    expect(ids).toContain('flow.sequence');
+    expect(ids).toContain('boundary.compensation');
     expect(ids.every((id) => bpmnComponentRegistry.get(id)?.implemented)).toBe(true);
   });
 

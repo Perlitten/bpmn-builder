@@ -92,6 +92,10 @@ export function readMany(el: ModdleEl, name: string): ModdleEl[] {
 
 export function refId(ref: unknown): string {
   if (typeof ref === 'string' && ref.trim()) return ref.trim();
+  if (ref && typeof ref === 'object' && '$ref' in ref) {
+    const value = (ref as { $ref?: unknown }).$ref;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
   const id = idOf(ref);
   if (id) return id;
   const body = (ref as ModdleEl | undefined)?.$body;
