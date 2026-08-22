@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Process } from '@bpmn/semantic-core';
+import type { SemanticProcess } from '@bpmn/semantic-core';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { TextField } from '../../ui/TextField';
 import type { DiagramElement } from '../diagramElement';
@@ -28,7 +28,7 @@ const GROUP_ORDER: PreservedField['group'][] = [
 ];
 
 export type PreservedBpmnFieldsProps = {
-  process: Process;
+  process: SemanticProcess;
   element: DiagramElement;
   onChange: (change: PreservedChange) => void;
 };

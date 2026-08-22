@@ -1,15 +1,15 @@
 import { rebuildStructure } from './detect.js';
 import { nextId } from './ids.js';
-import type { Applied, ExtensionValue, Process } from './types.js';
+import type { Applied, ExtensionValue, SemanticProcess } from './types.js';
 
-function apply(prev: Process, fn: (draft: Process) => string): Applied {
+function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
   const id = fn(draft);
   rebuildStructure(draft);
   return { process: draft, inverse: () => structuredClone(prev), id };
 }
 
-function extras(draft: Process): ExtensionValue[] {
+function extras(draft: SemanticProcess): ExtensionValue[] {
   if (!draft.artifacts) draft.artifacts = [];
   return draft.artifacts;
 }
@@ -22,7 +22,7 @@ function isAnnotation(item: ExtensionValue): boolean {
   return String(item.$type).endsWith(':TextAnnotation');
 }
 
-export function addDataObject(process: Process, spec: { name?: string; id?: string } = {}): Applied {
+export function addDataObject(process: SemanticProcess, spec: { name?: string; id?: string } = {}): Applied {
   return apply(process, (draft) => {
     const id = nextId(draft, 'DataObjectReference', spec.id);
     extras(draft).push({ $type: 'bpmn:DataObjectReference', id, ...(spec.name ? { name: spec.name } : {}) });
@@ -30,7 +30,7 @@ export function addDataObject(process: Process, spec: { name?: string; id?: stri
   });
 }
 
-export function addDataStore(process: Process, spec: { name?: string; id?: string } = {}): Applied {
+export function addDataStore(process: SemanticProcess, spec: { name?: string; id?: string } = {}): Applied {
   return apply(process, (draft) => {
     const id = nextId(draft, 'DataStoreReference', spec.id);
     extras(draft).push({ $type: 'bpmn:DataStoreReference', id, ...(spec.name ? { name: spec.name } : {}) });
@@ -38,7 +38,7 @@ export function addDataStore(process: Process, spec: { name?: string; id?: strin
   });
 }
 
-export function addTextAnnotation(process: Process, spec: { text?: string; id?: string; associateTo?: string } = {}): Applied {
+export function addTextAnnotation(process: SemanticProcess, spec: { text?: string; id?: string; associateTo?: string } = {}): Applied {
   return apply(process, (draft) => {
     const id = nextId(draft, 'TextAnnotation', spec.id);
     const text = spec.text ?? '';
@@ -56,7 +56,7 @@ export function addTextAnnotation(process: Process, spec: { text?: string; id?: 
   });
 }
 
-export function addGroup(process: Process, spec: { name?: string; id?: string } = {}): Applied {
+export function addGroup(process: SemanticProcess, spec: { name?: string; id?: string } = {}): Applied {
   return apply(process, (draft) => {
     const id = nextId(draft, 'Group', spec.id);
     extras(draft).push({ $type: 'bpmn:Group', id, ...(spec.name ? { name: spec.name } : {}) });
@@ -64,7 +64,7 @@ export function addGroup(process: Process, spec: { name?: string; id?: string } 
   });
 }
 
-export function addAssociation(process: Process, spec: { from: string; to: string }): Applied {
+export function addAssociation(process: SemanticProcess, spec: { from: string; to: string }): Applied {
   if (spec.from === spec.to) throw new Error('Association needs two different elements');
   return apply(process, (draft) => {
     const id = nextId(draft, 'Association');
@@ -79,7 +79,7 @@ export function addAssociation(process: Process, spec: { from: string; to: strin
 }
 
 export function resolveAssociationEnds(
-  process: Process,
+  process: SemanticProcess,
   spec: { from?: string; to?: string; after?: string },
 ): { from: string; to: string } {
   const from = spec.from ?? spec.after;

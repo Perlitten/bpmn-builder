@@ -1,4 +1,4 @@
-import { incomingFlows, type Process } from '@bpmn/semantic-core';
+import { incomingFlows, type SemanticProcess } from '@bpmn/semantic-core';
 import { simulationMarks, type SimSnapshot } from '@bpmn/simulate';
 
 const OVERLAY = 'token-sim';
@@ -67,7 +67,7 @@ export function createTokenView(modeler: Modeler) {
 
   return {
     clear,
-    sync(process: Process, snap: SimSnapshot) {
+    sync(process: SemanticProcess, snap: SimSnapshot) {
       clear();
       for (const [id, count] of Object.entries(snap.tokens)) addBadge(id, String(count));
       for (const [joinId, buf] of Object.entries(snap.joinWait)) {

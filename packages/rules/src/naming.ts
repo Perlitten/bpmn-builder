@@ -1,7 +1,7 @@
 import type { Finding } from './types.js';
 
 /** Infinitive verbs used for Camunda-style task names (object + action). */
-export const ACTION_VERBS = new Set(
+const ACTION_VERBS = new Set(
   'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue notify open pay pick prepare print process publish quote receive record refund register reject release report request resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
     ' ',
   ),

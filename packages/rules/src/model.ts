@@ -5,11 +5,11 @@ import {
   type FlowNode,
   type FlowNodeType,
   parseXmlAttributes,
-  type Process,
+  type SemanticProcess,
   type SequenceFlow,
-} from '../../semantic-core/src/index.js';
+} from '@bpmn/semantic-core';
 
-export type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event' | 'subprocess';
+type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event' | 'subprocess';
 
 export type LintNode = {
   id: string;
@@ -43,7 +43,7 @@ export type Bounds = {
   height: number;
 };
 
-export type LintAssociation = {
+type LintAssociation = {
   id: string;
   source: string | null;
   target: string | null;
@@ -101,9 +101,9 @@ const CORE_TYPE: Record<string, FlowNodeType> = {
 
 const NODE_ALT = Object.keys(NODE_KIND).join('|');
 
-export function isSemanticGraph(value: unknown): value is Process {
+function isSemanticGraph(value: unknown): value is SemanticProcess {
   if (value === null || typeof value !== 'object') return false;
-  const p = value as Process;
+  const p = value as SemanticProcess;
   return Array.isArray(p.nodes) && Array.isArray(p.flows);
 }
 
@@ -122,7 +122,7 @@ function emptyModel(parseError?: string): LintModel {
   return { nodes: [], flows: [], associations: [], adHocInnerIds: [], bounds: {}, labels: {}, hasDi: false, ...(parseError ? { parseError } : {}) };
 }
 
-function fromGraph(process: Process): LintModel {
+function fromGraph(process: SemanticProcess): LintModel {
   const adHocOwners = new Set(
     process.nodes.filter((n) => localTag(n.bpmnType ?? '') === 'adhocsubprocess').map((n) => n.id),
   );
@@ -191,7 +191,7 @@ export function normalizeEventDefinition(value?: string): string | undefined {
   return `${head.charAt(0).toUpperCase()}${head.slice(1)}EventDefinition`;
 }
 
-export function bpmnTypeFromTag(tag: string): string | undefined {
+function bpmnTypeFromTag(tag: string): string | undefined {
   return bpmnComponentRegistry.list().find((def) => def.bpmnType.replace(/^bpmn:/, '').toLowerCase() === tag)?.bpmnType;
 }
 

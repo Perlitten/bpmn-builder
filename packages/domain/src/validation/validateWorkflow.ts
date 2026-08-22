@@ -1,5 +1,5 @@
 import type { ValidationIssue } from '../types/ValidationIssue.js';
-import type { WorkflowDocument } from '../types/Process.js';
+import type { WorkflowDocument } from '../types/StoredProcess.js';
 import type { WorkflowEdge } from '../types/WorkflowEdge.js';
 import type { WorkflowNode } from '../types/WorkflowNode.js';
 import { isNonEmptyString } from './isNonEmptyString.js';

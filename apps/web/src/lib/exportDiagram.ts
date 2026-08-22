@@ -26,7 +26,7 @@ export function padBox(box: DiagramBox, padding: number): DiagramBox {
   };
 }
 
-export function parseSvgViewBox(svg: string): DiagramBox | undefined {
+function parseSvgViewBox(svg: string): DiagramBox | undefined {
   const match = svg.match(/\bviewBox="([^"]+)"/i);
   if (!match) return undefined;
   const parts = match[1]!.trim().split(/[\s,]+/).map(Number);
@@ -44,7 +44,7 @@ function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export function applySvgViewBox(svg: string, box: DiagramBox): string {
+function applySvgViewBox(svg: string, box: DiagramBox): string {
   const width = round(box.width);
   const height = round(box.height);
   const viewBox = `${round(box.x)} ${round(box.y)} ${width} ${height}`;
@@ -56,7 +56,7 @@ export function applySvgViewBox(svg: string, box: DiagramBox): string {
   });
 }
 
-export function withPageBackground(svg: string, box: DiagramBox, fill = '#ffffff'): string {
+function withPageBackground(svg: string, box: DiagramBox, fill = '#ffffff'): string {
   if (/data-export-bg=/i.test(svg)) return svg;
   const rect = `<rect data-export-bg="true" x="${round(box.x)}" y="${round(box.y)}" width="${round(box.width)}" height="${round(box.height)}" fill="${fill}"/>`;
   return svg.replace(/(<svg\b[^>]*>)/i, `$1${rect}`);

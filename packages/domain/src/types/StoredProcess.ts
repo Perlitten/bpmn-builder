@@ -2,8 +2,8 @@ import type { ProcessStatus } from './ProcessStatus.js';
 import type { WorkflowEdge } from './WorkflowEdge.js';
 import type { WorkflowNode } from './WorkflowNode.js';
 
-/** Persistence DTO (`bpmnXml`). Graph IR is `@bpmn/semantic-core` `Process`. */
-export type Process = {
+/** Persisted process DTO. The editable graph IR is `SemanticProcess` from `@bpmn/semantic-core`. */
+export type StoredProcess = {
   id: string;
   name: string;
   description: string | null;
@@ -22,7 +22,7 @@ export type WorkflowDocument = {
 };
 
 export type ProcessSummary = Pick<
-  Process,
+  StoredProcess,
   'id' | 'name' | 'description' | 'status' | 'version' | 'createdAt' | 'updatedAt'
 > & {
   builtin?: boolean;

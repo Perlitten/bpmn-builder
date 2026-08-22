@@ -1,5 +1,5 @@
 import type { AgentScope, AgentScopeKind } from '@bpmn/agent-tools';
-import { allRegions, type Process } from '@bpmn/semantic-core';
+import { allRegions, type SemanticProcess } from '@bpmn/semantic-core';
 
 export const AGENT_SCOPE_OPTIONS: Array<{ kind: AgentScopeKind; label: string }> = [
   { kind: 'process', label: 'Whole process' },
@@ -15,7 +15,7 @@ export type AgentContext = {
   selectionIds: string[];
 };
 
-function locate(process: Process, id: string): { regionId?: string; branchId?: string } {
+function locate(process: SemanticProcess, id: string): { regionId?: string; branchId?: string } {
   for (const region of allRegions(process)) {
     if (region.id === id || region.split === id || region.join === id) return { regionId: region.id };
     for (const branch of region.branches) {
@@ -33,7 +33,7 @@ function locate(process: Process, id: string): { regionId?: string; branchId?: s
   return {};
 }
 
-export function resolveAgentContext(process: Process, selectedIds: string[]): AgentContext {
+export function resolveAgentContext(process: SemanticProcess, selectedIds: string[]): AgentContext {
   const selectionIds = selectedIds.filter(Boolean);
   const regions = new Set<string>();
   const branches = new Set<string>();

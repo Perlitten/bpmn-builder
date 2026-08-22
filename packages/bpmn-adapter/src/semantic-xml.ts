@@ -1,4 +1,4 @@
-import { layoutProcess, type LayoutResult } from '../../layout-engine/src/index.js';
+import { layoutProcess, type LayoutResult } from '@bpmn/layout-engine';
 import {
   detectStructure,
   getNode,
@@ -11,12 +11,12 @@ import {
   type Lane,
   type MessageFlow,
   type Participant,
-  type Process,
+  type SemanticProcess,
   type ProcessGraph,
   type Scope,
   type SequenceFlow,
   visibleNodeName,
-} from '../../semantic-core/src/index.js';
+} from '@bpmn/semantic-core';
 import {
   appendExtras,
   applyPreserve,
@@ -182,7 +182,7 @@ function mapFlow(el: ModdleEl, defaults: Map<string, string>): SequenceFlow | nu
   );
 }
 
-function emptyProcess(id: string): Process {
+function emptyProcess(id: string): SemanticProcess {
   return detectStructure({
     id,
     name: 'Process',
@@ -366,7 +366,7 @@ function detectGraph(
     rootElements?: ExtensionValue[];
     collaborationArtifacts?: ExtensionValue[];
   },
-): Process {
+): SemanticProcess {
   const scopes = mapped.scopes?.length
     ? mapped.scopes
     : [{ id: 'Scope_1', parentId: null, ownerId: null, nodeIds: mapped.nodes.map((n) => n.id), flowIds: mapped.flows.map((f) => f.id) }];
@@ -403,7 +403,7 @@ function detectGraph(
   );
 }
 
-function asGraph(p: Process): ProcessGraph {
+function asGraph(p: SemanticProcess): ProcessGraph {
   return withExt(
     withPreserve(
       {
@@ -444,7 +444,7 @@ function snapshotDefinitions(definitions: ModdleEl): DefinitionsMeta | undefined
 }
 
 /** BPMN XML → semantic graph. Ignores DI; coordinates are layout output. */
-export async function xmlToProcess(bpmnXml: string): Promise<Process> {
+export async function xmlToProcess(bpmnXml: string): Promise<SemanticProcess> {
   if (!bpmnXml.trim()) return emptyProcess('Process_1');
   const definitions = await parseDefinitions(bpmnXml);
   const roots = many(definitions, 'rootElements');
@@ -566,7 +566,7 @@ export async function xmlToProcess(bpmnXml: string): Promise<Process> {
   });
 }
 
-function orderedNodes(process: Process): FlowNode[] {
+function orderedNodes(process: SemanticProcess): FlowNode[] {
   try {
     const path = happyPathIds(process);
     const seen = new Set(path);
@@ -769,7 +769,7 @@ function diLabel(moddle: Moddle, box: LayoutResult['labels'][string] | undefined
 }
 
 /** Semantic graph + layout DI → BPMN 2.0 XML via bpmn-moddle. */
-export function processToXml(process: Process, di: LayoutResult): string {
+export function processToXml(process: SemanticProcess, di: LayoutResult): string {
   const moddle = createModdle();
   const registry = new Map<string, ModdleEl>();
   const resolve = resolveOf(registry);
@@ -906,7 +906,7 @@ export function processToXml(process: Process, di: LayoutResult): string {
 }
 
 /** Layout then serialize. Same graph ⇒ byte-identical XML. */
-export function exportProcessXml(process: Process): string {
+export function exportProcessXml(process: SemanticProcess): string {
   return processToXml(process, layoutProcess(process));
 }
 

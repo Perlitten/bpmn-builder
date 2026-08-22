@@ -1,8 +1,8 @@
 import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getProcessesTable, getQueryDb, migrate, resetDbForTests } from '@bpmn/db';
-import { PROCESS_NAME_MAX } from '../../../domain/src/index.js';
-import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
+import { PROCESS_NAME_MAX } from '@bpmn/domain';
+import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '@bpmn/rules';
 import { createApp } from '../app.js';
 import { issueTestSession } from '../auth/testSession.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';

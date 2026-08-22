@@ -26,7 +26,7 @@ import {
   setPreserveAttr,
   setTimerDuration,
   type Applied,
-  type Process,
+  type SemanticProcess,
   type SemanticClip,
 } from '@bpmn/semantic-core';
 import { exportProcessXml, xmlToProcess } from '@bpmn/bpmn-adapter';
@@ -43,7 +43,7 @@ const UNDO_LIMIT = 50;
 
 /** Create after a selected lane assigns the new flow node; Add lane on a lane is a sibling. */
 export function createIntoLane(
-  process: Process,
+  process: SemanticProcess,
   catalogId: string,
   afterId?: string,
 ): { after?: string; laneId?: string } {
@@ -61,7 +61,7 @@ export function createIntoLane(
 }
 
 /** Nodes `assignLane` should cover when create returns a node or a split region. */
-export function createdLaneTargets(process: Process, appliedId: string): string[] {
+export function createdLaneTargets(process: SemanticProcess, appliedId: string): string[] {
   const node = process.nodes.find((item) => item.id === appliedId);
   if (node) return node.type === 'boundaryEvent' ? [] : [appliedId];
   const region = allRegions(process).find((item) => item.id === appliedId);
@@ -70,7 +70,7 @@ export function createdLaneTargets(process: Process, appliedId: string): string[
   return [...new Set(ids)].filter((id) => process.nodes.some((item) => item.id === id && item.type !== 'boundaryEvent'));
 }
 
-function assignCreatedToLane(process: Process, appliedId: string, laneId: string): Process {
+function assignCreatedToLane(process: SemanticProcess, appliedId: string, laneId: string): SemanticProcess {
   let current = process;
   for (const id of createdLaneTargets(current, appliedId)) {
     current = coreAssignLane(current, id, laneId).process;
@@ -78,7 +78,7 @@ function assignCreatedToLane(process: Process, appliedId: string, laneId: string
   return current;
 }
 
-export function diagramImportError(error: unknown): Error {
+function diagramImportError(error: unknown): Error {
   const raw = error instanceof Error ? error.message : String(error || '');
   const next = new Error(
     /root-0|Cannot read properties of undefined/i.test(raw)
@@ -91,7 +91,7 @@ export function diagramImportError(error: unknown): Error {
 }
 
 /** `reveal` = this import added flow nodes, so an off-screen result must be brought into view. */
-export type ImportXmlOptions = { fit?: boolean; reveal?: boolean };
+type ImportXmlOptions = { fit?: boolean; reveal?: boolean };
 
 export type DiagramWriter = {
   importXml: (xml: string, selectId?: string | string[], options?: ImportXmlOptions) => Promise<void>;
@@ -99,12 +99,12 @@ export type DiagramWriter = {
 };
 
 export type SemanticEditor = {
-  process: () => Process;
+  process: () => SemanticProcess;
   xml: () => string;
   bootstrap: () => Promise<string>;
   create: (catalogId: string, afterId?: string, target?: InsertTarget) => Promise<{ id: string; xml: string }>;
   applyPlan: (tools: ToolCall[], scope?: AgentScope) => Promise<string>;
-  applyProcess: (next: Process, selectId?: string) => Promise<string>;
+  applyProcess: (next: SemanticProcess, selectId?: string) => Promise<string>;
   rename: (id: string, name: string) => string;
   replace: (id: string, def: BpmnComponentDefinition) => Promise<string>;
   remove: (id: string) => Promise<string>;
@@ -132,24 +132,24 @@ export async function createSemanticEditor(writer: DiagramWriter, initialXml: st
   let process = await xmlToProcess(initialXml);
   let clipboard: SemanticClip | null = null;
   let displayedSet: string | undefined;
-  const undoStack: Process[] = [];
-  const redoStack: Process[] = [];
+  const undoStack: SemanticProcess[] = [];
+  const redoStack: SemanticProcess[] = [];
 
   function xml(): string {
     return exportProcessXml(process);
   }
 
-  function recordUndo(previous: Process): void {
+  function recordUndo(previous: SemanticProcess): void {
     undoStack.push(previous);
     if (undoStack.length > UNDO_LIMIT) undoStack.shift();
     redoStack.length = 0;
   }
 
-  function revertUndo(previous: Process): void {
+  function revertUndo(previous: SemanticProcess): void {
     if (undoStack[undoStack.length - 1] === previous) undoStack.pop();
   }
 
-  async function commit(selectId?: string | string[], previous?: Process): Promise<string> {
+  async function commit(selectId?: string | string[], previous?: SemanticProcess): Promise<string> {
     const next = xml();
     const nextSet = participantSetKey(process);
     const fit = shouldFitCanvas(displayedSet, nextSet);

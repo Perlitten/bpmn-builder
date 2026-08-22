@@ -1,4 +1,4 @@
-import type { Process, StructuredRegion as CoreRegion } from '../../semantic-core/src/index.js';
+import type { SemanticProcess, StructuredRegion as CoreRegion } from '@bpmn/semantic-core';
 import type { Branch, LayoutArtifact, LayoutInput, LayoutNode, SequenceFlow, StructuredRegion } from './types.js';
 
 type Dict = Record<string, unknown>;
@@ -24,7 +24,7 @@ function refId(value: unknown): string | undefined {
   return undefined;
 }
 
-export function artifactsFromExtras(extras: unknown[]): LayoutArtifact[] {
+function artifactsFromExtras(extras: unknown[]): LayoutArtifact[] {
   const out: LayoutArtifact[] = [];
   for (const raw of extras) {
     const item = obj(raw);
@@ -121,14 +121,14 @@ function fromCoreRegion(region: CoreRegion): StructuredRegion {
   };
 }
 
-export function isSemanticProcess(value: unknown): value is Process {
+function isSemanticProcess(value: unknown): value is SemanticProcess {
   if (value === null || typeof value !== 'object') return false;
-  const p = value as Process;
+  const p = value as SemanticProcess;
   return Array.isArray(p.nodes) && Array.isArray(p.flows) && Array.isArray(p.regions);
 }
 
-/** Maps @bpmn/semantic-core Process onto LayoutInput. */
-export function fromSemanticProcess(process: Process | unknown): LayoutInput {
+/** Maps @bpmn/semantic-core SemanticProcess onto LayoutInput. */
+export function fromSemanticProcess(process: SemanticProcess | unknown): LayoutInput {
   if (isSemanticProcess(process)) {
     return {
       processId: process.id,

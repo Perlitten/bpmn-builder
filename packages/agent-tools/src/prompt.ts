@@ -1,4 +1,4 @@
-import { BPMN, bpmnComponentRegistry, type Process } from '../../semantic-core/src/index.js';
+import { BPMN, bpmnComponentRegistry, type SemanticProcess } from '@bpmn/semantic-core';
 import { scopePromptLines } from './scope.js';
 import type { PlanOptions, ToolCall, ToolName } from './types.js';
 
@@ -89,7 +89,7 @@ function createComponentIds(): string {
     .join(', ');
 }
 
-export function toolSystemPrompt(input?: { process?: Process; scope?: PlanOptions['scope'] }): string {
+export function toolSystemPrompt(input?: { process?: SemanticProcess; scope?: PlanOptions['scope'] }): string {
   const taskIds = taskComponentIds();
   const createIds = createComponentIds();
   return `You are a BPMN 2.0 semantic process assistant.

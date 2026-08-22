@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@bpmn/db": "workspace:*",
-    "@vercel/functions": "^3.9.3",
     "express": "^4.21.2"
   },
   "devDependencies": {

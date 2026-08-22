@@ -31,4 +31,42 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
+  {
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/src/**'],
+              message: 'Use the public @bpmn/* package API instead of another package source tree.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/domain/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@bpmn/semantic-core',
+              message: 'Persistence domain types must not depend on the semantic BPMN graph.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/src/**'],
+              message: 'Persistence domain types must not depend on the semantic BPMN graph.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

@@ -3,7 +3,7 @@ import {
   type BpmnComponentDefinition,
   type EngineSupport,
   type EngineSupportLevel,
-} from '../../semantic-core/src/index.js';
+} from '@bpmn/semantic-core';
 import { normalizeEventDefinition, type LintModel, type LintNode } from './model.js';
 import type { ExecutionProfile, Finding } from './types.js';
 
@@ -69,7 +69,7 @@ export function supportLevel(support: EngineSupport, profile: 'camunda8' | 'zeeb
   return RANK[support.camunda8] <= RANK[support.zeebe] ? support.camunda8 : support.zeebe;
 }
 
-export function engineLabel(profile: 'camunda8' | 'zeebe'): string {
+function engineLabel(profile: 'camunda8' | 'zeebe'): string {
   return profile === 'zeebe' ? 'Zeebe' : 'Camunda 8 / Zeebe';
 }
 

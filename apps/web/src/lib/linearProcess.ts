@@ -1,4 +1,4 @@
-import { addTask, createProcess, type Process } from '@bpmn/semantic-core';
+import { addTask, createProcess, type SemanticProcess } from '@bpmn/semantic-core';
 import { exportProcessXml } from '@bpmn/bpmn-adapter';
 
 export const MAX_DESCRIPTION_CHARS = 20_000;
@@ -117,7 +117,7 @@ export function linearSteps(text: string): string[] {
   return steps;
 }
 
-export function linearSemanticProcess(name: string, description: string): Process {
+export function linearSemanticProcess(name: string, description: string): SemanticProcess {
   let process = createProcess({ name });
   for (const step of linearSteps(description)) {
     process = addTask(process, { name: step }).process;

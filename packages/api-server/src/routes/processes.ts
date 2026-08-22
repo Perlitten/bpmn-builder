@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from 'express';
-import { isProcessStatus, type ProcessPatch } from '../../../domain/src/index.js';
+import { isProcessStatus, type ProcessPatch } from '@bpmn/domain';
 import { sendProcessError } from '../services/errors.js';
 import { parseProcessListQuery } from '../services/processListQuery.js';
 import {

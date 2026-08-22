@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { getQueryDb, getUsersTable } from '../../../db/src/index.js';
+import { getQueryDb, getUsersTable } from '@bpmn/db';
 import type { AuthUser } from './types.js';
 
 export type GoogleProfile = {

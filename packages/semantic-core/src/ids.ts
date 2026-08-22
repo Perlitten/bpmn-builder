@@ -1,4 +1,4 @@
-import type { FlowNodeType, Process } from './types.js';
+import type { FlowNodeType, SemanticProcess } from './types.js';
 
 export const ID_PREFIX: Record<FlowNodeType, string> = {
   start: 'StartEvent',
@@ -22,7 +22,7 @@ export function alloc(idSeq: Record<string, number>, prefix: string): string {
   return `${prefix}_${n}`;
 }
 
-export function allIds(p: Process): Set<string> {
+function allIds(p: SemanticProcess): Set<string> {
   const ids = new Set<string>([p.id]);
   if (p.collaborationId) ids.add(p.collaborationId);
   for (const n of p.nodes) ids.add(n.id);
@@ -33,7 +33,7 @@ export function allIds(p: Process): Set<string> {
   for (const part of p.participants ?? []) ids.add(part.id);
   for (const lane of p.lanes ?? []) ids.add(lane.id);
   for (const message of p.messageFlows ?? []) ids.add(message.id);
-  const walk = (regions: Process['regions']) => {
+  const walk = (regions: SemanticProcess['regions']) => {
     for (const r of regions) {
       ids.add(r.id);
       for (const b of r.branches) ids.add(b.id);
@@ -59,7 +59,7 @@ export function allIds(p: Process): Set<string> {
   return ids;
 }
 
-export function nextId(p: Process, prefix: string, explicit?: string): string {
+export function nextId(p: SemanticProcess, prefix: string, explicit?: string): string {
   const id = explicit ?? alloc(p.idSeq, prefix);
   if (allIds(p).has(id)) throw new Error(`duplicate id: ${id}`);
   return id;

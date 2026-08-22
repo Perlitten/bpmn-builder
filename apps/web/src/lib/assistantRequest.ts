@@ -4,7 +4,7 @@ import { userFacingPlanError } from '@bpmn/agent-tools';
 // reach the client before the browser-side deadline fires.
 export const ASSISTANT_TIMEOUT_MS = 55_000;
 
-export function assistantTimeoutLabel(ms = ASSISTANT_TIMEOUT_MS): string {
+function assistantTimeoutLabel(ms = ASSISTANT_TIMEOUT_MS): string {
   return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;
 }
 

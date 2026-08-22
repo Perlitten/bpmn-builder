@@ -10,9 +10,6 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@bpmn/semantic-core": "workspace:*"
-  },
   "devDependencies": {
     "typescript": "~5.8.2",
     "vitest": "^3.2.4"

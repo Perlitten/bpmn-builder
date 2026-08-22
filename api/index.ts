@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import { migrate } from '../packages/db/src/index.js';
+import { migrate } from '@bpmn/db';
 import { createApp } from '../packages/api-server/src/app.js';
 import { repairEmptyDiagrams, seedIfEmpty } from '../packages/api-server/src/seed.js';
 

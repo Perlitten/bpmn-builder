@@ -9,7 +9,7 @@ import {
   outgoingFlows,
   splitExclusive,
   wrapInSubprocess,
-  type Process,
+  type SemanticProcess,
 } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import {
@@ -21,7 +21,7 @@ import {
   simulationMarks,
 } from './simulate.js';
 
-function twoStartJoin(type: 'exclusiveGateway' | 'parallelGateway'): Process {
+function twoStartJoin(type: 'exclusiveGateway' | 'parallelGateway'): SemanticProcess {
   return {
     id: 'Process_1',
     name: 'join',
@@ -186,7 +186,7 @@ describe('token simulation', () => {
   });
 
   it('caps drain on a two-gateway cycle', () => {
-    const p: Process = {
+    const p: SemanticProcess = {
       ...twoStartJoin('exclusiveGateway'),
       nodes: [
         { id: 'StartA', type: 'start', name: 'A' },
@@ -214,10 +214,10 @@ describe('token simulation', () => {
 });
 
 function scopedProcess(
-  nodes: Process['nodes'],
-  flows: Process['flows'],
-  scopes: Process['scopes'],
-): Process {
+  nodes: SemanticProcess['nodes'],
+  flows: SemanticProcess['flows'],
+  scopes: SemanticProcess['scopes'],
+): SemanticProcess {
   return {
     id: 'Process_1',
     name: 'Scoped process',
@@ -237,7 +237,7 @@ function scopedProcess(
   };
 }
 
-function parallelSubprocess(): Process {
+function parallelSubprocess(): SemanticProcess {
   return scopedProcess(
     [
       { id: 'OuterStart', type: 'start', name: 'Start' },
@@ -266,7 +266,7 @@ function parallelSubprocess(): Process {
   );
 }
 
-function implicitStartSubprocess(): Process {
+function implicitStartSubprocess(): SemanticProcess {
   return scopedProcess(
     [
       { id: 'OuterStart', type: 'start', name: 'Start' },
@@ -287,7 +287,7 @@ function implicitStartSubprocess(): Process {
   );
 }
 
-function linkPair(): Process {
+function linkPair(): SemanticProcess {
   const linkDefinition = (id: string) => ({
     props: { eventDefinitions: [{ $type: 'bpmn:LinkEventDefinition', id, name: 'Continue' }] },
   });
@@ -351,7 +351,7 @@ describe('describeSimulation', () => {
   });
 });
 
-function assessWithTimeoutAndEscalation(): Process {
+function assessWithTimeoutAndEscalation(): SemanticProcess {
   let p = createProcess();
   p = addSubProcess(p, { name: 'Assess', id: 'Sub_Assess' }).process;
   p = attachBoundaryTimer(p, { on: 'Sub_Assess', name: 'After 48h' }).process;

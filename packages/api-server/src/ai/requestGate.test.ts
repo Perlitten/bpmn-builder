@@ -30,4 +30,25 @@ describe('assistant request gate', () => {
     expect(gate.acquire('user-a', 5_002)).toMatchObject({ ok: false, retryAfterSeconds: 60 });
     expect(gate.acquire('user-a', 65_001).ok).toBe(true);
   });
+
+  it('prunes idle records without dropping active leases', () => {
+    const gate = createAssistantRequestGate({
+      ASSISTANT_MAX_CONCURRENT_PER_USER: '1',
+      ASSISTANT_REQUESTS_PER_MINUTE: '10',
+    });
+    const active = gate.acquire('active', 1);
+    expect(active.ok).toBe(true);
+    if (!active.ok) return;
+
+    for (let i = 0; i < 62; i += 1) {
+      const idle = gate.acquire(`idle-${i}`, 1);
+      if (idle.ok) idle.release();
+    }
+
+    const trigger = gate.acquire('trigger', 60_002);
+    if (trigger.ok) trigger.release();
+    expect(gate.acquire('active', 60_003)).toMatchObject({ ok: false, retryAfterSeconds: 1 });
+    active.release();
+    expect(gate.acquire('active', 60_004).ok).toBe(true);
+  });
 });

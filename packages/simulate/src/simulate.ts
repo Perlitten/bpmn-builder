@@ -6,9 +6,9 @@ import {
   outgoingFlows,
   scopeOf,
   type FlowNode,
-  type Process,
+  type SemanticProcess,
   type SequenceFlow,
-} from '../../semantic-core/src/index.js';
+} from '@bpmn/semantic-core';
 
 export type SimSnapshot = {
   /** Parked tokens waiting for a click (tasks, exclusive splits). */
@@ -50,14 +50,14 @@ function isChoiceGateway(type: string): boolean {
   return type === 'exclusiveGateway' || type === 'inclusiveGateway' || type === 'eventBasedGateway';
 }
 
-function innerStart(process: Process, ownerId: string): FlowNode | undefined {
+function innerStart(process: SemanticProcess, ownerId: string): FlowNode | undefined {
   const scope = innerScope(process, ownerId);
   if (!scope) return undefined;
   const starts = process.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
   return starts.find((n) => n.eventDefinition) ?? starts[0];
 }
 
-function hasExecutableInnerGraph(process: Process, ownerId: string): boolean {
+function hasExecutableInnerGraph(process: SemanticProcess, ownerId: string): boolean {
   const scope = innerScope(process, ownerId);
   return Boolean(scope?.nodeIds.some((id) => {
     const node = process.nodes.find((item) => item.id === id);
@@ -65,7 +65,7 @@ function hasExecutableInnerGraph(process: Process, ownerId: string): boolean {
   }));
 }
 
-function implicitInnerEntries(process: Process, ownerId: string): FlowNode[] {
+function implicitInnerEntries(process: SemanticProcess, ownerId: string): FlowNode[] {
   const scope = innerScope(process, ownerId);
   if (!scope) return [];
   const ids = new Set(scope.nodeIds);
@@ -94,7 +94,7 @@ function refId(value: unknown): string | undefined {
   return typeof record?.$ref === 'string' ? record.$ref : undefined;
 }
 
-function matchingLinkCatch(process: Process, source: FlowNode): FlowNode | undefined {
+function matchingLinkCatch(process: SemanticProcess, source: FlowNode): FlowNode | undefined {
   const sourceScope = scopeOf(process, source.id).id;
   const sourceDefinition = linkDefinition(source);
   const targetId = refId(sourceDefinition?.target);
@@ -116,7 +116,7 @@ function matchingLinkCatch(process: Process, source: FlowNode): FlowNode | undef
   });
 }
 
-function ownerSubtreeIds(process: Process, ownerId: string): string[] {
+function ownerSubtreeIds(process: SemanticProcess, ownerId: string): string[] {
   const inner = innerScope(process, ownerId);
   if (!inner) return [];
   const out: string[] = [];
@@ -137,7 +137,7 @@ function waitHasToken(buf: Record<string, number> | undefined): boolean {
 }
 
 function isHostActive(
-  process: Process,
+  process: SemanticProcess,
   tokens: Record<string, number>,
   joinWait: Record<string, Record<string, number>>,
   hostId: string,
@@ -149,7 +149,7 @@ function isHostActive(
   return false;
 }
 
-export function simulationMarks(process: Process, snap: SimSnapshot): SimMarks {
+export function simulationMarks(process: SemanticProcess, snap: SimSnapshot): SimMarks {
   const click = new Set<string>();
   const choice = new Set<string>();
   const host = new Set<string>();
@@ -189,7 +189,7 @@ export function simulationMarks(process: Process, snap: SimSnapshot): SimMarks {
   return { click: [...click], choice: [...choice], host: [...host] };
 }
 
-export function createTokenSimulation(process: Process): TokenSimulation {
+export function createTokenSimulation(process: SemanticProcess): TokenSimulation {
   let tokens: Record<string, number> = Object.create(null);
   let joinWait: Record<string, Record<string, number>> = Object.create(null);
   let completed: Record<string, number> = Object.create(null);
@@ -400,7 +400,7 @@ export function createTokenSimulation(process: Process): TokenSimulation {
 }
 
 export function resolveClick(
-  process: Process,
+  process: SemanticProcess,
   snap: SimSnapshot,
   elementId: string,
 ): { nodeId: string; flowId?: string } | null {
@@ -439,7 +439,7 @@ export function resolveClick(
   return null;
 }
 
-function simNodeLabel(process: Process, id: string): string {
+function simNodeLabel(process: SemanticProcess, id: string): string {
   const node = process.nodes.find((n) => n.id === id);
   if (!node) return 'element';
   const name = node.name.trim();
@@ -462,19 +462,19 @@ function choiceKind(type: string): string {
   return 'XOR';
 }
 
-function exceptionHint(process: Process, hostId: string): string {
+function exceptionHint(process: SemanticProcess, hostId: string): string {
   const bounds = process.nodes.filter((n) => n.type === 'boundaryEvent' && n.attachedTo === hostId);
   if (!bounds.length) return '';
   return `, or ${simNodeLabel(process, bounds[0]!.id)} for the exception path`;
 }
 
-function sideEventHint(process: Process): string {
+function sideEventHint(process: SemanticProcess): string {
   const ev = process.nodes.find((n) => isEventSubProcess(n));
   if (!ev) return '';
   return `, or ${simNodeLabel(process, ev.id)} as a side event`;
 }
 
-export function describeSimulation(process: Process, snap: SimSnapshot): string {
+export function describeSimulation(process: SemanticProcess, snap: SimSnapshot): string {
   const parked = Object.keys(snap.tokens);
   const choiceId = parked.find((id) => {
     const node = process.nodes.find((n) => n.id === id);

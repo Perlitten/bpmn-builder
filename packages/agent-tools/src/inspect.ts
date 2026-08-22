@@ -1,15 +1,14 @@
 import {
-  allRegions,
   findBranch,
   findRegion,
   getNode,
   happyPathIds,
-  type Process,
+  type SemanticProcess,
   type StructuredRegion,
-} from '../../semantic-core/src/index.js';
+} from '@bpmn/semantic-core';
 import type { BranchView, FlowView, NodeView, ProcessView, RegionView } from './types.js';
 
-function nodeView(process: Process, id: string): NodeView {
+function nodeView(process: SemanticProcess, id: string): NodeView {
   const node = getNode(process, id);
   return {
     id: node.id,
@@ -22,7 +21,7 @@ function nodeView(process: Process, id: string): NodeView {
   };
 }
 
-function flowView(flow: Process['flows'][number]): FlowView {
+function flowView(flow: SemanticProcess['flows'][number]): FlowView {
   return {
     id: flow.id,
     source: flow.source,
@@ -43,7 +42,7 @@ function branchView(branch: StructuredRegion['branches'][number]): BranchView {
   };
 }
 
-export function regionView(region: StructuredRegion): RegionView {
+function regionView(region: StructuredRegion): RegionView {
   return {
     id: region.id,
     type: region.type,
@@ -54,7 +53,7 @@ export function regionView(region: StructuredRegion): RegionView {
   };
 }
 
-export function processView(process: Process): ProcessView {
+export function processView(process: SemanticProcess): ProcessView {
   let happyPath: string[] = [];
   try {
     happyPath = happyPathIds(process);
@@ -97,11 +96,11 @@ export function processView(process: Process): ProcessView {
   };
 }
 
-export function inspectRegionView(process: Process, regionId: string): RegionView {
+export function inspectRegionView(process: SemanticProcess, regionId: string): RegionView {
   return regionView(findRegion(process, regionId));
 }
 
-export function inspectBranchView(process: Process, branchId: string) {
+export function inspectBranchView(process: SemanticProcess, branchId: string) {
   const { region, branch } = findBranch(process, branchId);
   return {
     regionId: region.id,
@@ -113,10 +112,8 @@ export function inspectBranchView(process: Process, branchId: string) {
   };
 }
 
-export function isSemanticProcess(value: unknown): value is Process {
+export function isSemanticProcess(value: unknown): value is SemanticProcess {
   if (value === null || typeof value !== 'object') return false;
-  const p = value as Process;
+  const p = value as SemanticProcess;
   return typeof p.id === 'string' && Array.isArray(p.nodes) && Array.isArray(p.flows);
 }
-
-export { allRegions };

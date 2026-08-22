@@ -1,4 +1,4 @@
-import { lintProcess, normalizeTaskName } from '../../rules/src/index.js';
+import { lintProcess, normalizeTaskName } from '@bpmn/rules';
 import {
   BPMN,
   addAfter as coreAddAfter,
@@ -34,8 +34,8 @@ import {
   splitComplex as coreSplitComplex,
   type FlowNodeType,
   type PlaceSpec,
-  type Process,
-} from '../../semantic-core/src/index.js';
+  type SemanticProcess,
+} from '@bpmn/semantic-core';
 import { ToolPlanError, userFacingPlanError } from './errors.js';
 import { assertNoGeometry } from './geometry.js';
 import { inspectBranchView, inspectRegionView, processView } from './inspect.js';
@@ -81,11 +81,11 @@ const ARG_ALIASES: Record<string, string> = {
   targetId: 'to',
 };
 
-function unchanged(process: Process, name: ToolName, view: unknown): ToolResult {
+function unchanged(process: SemanticProcess, name: ToolName, view: unknown): ToolResult {
   return { name, process, inverse: () => process, id: process.id, view };
 }
 
-function wrap(name: ToolName, applied: { process: Process; inverse: (current: Process) => Process; id: string }): ToolResult {
+function wrap(name: ToolName, applied: { process: SemanticProcess; inverse: (current: SemanticProcess) => SemanticProcess; id: string }): ToolResult {
   return { name, process: applied.process, inverse: applied.inverse, id: applied.id };
 }
 
@@ -113,7 +113,7 @@ function normalizeArgs(raw: Record<string, unknown>): Record<string, unknown> {
   return args;
 }
 
-function resolveRef(process: Process, ref: string, lastId?: string): string {
+function resolveRef(process: SemanticProcess, ref: string, lastId?: string): string {
   if (ref === '$last' || ref === '$id') {
     if (!lastId) throw new ToolPlanError('$last is not set');
     return lastId;
@@ -146,12 +146,12 @@ function resolveRef(process: Process, ref: string, lastId?: string): string {
   throw new ToolPlanError(`unknown element: ${ref}`);
 }
 
-function ref(process: Process, args: Record<string, unknown>, key: string, lastId?: string): string | undefined {
+function ref(process: SemanticProcess, args: Record<string, unknown>, key: string, lastId?: string): string | undefined {
   const value = str(args, key);
   return value ? resolveRef(process, value, lastId) : undefined;
 }
 
-function reqRef(process: Process, args: Record<string, unknown>, key: string, lastId?: string): string {
+function reqRef(process: SemanticProcess, args: Record<string, unknown>, key: string, lastId?: string): string {
   return resolveRef(process, req(args, key), lastId);
 }
 
@@ -174,7 +174,7 @@ function componentDef(componentId: string) {
   return def;
 }
 
-function taskPlace(process: Process, args: Record<string, unknown>, lastId?: string): PlaceSpec {
+function taskPlace(process: SemanticProcess, args: Record<string, unknown>, lastId?: string): PlaceSpec {
   const componentId = str(args, 'componentId');
   const after = ref(process, args, 'after', lastId);
   const before = ref(process, args, 'before', lastId);
@@ -213,7 +213,7 @@ function taskPlace(process: Process, args: Record<string, unknown>, lastId?: str
   return { name, after, before, branchId, type, bpmnType: str(args, 'bpmnType') };
 }
 
-function addTask(process: Process, args: Record<string, unknown>, lastId?: string): ToolResult {
+function addTask(process: SemanticProcess, args: Record<string, unknown>, lastId?: string): ToolResult {
   const spec = taskPlace(process, args, lastId);
   if (spec.componentId && !spec.after && !spec.before && !spec.branchId) {
     return wrap('addTask', createFromComponent(process, spec.componentId, { name: spec.name }));
@@ -221,17 +221,17 @@ function addTask(process: Process, args: Record<string, unknown>, lastId?: strin
   return wrap('addTask', coreAddTask(process, spec));
 }
 
-function addAfter(process: Process, args: Record<string, unknown>, lastId?: string): ToolResult {
+function addAfter(process: SemanticProcess, args: Record<string, unknown>, lastId?: string): ToolResult {
   const after = reqRef(process, args, 'after', lastId);
   return wrap('addAfter', coreAddAfter(process, after, taskPlace(process, args, lastId)));
 }
 
-function addBefore(process: Process, args: Record<string, unknown>, lastId?: string): ToolResult {
+function addBefore(process: SemanticProcess, args: Record<string, unknown>, lastId?: string): ToolResult {
   const before = reqRef(process, args, 'before', lastId);
   return wrap('addBefore', coreAddBefore(process, before, taskPlace(process, args, lastId)));
 }
 
-function splitArgs(process: Process, args: Record<string, unknown>, lastId?: string) {
+function splitArgs(process: SemanticProcess, args: Record<string, unknown>, lastId?: string) {
   return {
     after: reqRef(process, args, 'after', lastId),
     name: str(args, 'name'),
@@ -239,7 +239,7 @@ function splitArgs(process: Process, args: Record<string, unknown>, lastId?: str
   };
 }
 
-const HANDLERS: Record<ToolName, (process: Process, args: Record<string, unknown>, lastId?: string) => ToolResult> = {
+const HANDLERS: Record<ToolName, (process: SemanticProcess, args: Record<string, unknown>, lastId?: string) => ToolResult> = {
   inspectProcess: (process) => unchanged(process, 'inspectProcess', processView(process)),
   inspectRegion: (process, args, lastId) =>
     unchanged(process, 'inspectRegion', inspectRegionView(process, reqRef(process, args, 'regionId', lastId))),
@@ -404,7 +404,7 @@ export function parseToolPlan(value: unknown): ToolCall[] {
   });
 }
 
-export function executeTool(process: Process, call: ToolCall, lastId?: string, options?: PlanOptions): ToolResult {
+export function executeTool(process: SemanticProcess, call: ToolCall, lastId?: string, options?: PlanOptions): ToolResult {
   assertNoGeometry(call.args, call.name);
   const args = applyScopeDefaults(call.name, normalizeArgs(call.args), options?.scope, {
     process,
@@ -435,14 +435,14 @@ export function executeTool(process: Process, call: ToolCall, lastId?: string, o
   }
 }
 
-export function executePlan(process: Process, calls: ToolCall[], options?: PlanOptions): PlanResult {
+export function executePlan(process: SemanticProcess, calls: ToolCall[], options?: PlanOptions): PlanResult {
   if (!calls.length) {
     return { process, inverse: () => process, id: process.id, steps: [] };
   }
   let current = process;
   let lastId: string | undefined;
   const steps: ToolResult[] = [];
-  const inverses: Array<(p: Process) => Process> = [];
+  const inverses: Array<(p: SemanticProcess) => SemanticProcess> = [];
   for (let index = 0; index < calls.length; index++) {
     const call = calls[index]!;
     let step: ToolResult;

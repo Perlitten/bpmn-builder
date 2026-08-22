@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   repairEmptyDiagrams: vi.fn<() => Promise<void>>(),
 }));
 
-vi.mock('../../db/src/index.js', () => ({ migrate: mocks.migrate }));
+vi.mock('@bpmn/db', () => ({ migrate: mocks.migrate }));
 vi.mock('./seed.js', () => ({
   seedIfEmpty: mocks.seedIfEmpty,
   repairEmptyDiagrams: mocks.repairEmptyDiagrams,

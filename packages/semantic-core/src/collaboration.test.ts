@@ -12,15 +12,15 @@ import {
   renameElement,
   wrapInSubprocess,
 } from './index.js';
-import type { Process } from './index.js';
+import type { SemanticProcess } from './index.js';
 
-function pool(p: Process, name: string) {
+function pool(p: SemanticProcess, name: string) {
   const participant = p.participants.find((item) => item.name === name);
   if (!participant) throw new Error(`no pool named ${name}`);
   return participant;
 }
 
-function graphOf(p: Process, processId: string | undefined) {
+function graphOf(p: SemanticProcess, processId: string | undefined) {
   const graph = processId === p.id ? p : p.processes.find((item) => item.id === processId);
   if (!graph) throw new Error(`no process ${processId}`);
   return graph;

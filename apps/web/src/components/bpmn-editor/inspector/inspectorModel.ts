@@ -257,7 +257,7 @@ export function flowNodeLaneAssignment(
   return current ? { lanes: rows, currentLaneId: current.id } : { lanes: rows };
 }
 
-export function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {
+function outgoingSequenceFlows(element: DiagramElement): DiagramElement[] {
   return (element.outgoing ?? []).filter((flow) => flow.type === 'bpmn:SequenceFlow');
 }
 

@@ -3,7 +3,7 @@
 import { createElement } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Process, ProcessPatch } from '@bpmn/domain';
+import type { ProcessPatch, StoredProcess } from '@bpmn/domain';
 import { mergeLatestProcessWithPendingPatch, ProcessEditorPage } from './ProcessEditorPage';
 
 const mocks = vi.hoisted(() => ({
@@ -49,7 +49,7 @@ vi.mock('../lib/api', () => ({
 const serverXml = '<bpmn:startEvent id="server" />';
 const localXml = '<bpmn:startEvent id="local" />';
 
-function processFixture(patch: Partial<Process> = {}): Process {
+function processFixture(patch: Partial<StoredProcess> = {}): StoredProcess {
   return {
     id: 'process-1',
     name: 'Approval',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportProcessXml } from '@bpmn/bpmn-adapter';
-import { bpmnComponentRegistry, createProcess, type Process } from '@bpmn/semantic-core';
+import { bpmnComponentRegistry, createProcess, type SemanticProcess } from '@bpmn/semantic-core';
 import { pickCatalogItem } from './createFromCatalog';
 import type { DiagramElement } from '../diagramElement';
 import { createSemanticEditor } from '../semantic/session';
@@ -9,7 +9,7 @@ function poolElement(id: string, name: string): DiagramElement {
   return { id, type: 'bpmn:Participant', businessObject: { $type: 'bpmn:Participant', name } };
 }
 
-function peerOf(process: Process, participantName: string) {
+function peerOf(process: SemanticProcess, participantName: string) {
   const participant = process.participants.find((item) => item.name === participantName);
   const graph = process.processes.find((item) => item.id === participant?.processId);
   if (!participant || !graph) throw new Error(`no filled pool ${participantName}`);

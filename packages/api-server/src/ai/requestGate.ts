@@ -3,6 +3,8 @@ type GateRecord = {
   requests: number[];
 };
 
+const PRUNE_EVERY_ACQUIRES = 64;
+
 type GateLease =
   | { ok: true; release: () => void }
   | { ok: false; retryAfterSeconds: number };
@@ -18,9 +20,17 @@ export function createAssistantRequestGate(env: NodeJS.ProcessEnv = process.env)
   const maxRequests = positiveInt(env.ASSISTANT_REQUESTS_PER_MINUTE, 30, 300);
   const windowMs = 60_000;
   const records = new Map<string, GateRecord>();
+  let acquires = 0;
 
   const acquire = (key: string, now = Date.now()): GateLease => {
     const cutoff = now - windowMs;
+    acquires += 1;
+    if (acquires % PRUNE_EVERY_ACQUIRES === 0) {
+      for (const [recordKey, candidate] of records) {
+        candidate.requests = candidate.requests.filter((time) => time > cutoff);
+        if (candidate.inFlight === 0 && candidate.requests.length === 0) records.delete(recordKey);
+      }
+    }
     const record = records.get(key) ?? { inFlight: 0, requests: [] };
     record.requests = record.requests.filter((time) => time > cutoff);
     records.set(key, record);

@@ -1,4 +1,4 @@
-export type AiProviderName = 'nvidia' | 'gemini';
+type AiProviderName = 'nvidia' | 'gemini';
 
 export type ChatTurn = { role: 'user' | 'assistant'; text: string };
 

@@ -1,5 +1,5 @@
 import type { Application, Request, Response } from 'express';
-import { getDbDriver, pingDb } from '../../../db/src/index.js';
+import { getDbDriver, pingDb } from '@bpmn/db';
 
 export function registerHealthRoutes(app: Application): void {
   app.get('/api/health', async (_req: Request, res: Response) => {

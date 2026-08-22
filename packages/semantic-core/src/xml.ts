@@ -1,4 +1,4 @@
-export type XmlTag = {
+type XmlTag = {
   start: number;
   end: number;
   localName: string;
