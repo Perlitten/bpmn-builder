@@ -23,6 +23,7 @@ type MobileProcessCaptureProps = {
   initialValue: string;
   templates: ProcessSummary[];
   busy: boolean;
+  error?: string | null;
   onClose: () => void;
   onCreate: (description: string) => void;
   onUseTemplate: (template: ProcessSummary) => void;
@@ -37,6 +38,7 @@ export function MobileProcessCapture({
   initialValue,
   templates,
   busy,
+  error,
   onClose,
   onCreate,
   onUseTemplate,
@@ -119,6 +121,7 @@ export function MobileProcessCapture({
           </Button>
         </div>
         {issue ? <p className="mobile-process-capture-error" role="alert">{issue}</p> : null}
+        {!issue && error ? <p className="mobile-process-capture-error" role="alert">{error}</p> : null}
 
         <span className="process-section-label mobile-process-template-label">Or start from</span>
         <div className="mobile-process-template-list">

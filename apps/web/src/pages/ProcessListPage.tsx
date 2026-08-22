@@ -73,7 +73,8 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const [reloadToken, setReloadToken] = useState(0);
   const [creating, setCreating] = useState(false);
   const [exportingId, setExportingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [importFailure, setImportFailure] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ file: File; xml: string } | null>(null);
   const [renameTarget, setRenameTarget] = useState<ProcessSummary | null>(null);
@@ -121,7 +122,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   useEffect(() => {
     const ac = new AbortController();
     let cancelled = false;
-    setError(null);
+    setLoadError(null);
     setLoading(true);
     const request = kind === 'template'
       ? api.listTemplates({ q: debouncedQuery, sort, page, limit: PAGE_SIZE }, ac.signal)
@@ -138,7 +139,6 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         setProcesses(data.processes);
         setTotal(data.total);
         if (kind === 'process') setProcessTotal(data.total);
-        else setTemplateTotal(data.total);
         setSelectedId((current) => (
           data.processes.some((process) => process.id === current)
             ? current
@@ -147,7 +147,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
       })
       .catch((err: unknown) => {
         if (cancelled || isAbort(err)) return;
-        setError(err instanceof Error ? err.message : 'Failed to load processes');
+        setLoadError(err instanceof Error ? err.message : 'Failed to load processes');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -191,7 +191,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     signal?: AbortSignal,
   ) => {
     setCreating(true);
-    setError(null);
+    setActionError(null);
     setImportFailure(null);
     try {
       const created = await api.createProcess(input, signal);
@@ -206,7 +206,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         setPendingImport(imported);
         setImportFailure(message);
       } else {
-        setError(message);
+        setActionError(message);
       }
     } finally {
       setCreating(false);
@@ -221,7 +221,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
       const bpmnXml = describeBpmnXml(name, description);
       void createAndOpen({ name, description, bpmnXml }, undefined, signal);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create BPMN from this description');
+      setActionError(err instanceof Error ? err.message : 'Could not create BPMN from this description');
     }
   };
 
@@ -288,12 +288,12 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
 
   const handleExport = async (process: ProcessSummary) => {
     setExportingId(process.id);
-    setError(null);
+    setActionError(null);
     try {
       const { process: fullProcess } = await fetchProcess(process.id);
       downloadBpmnXml(fullProcess.bpmnXml, bpmnDownloadFilename(fullProcess.name));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export BPMN');
+      setActionError(err instanceof Error ? err.message : 'Failed to export BPMN');
     } finally {
       setExportingId(null);
     }
@@ -320,13 +320,13 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const searching = Boolean(debouncedQuery);
   const promptIssue = descriptionInputIssue(prompt);
   const initialLoading = loading && processes.length === 0;
-  const fullEmptyState = !initialLoading && !error && kind === 'process' && !searching && total === 0;
+  const fullEmptyState = !initialLoading && !loadError && kind === 'process' && !searching && total === 0;
 
   return (
     <div className={`process-list-page ${mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
       <ProcessListHeader
         query={query}
-        total={kind === 'process' ? processTotal : templateTotal}
+        total={total}
         empty={fullEmptyState}
         buildVersion={getBuildVersionInfo()}
         searchLabel={kind === 'template' ? 'Search templates' : 'Search processes'}
@@ -350,10 +350,14 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
         account={<UserMenu compact />}
       />
 
-      {error && !importFailure ? (
+      {(loadError || actionError) && !importFailure ? (
         <div className="process-list-error" role="alert">
-          <span>{error}</span>
-          <Button variant="outline" size="sm" onClick={() => setReloadToken((current) => current + 1)}>Retry</Button>
+          <span>{loadError ?? actionError}</span>
+          {loadError ? (
+            <Button variant="outline" size="sm" onClick={() => setReloadToken((current) => current + 1)}>Retry</Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setActionError(null)}>Dismiss</Button>
+          )}
         </div>
       ) : null}
 
@@ -405,9 +409,9 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             </div>
 
             {kind === 'process' ? (
-              <div className="process-list-mobile-filter" aria-label="Process filters">
+              <div className="process-list-mobile-filter" aria-label="Process filters for this page">
                 <button type="button" aria-pressed={mobileFilter === 'all'} onClick={() => setMobileFilter('all')}>
-                  All {processTotal}
+                  All {processes.length}
                 </button>
                 <button type="button" data-tone="error" aria-pressed={mobileFilter === 'attention'} onClick={() => setMobileFilter('attention')}>
                   Attention {attentionCount}
@@ -415,6 +419,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
                 <button type="button" aria-pressed={mobileFilter === 'draft'} onClick={() => setMobileFilter('draft')}>
                   Drafts {draftCount}
                 </button>
+                <span className="process-list-mobile-filter-scope">This page</span>
               </div>
             ) : null}
 
@@ -517,6 +522,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           initialValue={prompt}
           templates={suggestedTemplates}
           busy={creating}
+          error={actionError}
           onClose={() => setMobileCapture(false)}
           onCreate={(description) => {
             setPrompt(description);

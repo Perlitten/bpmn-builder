@@ -1117,6 +1117,16 @@
     color: var(--color-canvas);
   }
 
+  .process-list-mobile-filter-scope {
+    margin-left: auto;
+    flex: none;
+    color: var(--color-muted);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: var(--fs-10);
+    letter-spacing: var(--ls-caps);
+    text-transform: uppercase;
+  }
+
   .process-index-row {
     min-height: var(--process-list-mobile-row-height);
     display: grid;
@@ -1188,7 +1198,7 @@
   }
 
   .process-index-pagination > div {
-    display: none;
+    display: flex;
   }
 
   .process-mobile-composer {

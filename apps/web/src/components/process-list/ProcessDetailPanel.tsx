@@ -210,14 +210,14 @@ export function ProcessDetailPanel({
 
       <div className="process-detail-mobile-actions">
         {onExport && !process.builtin ? (
-          <Button variant="outline" size="md" loading={exporting} onClick={() => onExport(process)}>Export</Button>
+          <Button variant="outline" size="md" loading={exporting} disabled={busy} onClick={() => onExport(process)}>Export</Button>
         ) : null}
         {kind === 'process' && onOpenEditor ? (
-          <Button variant="accentSolid" size="md" onClick={() => onOpenEditor(process.id)}>
+          <Button variant="accentSolid" size="md" disabled={busy} onClick={() => onOpenEditor(process.id)}>
             Open in editor <ArrowRight size={13} aria-hidden="true" />
           </Button>
         ) : onUseTemplate ? (
-          <Button variant="accentSolid" size="md" onClick={() => onUseTemplate(process)}>Use template</Button>
+          <Button variant="accentSolid" size="md" disabled={busy} onClick={() => onUseTemplate(process)}>Use template</Button>
         ) : null}
         <span>Phones review. Desktops edit.</span>
       </div>

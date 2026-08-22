@@ -5,6 +5,8 @@ import type { ProcessSummary } from '@bpmn/domain';
 import { AuthProvider } from '../auth/AuthGate';
 import { ListKindTabs } from './ListKindTabs';
 import { ListPaginationFooter } from './ListPaginationFooter';
+import { MobileProcessCapture } from './MobileProcessCapture';
+import { ProcessDetailPanel } from './ProcessDetailPanel';
 import { ProcessListPage } from '../../pages/ProcessListPage';
 import { draftNameFromTemplate, TemplatesSection } from './TemplatesSection';
 import {
@@ -104,6 +106,7 @@ describe('list pagination footer', () => {
     expect(singlePageHtml).toMatch(/^<footer\b/);
     expect(singlePageHtml).toContain('shrink-0');
     expect(singlePageHtml).toContain('Showing 1–7 of 7');
+    expect(singlePageHtml).toContain('End of list · 7 processes');
     expect(singlePageHtml).not.toContain('Prev');
     expect(singlePageHtml).not.toContain('Next');
 
@@ -120,6 +123,39 @@ describe('list pagination footer', () => {
     );
     expect(multiPageHtml).toContain('Prev');
     expect(multiPageHtml).toContain('Next');
+    expect(multiPageHtml).toContain('Page 1 of 2 · 25 processes');
+  });
+});
+
+describe('mobile process actions', () => {
+  it('keeps creation failures visible inside the full-screen capture dialog', () => {
+    const html = renderToStaticMarkup(
+      createElement(MobileProcessCapture, {
+        initialValue: 'Receive and approve an invoice.',
+        templates: [],
+        busy: false,
+        error: 'Network unavailable',
+        onClose: () => undefined,
+        onCreate: () => undefined,
+        onUseTemplate: () => undefined,
+      }),
+    );
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('Network unavailable');
+  });
+
+  it('disables the mobile template action while creation is pending', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProcessDetailPanel, {
+        process: summary('Invoice template'),
+        kind: 'template',
+        busy: true,
+        onUseTemplate: () => undefined,
+      }),
+    );
+    const mobileActions = html.slice(html.indexOf('<div class="process-detail-mobile-actions">'));
+    expect(mobileActions).toContain('disabled=""');
+    expect(mobileActions).toContain('Use template');
   });
 });
 

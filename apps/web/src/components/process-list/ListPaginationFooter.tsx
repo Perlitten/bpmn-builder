@@ -28,7 +28,9 @@ export function ListPaginationFooter({
         Showing {from}–{to} of {total}
       </p>
       <p aria-live="polite" className="process-pagination-mobile tabular-nums">
-        End of list · {total} {total === 1 ? 'process' : 'processes'}
+        {totalPages > 1
+          ? `Page ${page} of ${totalPages} · ${total} ${total === 1 ? 'process' : 'processes'}`
+          : `End of list · ${total} ${total === 1 ? 'process' : 'processes'}`}
       </p>
       {totalPages > 1 ? (
         <div className="flex items-center gap-1">
