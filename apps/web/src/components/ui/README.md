@@ -26,7 +26,8 @@ geometry.
 ## Primitives
 
 `Button`, `IconButton`, `TextField`, `TextAreaField`, `SelectField`, `Dialog`,
-`ChromeMenu`, `PressedToggle`, `Avatar`, `ModeBar`, `SaveStatus`, and `Skeleton`
+`ChromeMenu`, `PressedToggle`, `Avatar`, `ModeBar`, `SaveStatus`, `Tooltip`,
+`Toast`, `Chip`, `Badge`, and `Skeleton`
 are the shared product primitives. Domain components may compose them but should
 not recreate their interaction states locally.
 

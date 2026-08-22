@@ -39,7 +39,7 @@ import { dropSlot } from './dropSlot';
 /** Modeler instance is keyed by processId only. Autosave xml is an output. */
 export const MODELER_REMOUNT_KEYS = ['processId'] as const;
 
-const UNDO_LIMIT = 50;
+export const UNDO_LIMIT = 200;
 
 /** Create after a selected lane assigns the new flow node; Add lane on a lane is a sibling. */
 export function createIntoLane(

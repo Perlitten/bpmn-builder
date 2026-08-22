@@ -13,16 +13,16 @@ type BpmnZoomControlsProps = {
 export function BpmnZoomControls({ scale, onZoomIn, onZoomOut, onFit, onReset }: BpmnZoomControlsProps) {
   return (
     <div className="bpmn-zoom-controls" role="group" aria-label="Canvas zoom">
-      <IconButton label="Zoom in" onClick={onZoomIn}>
+      <IconButton label="Zoom in" tooltipSide="left" onClick={onZoomIn}>
         <Plus size={16} aria-hidden />
       </IconButton>
       <button type="button" className="bpmn-zoom-value" aria-label="Reset zoom to 100%" onClick={onReset}>
         {Math.round(scale * 100)}%
       </button>
-      <IconButton label="Zoom out" onClick={onZoomOut}>
+      <IconButton label="Zoom out" tooltipSide="left" onClick={onZoomOut}>
         <Minus size={16} aria-hidden />
       </IconButton>
-      <IconButton label="Fit to viewport" onClick={onFit}>
+      <IconButton label="Fit to viewport" tooltipSide="left" onClick={onFit}>
         <Maximize2 size={16} aria-hidden />
       </IconButton>
     </div>

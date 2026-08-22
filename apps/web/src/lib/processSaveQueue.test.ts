@@ -32,6 +32,26 @@ function saved(version: number, patch: Partial<StoredProcess> = {}): StoredProce
 }
 
 describe('process save queue', () => {
+  it('uses the design-system 800ms autosave debounce by default', async () => {
+    vi.useFakeTimers();
+    const save = vi.fn(async (patch) => saved(2, patch));
+    const queue = createProcessSaveQueue({
+      storageKey: 'default-debounce',
+      initialVersion: 1,
+      save,
+      onState: () => undefined,
+      storage: memoryStorage(),
+      isOnline: () => true,
+    });
+
+    queue.enqueue({ name: 'One sentence' });
+    await vi.advanceTimersByTimeAsync(799);
+    expect(save).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(save).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
   it('serializes writes and coalesces edits made while a write is in flight', async () => {
     vi.useFakeTimers();
     const storage = memoryStorage();

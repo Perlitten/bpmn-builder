@@ -12,13 +12,15 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
-import { BpmnCanvas } from './BpmnCanvas';
+import { BpmnCanvas, type AccessibleDiagramItem } from './BpmnCanvas';
 import { BpmnZoomControls } from './BpmnZoomControls';
+import { BpmnMinimap, LARGE_DIAGRAM_SHAPES, type DiagramViewport } from './BpmnMinimap';
 import { DEFAULT_BPMN_XML } from './defaultBpmnXml';
 import { ArchitectPanel } from './architect/ArchitectPanel';
 import { applyAssistantResult } from './architect/applyAssistant';
 import { resolveAgentContext } from './architect/agentScope';
 import { ElementInspector, InspectorLintFooter } from './inspector/ElementInspector';
+import { ValidationPanel } from './inspector/ValidationPanel';
 import { commitPreservedChange } from './inspector/preservedFields';
 import { fetchAiStatus, runAssistant, type ChatTurn } from '../../lib/api';
 import { modelBoundsFromViewbox, prepareDiagramSvg } from '../../lib/exportDiagram';
@@ -65,7 +67,9 @@ import {
 import { createSelectMarqueeModule } from './selectMarquee';
 import { applyXmlToViewer } from './applyXmlToViewer';
 import { usableXml } from './usableXml';
-import { ModeBar } from '../ui';
+import { ModeBar, Toast } from '../ui';
+import { InspectorShell } from './InspectorShell';
+import { presentedFindings } from '../lint/lintPresentation';
 
 type BpmnEditorProps = {
   processId: string;
@@ -92,6 +96,8 @@ type CanvasService = {
     inner?: { x: number; y: number; width: number; height: number };
     outer?: { width: number; height: number };
   };
+  addMarker?: (id: string, marker: string) => void;
+  removeMarker?: (id: string, marker: string) => void;
 };
 
 type ZoomScrollService = { stepZoom: (delta: number) => void };
@@ -117,6 +123,60 @@ type EventBus = {
   on: (event: string | string[], cb: (payload?: unknown) => void) => void;
   off: (event: string | string[], cb: (payload?: unknown) => void) => void;
 };
+
+function readableBpmnType(type: string): string {
+  return type
+    .replace(/^bpmn:/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase();
+}
+
+function navigableElements(registry: ElementRegistry): DiagramElement[] {
+  const seen = new Set<string>();
+  return registry
+    .filter((candidate) => {
+      const element = selectableElement(candidate);
+      return !!element
+        && !element.source
+        && !element.target
+        && typeof element.width === 'number'
+        && typeof element.height === 'number';
+    })
+    .map((candidate) => selectableElement(candidate))
+    .filter((candidate): candidate is DiagramElement => {
+      if (!candidate || seen.has(candidate.id)) return false;
+      seen.add(candidate.id);
+      return true;
+    })
+    .sort((a, b) => (a.x ?? Number.MAX_SAFE_INTEGER) - (b.x ?? Number.MAX_SAFE_INTEGER)
+      || (a.y ?? Number.MAX_SAFE_INTEGER) - (b.y ?? Number.MAX_SAFE_INTEGER)
+      || a.id.localeCompare(b.id));
+}
+
+function accessibleItems(elements: DiagramElement[]): AccessibleDiagramItem[] {
+  return elements.map((element) => ({
+    id: element.id,
+    name: element.businessObject?.name?.trim() || readableBpmnType(element.type) || element.id,
+    type: readableBpmnType(element.type),
+    x: element.x,
+    y: element.y,
+    width: element.width,
+    height: element.height,
+  }));
+}
+
+function sameAccessibleItems(left: AccessibleDiagramItem[], right: AccessibleDiagramItem[]): boolean {
+  return left.length === right.length && left.every((item, index) => {
+    const next = right[index];
+    return next?.id === item.id
+      && next.name === item.name
+      && next.type === item.type
+      && next.x === item.x
+      && next.y === item.y
+      && next.width === item.width
+      && next.height === item.height;
+  });
+}
 
 function readViewbox(canvas: CanvasService): Viewbox | undefined {
   try {
@@ -157,6 +217,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   ref,
 ) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasKeyboardRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const modelerRef = useRef<BpmnModeler | null>(null);
   const sessionRef = useRef<SemanticEditor | null>(null);
@@ -166,6 +227,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const onSimStatusRef = useRef(onSimStatus);
   const { xmlRef, currentXml, revision: graphRev, emit } = useLiveBpmnXml(processId, xml, onChange);
   const [scale, setScale] = useState(1);
+  const [viewport, setViewport] = useState<DiagramViewport>();
   const [tool, setTool] = useState<'select' | 'pan'>('select');
   const toolRef = useRef(tool);
   const spacePanHoldRef = useRef(createSpacePanHold());
@@ -183,6 +245,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [onboarding, setOnboarding] = useState(() => !readEditorOnboardingSeen());
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [canvasAnnouncement, setCanvasAnnouncement] = useState('');
+  const [canvasItems, setCanvasItems] = useState<AccessibleDiagramItem[]>([]);
+  const [toast, setToast] = useState<{ message: string; action: 'redo' | 'undo' } | null>(null);
+  const [validating, setValidating] = useState(false);
+  const lintMarkerIdsRef = useRef(new Set<string>());
   const compact = useCompactViewport();
 
   onSimStatusRef.current = onSimStatus;
@@ -220,7 +286,11 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     const host = overlayRef.current;
     if (!modeler) return;
     const selected = (modeler.get('selection') as SelectionService).get();
-    const ids = selected.map((el) => el.id).filter(Boolean);
+    const active = document.activeElement;
+    if (active && active !== canvasKeyboardRef.current && canvasRef.current?.contains(active)) {
+      canvasKeyboardRef.current?.focus({ preventScroll: true });
+    }
+    const ids = selected.map(selectableElement).map((el) => el?.id).filter((id): id is string => !!id);
     const next = selected.map(selectableElement).find((el): el is DiagramElement => !!el) ?? null;
     if (labelWriteRef.current) {
       if (!next) return;
@@ -231,14 +301,30 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     setSelectedIds(ids);
     setSelection(next);
     setCanDelete(next ? canDeleteElement(modeler, next) : false);
-    const registry = modeler.get('elementRegistry') as { filter: (fn: (el: DiagramElement) => boolean) => unknown[] };
+    const registry = modeler.get('elementRegistry') as ElementRegistry;
     setHasParticipant(registry.filter((el) => el.type === 'bpmn:Participant').length > 0);
+    const items = accessibleItems(navigableElements(registry));
+    setCanvasItems((current) => (sameAccessibleItems(current, items) ? current : items));
     if (next && (isSequenceFlowSource(next) || isSequenceFlowElement(next)) && host) {
       setAnchor(gfxAnchor(modeler, next, host));
     } else {
       setAnchor(null);
     }
   }, []);
+
+  const applyUndo = useCallback(async () => {
+    const session = sessionRef.current;
+    if (!session?.canUndo() || simulatingRef.current) return;
+    emit(await session.undo());
+    setToast({ message: 'Undid last change', action: 'redo' });
+  }, [emit]);
+
+  const applyRedo = useCallback(async () => {
+    const session = sessionRef.current;
+    if (!session?.canRedo() || simulatingRef.current) return;
+    emit(await session.redo());
+    setToast({ message: 'Redid last change', action: 'undo' });
+  }, [emit]);
 
   useImperativeHandle(ref, () => ({
     getXml: async () => sessionRef.current?.xml(),
@@ -278,7 +364,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         externalStyle: { fontSize: 12 },
       },
     });
-    bindKeyboardToHost(modeler.get('keyboard') as EditorKeyboard, el);
+    bindKeyboardToHost(modeler.get('keyboard') as EditorKeyboard, canvasKeyboardRef.current ?? el);
     silenceCanvasTabStop(el);
     modelerRef.current = modeler;
     tokenViewRef.current = createTokenView(modeler);
@@ -417,8 +503,11 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     });
 
     const onViewbox = (payload?: unknown) => {
-      const next = (payload as { viewbox?: { scale?: number } } | undefined)?.viewbox?.scale;
-      if (typeof next === 'number') setScale(next);
+      const next = (payload as { viewbox?: Viewbox } | undefined)?.viewbox;
+      if (typeof next?.scale === 'number') setScale(next.scale);
+      if ([next?.x, next?.y, next?.width, next?.height].every((value) => typeof value === 'number')) {
+        setViewport({ x: next!.x, y: next!.y, width: next!.width, height: next!.height });
+      }
       refreshSelection();
     };
     eventBus.on('canvas.viewbox.changed', onViewbox);
@@ -477,6 +566,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       if (event.key === 'Escape') {
         if (isEditorChromeKeyTarget(event.target)) return;
         setCatalogView(null);
+        setValidating(false);
         if (!simulatingRef.current) setHint(null);
         const dragging = modelerRef.current?.get('dragging') as Dragging | undefined;
         dragging?.cancel();
@@ -486,21 +576,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       const modeler = modelerRef.current;
       const session = sessionRef.current;
       if (!modeler || !session) return;
-      const canvasFocused = event.target === canvasRef.current;
+      const canvasFocused = event.target === canvasKeyboardRef.current;
       if (canvasFocused && isCanvasNavigationKey(event.key)) {
         const registry = modeler.get('elementRegistry') as ElementRegistry;
-        const seen = new Set<string>();
-        const elements = registry
-          .filter((candidate) => !!selectableElement(candidate))
-          .map((candidate) => selectableElement(candidate))
-          .filter((candidate): candidate is DiagramElement => {
-            if (!candidate || seen.has(candidate.id)) return false;
-            seen.add(candidate.id);
-            return true;
-          })
-          .sort((a, b) => (a.y ?? Number.MAX_SAFE_INTEGER) - (b.y ?? Number.MAX_SAFE_INTEGER)
-            || (a.x ?? Number.MAX_SAFE_INTEGER) - (b.x ?? Number.MAX_SAFE_INTEGER)
-            || a.id.localeCompare(b.id));
+        const elements = navigableElements(registry);
         const selectedId = (modeler.get('selection') as SelectionService).get().map(selectableElement)[0]?.id;
         const nextId = canvasNavigationTarget(elements.map((element) => element.id), selectedId, event.key);
         const next = nextId ? registry.get(nextId) : undefined;
@@ -531,13 +610,13 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
       if (isUndoKey(event)) {
         event.preventDefault();
         event.stopPropagation();
-        void session.undo().then(emit);
+        void applyUndo();
         return;
       }
       if (isRedoKey(event)) {
         event.preventDefault();
         event.stopPropagation();
-        void session.redo().then(emit);
+        void applyRedo();
         return;
       }
       if (isCopyKey(event)) {
@@ -579,7 +658,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [emit]);
+  }, [applyRedo, applyUndo, emit]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLintXml(currentXml), 250);
@@ -588,6 +667,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
 
   useEffect(() => {
     simulationLock.on = simulating;
+    if (simulating) setValidating(false);
     const session = sessionRef.current;
     if (!simulating || !session) {
       simRef.current = null;
@@ -748,6 +828,42 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   );
 
   const lint = useMemo(() => lintLiveBpmnXml(lintXml), [lintXml]);
+  const findings = useMemo(() => presentedFindings(lint), [lint]);
+  const findingCounts = useMemo(() => ({
+    errors: findings.filter((finding) => finding.severity === 'error').length,
+    warnings: findings.filter((finding) => finding.severity === 'warning').length,
+    style: findings.filter((finding) => finding.severity === 'style').length,
+  }), [findings]);
+
+  useEffect(() => {
+    const canvas = modelerRef.current?.get('canvas') as CanvasService | undefined;
+    if (!canvas?.addMarker || !canvas.removeMarker) return;
+    for (const id of lintMarkerIdsRef.current) canvas.removeMarker(id, 'lint-error');
+    const next = validating
+      ? new Set(lint.errors.map((finding) => finding.elementId).filter((id): id is string => !!id))
+      : new Set<string>();
+    for (const id of next) canvas.addMarker(id, 'lint-error');
+    lintMarkerIdsRef.current = next;
+    return () => {
+      for (const id of next) canvas.removeMarker?.(id, 'lint-error');
+    };
+  }, [lint, validating]);
+
+  const selectValidationFinding = useCallback((elementId: string) => {
+    const modeler = modelerRef.current;
+    if (!modeler) return;
+    const target = (modeler.get('elementRegistry') as ElementRegistry).get(elementId);
+    if (!target) return;
+    (modeler.get('selection') as SelectionService).select(target);
+    if (typeof target.x === 'number' && typeof target.y === 'number') {
+      panCanvasToShape(
+        modeler.get('canvas') as CanvasService,
+        { x: target.x, y: target.y, width: target.width ?? 0, height: target.height ?? 0 },
+        overlayRef.current,
+      );
+    }
+    refreshSelection();
+  }, [refreshSelection]);
 
   const poolLanes = useMemo(() => {
     if (selection?.type !== 'bpmn:Participant') return [];
@@ -772,7 +888,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   }, [selectedIds, currentXml, lockRev, graphRev]);
 
   return (
-    <div className={`bpmn-stage bpmn-editor-stage flex${simulating ? ' is-simulating' : ''}${tool === 'pan' ? ' is-pan' : ''}`}>
+    <div className={`bpmn-stage bpmn-editor-stage flex${simulating ? ' is-simulating' : ''}${tool === 'pan' ? ' is-pan' : ''}${canvasItems.length > LARGE_DIAGRAM_SHAPES ? ' is-large-diagram' : ''}${canvasItems.length > LARGE_DIAGRAM_SHAPES && scale < 0.4 ? ' is-low-detail' : ''}`}>
       <PaletteRail
         tool={tool}
         catalogView={catalogView}
@@ -789,6 +905,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
           toolRef.current = 'select';
           setTool('select');
           setQuery('');
+          setValidating(false);
           setCatalogView(view);
         }}
         onQueryChange={setQuery}
@@ -802,14 +919,46 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
         }}
       />
       <div ref={overlayRef} className="bpmn-canvas-host">
-        <BpmnCanvas ref={canvasRef} />
+        <BpmnCanvas
+          ref={canvasRef}
+          keyboardRef={canvasKeyboardRef}
+          items={canvasItems}
+          selectedIds={selectedIds}
+        />
         <span className="sr-only" role="status" aria-live="polite">
           {canvasAnnouncement}
         </span>
         {simulating ? (
           <ModeBar mode="Simulating" detail={hint ?? 'Pick an available path on the diagram.'} meta="Read-only" />
-        ) : null}
+        ) : validating ? (
+          <ModeBar
+            mode="Validating"
+            detail={`${findingCounts.errors} ${findingCounts.errors === 1 ? 'error' : 'errors'} · ${findingCounts.warnings} ${findingCounts.warnings === 1 ? 'warning' : 'warnings'} · ${findingCounts.style} style`}
+            meta="Esc to exit"
+          />
+        ) : (
+          <ModeBar
+            mode="Editing"
+            detail={selection ? `Selected · ${selection.businessObject?.name?.trim() || readableBpmnType(selection.type)}` : 'Select an element or add the next step.'}
+            meta={canvasItems.length > 1_000 ? 'Large diagram · consider subprocesses' : `${findings.length} ${findings.length === 1 ? 'finding' : 'findings'}`}
+          />
+        )}
         <BpmnZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onFit={fit} onReset={reset} />
+        <BpmnMinimap
+          items={canvasItems}
+          viewport={viewport}
+          onNavigate={(next) => {
+            (modelerRef.current?.get('canvas') as CanvasService | undefined)?.viewbox(next);
+          }}
+        />
+        {toast ? (
+          <Toast
+            message={toast.message}
+            actionLabel={toast.action === 'redo' ? 'Redo' : 'Undo'}
+            onAction={() => void (toast.action === 'redo' ? applyRedo() : applyUndo())}
+            onDismiss={() => setToast(null)}
+          />
+        ) : null}
         {continueSource && anchor && !simulating ? (
           <ContinueWith
             key={continueSource.id}
@@ -829,8 +978,10 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
           <EditorOnboarding compact={compact} onDismiss={() => setOnboarding(false)} />
         ) : null}
       </div>
-      <aside className="element-inspector" aria-label="Process inspector">
-        {selection ? (
+      <InspectorShell>
+        {validating ? (
+          <ValidationPanel lint={lint} onClose={() => setValidating(false)} onSelect={selectValidationFinding} />
+        ) : selection ? (
           <ElementInspector
             framed={false}
             element={selection}
@@ -946,11 +1097,21 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
             poolLanes={poolLanes}
             nodeLanes={nodeLane.lanes}
             currentLaneId={nodeLane.currentLaneId}
+            onValidate={() => {
+              setCatalogView(null);
+              setValidating(true);
+            }}
           />
         ) : (
-          <InspectorLintFooter lint={lint} />
+          <InspectorLintFooter
+            lint={lint}
+            onValidate={() => {
+              setCatalogView(null);
+              setValidating(true);
+            }}
+          />
         )}
-      </aside>
+      </InspectorShell>
       <ArchitectPanel
         disabled={simulating}
         configured={aiConfigured}
