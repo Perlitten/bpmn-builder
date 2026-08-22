@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { layoutProcess } from '@bpmn/layout-engine';
-import type { FlowNode, Process, ProcessGraph, SequenceFlow } from '@bpmn/semantic-core';
+import type { FlowNode, SemanticProcess, ProcessGraph, SequenceFlow } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
 import { exportProcessXml, readDiFromXml, xmlToProcess } from '@bpmn/bpmn-adapter';
 
@@ -45,7 +45,7 @@ function graphKey(g: Pick<ProcessGraph, 'id' | 'name' | 'nodes' | 'flows'>) {
 }
 
 /** Semantic graph without DI / generated region ids. */
-function semanticGraph(p: Process) {
+function semanticGraph(p: SemanticProcess) {
   return {
     ...graphKey(p),
     collaborationId: p.collaborationId,

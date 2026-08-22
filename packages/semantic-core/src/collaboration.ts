@@ -2,9 +2,9 @@ import { rebuildStructure } from './detect.js';
 import { getNode } from './graph.js';
 import { nextId } from './ids.js';
 import { DEFAULT_BPMN_TYPE } from './types.js';
-import type { Applied, FlowNode, Lane, Participant, Process, ProcessGraph, SequenceFlow } from './types.js';
+import type { Applied, FlowNode, Lane, Participant, SemanticProcess, ProcessGraph, SequenceFlow } from './types.js';
 
-function apply(prev: Process, fn: (draft: Process) => string): Applied {
+function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
   draft.participants ??= [];
   draft.lanes ??= [];
@@ -15,7 +15,7 @@ function apply(prev: Process, fn: (draft: Process) => string): Applied {
   return { process: draft, inverse: () => structuredClone(prev), id };
 }
 
-function emptyPeerGraph(draft: Process, name: string): ProcessGraph {
+function emptyPeerGraph(draft: SemanticProcess, name: string): ProcessGraph {
   const id = nextId(draft, 'Process');
   const scopeId = nextId(draft, 'Scope');
   return {
@@ -32,7 +32,7 @@ function emptyPeerGraph(draft: Process, name: string): ProcessGraph {
   };
 }
 
-function ensureHostPool(draft: Process): Participant {
+function ensureHostPool(draft: SemanticProcess): Participant {
   const existing = draft.participants.find((p) => p.processId === draft.id);
   if (existing) return existing;
   if (!draft.collaborationId) draft.collaborationId = nextId(draft, 'Collaboration');
@@ -48,7 +48,7 @@ function ensureHostPool(draft: Process): Participant {
   return host;
 }
 
-function asGraph(source: Process | ProcessGraph): ProcessGraph {
+function asGraph(source: SemanticProcess | ProcessGraph): ProcessGraph {
   return {
     id: source.id,
     name: source.name,
@@ -67,8 +67,8 @@ function asGraph(source: Process | ProcessGraph): ProcessGraph {
   };
 }
 
-/** Peer graph seen as a Process so kernel ops run unchanged. Ids stay unique across the collaboration. */
-function poolView(draft: Process, peer: ProcessGraph): Process {
+/** Peer graph seen as a semantic process so kernel ops run unchanged. Ids stay unique across the collaboration. */
+function poolView(draft: SemanticProcess, peer: ProcessGraph): SemanticProcess {
   return {
     ...asGraph(peer),
     idSeq: draft.idSeq,
@@ -80,7 +80,7 @@ function poolView(draft: Process, peer: ProcessGraph): Process {
   };
 }
 
-function mergePool(draft: Process, peerId: string, result: Process): void {
+function mergePool(draft: SemanticProcess, peerId: string, result: SemanticProcess): void {
   const index = draft.processes.findIndex((graph) => graph.id === peerId);
   const graph = asGraph(result);
   if (index >= 0) draft.processes[index] = graph;
@@ -92,7 +92,7 @@ function mergePool(draft: Process, peerId: string, result: Process): void {
 }
 
 /** A pool the user filled by hand is no longer a black box: give it Start → End to insert between. */
-function seedPool(draft: Process, peer: ProcessGraph): void {
+function seedPool(draft: SemanticProcess, peer: ProcessGraph): void {
   if (peer.nodes.length) return;
   if (!peer.scopes.length) {
     peer.rootScopeId = nextId(draft, 'Scope');
@@ -119,7 +119,7 @@ function seedPool(draft: Process, peer: ProcessGraph): void {
 }
 
 /** Pool a selection means for insertion: a participant, a lane, or nothing. */
-export function poolTargetOf(process: Process, id: string | undefined): string | undefined {
+export function poolTargetOf(process: SemanticProcess, id: string | undefined): string | undefined {
   if (!id) return undefined;
   const lane = (process.lanes ?? []).find((item) => item.id === id);
   const participantId = lane?.participantId ?? id;
@@ -131,9 +131,9 @@ export function poolTargetOf(process: Process, id: string | undefined): string |
  * Materialises a process for a black-box pool and seeds Start → End for an empty one.
  */
 export function applyInPool(
-  process: Process,
+  process: SemanticProcess,
   participantId: string,
-  run: (graph: Process) => Applied,
+  run: (graph: SemanticProcess) => Applied,
 ): Applied {
   const participant = (process.participants ?? []).find((part) => part.id === participantId);
   if (!participant) throw new Error(`unknown participant: ${participantId}`);
@@ -154,7 +154,7 @@ export function applyInPool(
 }
 
 /** Pool label is the source of truth: the process it references follows the participant name. */
-export function syncProcessName(draft: Process, participant: Participant, name: string): void {
+export function syncProcessName(draft: SemanticProcess, participant: Participant, name: string): void {
   if (!participant.processId) return;
   if (participant.processId === draft.id) {
     draft.name = name;
@@ -164,7 +164,7 @@ export function syncProcessName(draft: Process, participant: Participant, name: 
   if (peer) peer.name = name;
 }
 
-function nodeIdsForProcess(draft: Process, processId: string): string[] {
+function nodeIdsForProcess(draft: SemanticProcess, processId: string): string[] {
   const graph = processId === draft.id ? draft : draft.processes.find((g) => g.id === processId);
   if (!graph) return [];
   const root =
@@ -173,7 +173,7 @@ function nodeIdsForProcess(draft: Process, processId: string): string[] {
   return graph.nodes.filter((n) => n.type !== 'boundaryEvent' && allowed.has(n.id)).map((n) => n.id);
 }
 
-function participantIdOf(draft: Process, id: string): string | undefined {
+function participantIdOf(draft: SemanticProcess, id: string): string | undefined {
   if (draft.participants.some((p) => p.id === id)) return id;
   const lane = draft.lanes.find((l) => l.id === id);
   if (lane?.participantId) return lane.participantId;
@@ -188,7 +188,7 @@ function participantIdOf(draft: Process, id: string): string | undefined {
 }
 
 /** Adds a pool. First call wraps this process and adds a partner; later calls add another pool. */
-export function addPool(process: Process, spec: { name?: string; id?: string } = {}): Applied {
+export function addPool(process: SemanticProcess, spec: { name?: string; id?: string } = {}): Applied {
   return apply(process, (draft) => {
     ensureHostPool(draft);
     const id = nextId(draft, 'Participant', spec.id);
@@ -201,7 +201,7 @@ export function addPool(process: Process, spec: { name?: string; id?: string } =
 }
 
 export function addLane(
-  process: Process,
+  process: SemanticProcess,
   spec: { participantId?: string; parentLaneId?: string; name?: string; id?: string } = {},
 ): Applied {
   return apply(process, (draft) => {
@@ -239,7 +239,7 @@ export function addLane(
   });
 }
 
-export function assignLane(process: Process, nodeId: string, laneId: string): Applied {
+export function assignLane(process: SemanticProcess, nodeId: string, laneId: string): Applied {
   return apply(process, (draft) => {
     getNode(draft, nodeId);
     // An empty lane id is the explicit “Not in a lane” choice in the
@@ -261,7 +261,7 @@ export function assignLane(process: Process, nodeId: string, laneId: string): Ap
 
 /** Message flow between participants. Sequence flow stays intra-process. */
 export function addMessageInteraction(
-  process: Process,
+  process: SemanticProcess,
   spec: { from: string; to: string; name?: string; id?: string },
 ): Applied {
   return apply(process, (draft) => {

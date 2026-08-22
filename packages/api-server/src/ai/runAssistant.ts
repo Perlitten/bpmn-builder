@@ -14,11 +14,11 @@ import {
   type ToolCall,
 } from '../../../agent-tools/src/index.js';
 import { xmlToProcess } from '../../../bpmn-adapter/src/index.js';
-import { createProcess, type Process } from '../../../semantic-core/src/index.js';
+import { createProcess, type SemanticProcess } from '../../../semantic-core/src/index.js';
 import { assistantTimeoutError, isTimeoutError, whenAborted } from './timeout.js';
 import type { AiModelClient, ChatTurn } from './types.js';
 
-export type AssistantStep = {
+type AssistantStep = {
   name: string;
   args: Record<string, unknown>;
   id: string;
@@ -30,8 +30,8 @@ export type AssistantData = {
   message: string;
   tools: ToolCall[];
   results: AssistantStep[];
-  process: Process;
-  previousProcess: Process;
+  process: SemanticProcess;
+  previousProcess: SemanticProcess;
 };
 
 const clip = (value: string, max = 24000) =>
@@ -40,7 +40,7 @@ const clip = (value: string, max = 24000) =>
 async function loadProcess(
   input: { process?: unknown; bpmnXml?: string; processName?: string },
   signal?: AbortSignal,
-): Promise<Process> {
+): Promise<SemanticProcess> {
   if (isSemanticProcess(input.process)) return input.process;
   if (input.bpmnXml?.trim()) {
     try {

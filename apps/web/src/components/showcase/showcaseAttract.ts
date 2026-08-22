@@ -1,4 +1,4 @@
-export type ShowcaseNodeKind = 'start' | 'end' | 'gateway' | 'task';
+type ShowcaseNodeKind = 'start' | 'end' | 'gateway' | 'task';
 
 type ShowcaseNode = {
   kind: ShowcaseNodeKind;
@@ -25,7 +25,7 @@ export type ShowcaseShape = ShowcaseNode & {
   order: number;
 };
 
-export type ShowcaseEdge = {
+type ShowcaseEdge = {
   order: number;
   points: ShowcasePoint[];
 };
@@ -127,7 +127,7 @@ function left(shape: ShowcaseShape): number {
   return shape.cx - shape.width / 2;
 }
 
-export function buildShowcaseGeometry(scenario: ShowcaseScenario): ShowcaseGeometry {
+function buildShowcaseGeometry(scenario: ShowcaseScenario): ShowcaseGeometry {
   const shapes: ShowcaseShape[] = [];
   const edges: ShowcaseEdge[] = [];
   const paths: ShowcasePoint[][] = [];

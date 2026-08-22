@@ -177,13 +177,7 @@ function suggestFlow(ctx: NameContext, current: string): NameSuggestion | undefi
 function suggestTask(ctx: NameContext, current: string, findings: Finding[]): NameSuggestion | undefined {
   const fromNext = stripQuestion(firstMeaningful(ctx.outgoing));
   const fromPrev = firstMeaningful(ctx.incoming);
-  const placeholder = isPlaceholderName(current, ctx.id);
-  // Do not manufacture English verbs for names written in another script or
-  // for actor-prefixed labels such as “Sales: check stock”. The suggestion is
-  // optional guidance; hiding a bad transformation is safer than corrupting a
-  // user's wording.
-  if (!placeholder && (!shouldCheckActionVerb(current) || current.includes(':'))) return undefined;
-  if (placeholder) {
+  if (isPlaceholderName(current, ctx.id)) {
     const proposed = asTask(fromNext || fromPrev || 'Validate customer');
     return { name: proposed, reason: 'Task names are object + action' };
   }

@@ -1,8 +1,5 @@
 import { userFacingPlanError } from '@bpmn/agent-tools';
 
-/** Editor notices close themselves; simulation status stays until the run changes. */
-export const NOTICE_DISMISS_MS = 6000;
-
 const FALLBACK = 'Could not apply that change.';
 
 /** One BPMN sentence for the canvas notice — never `ambiguous after Gateway_1: pass branchId`. */
@@ -18,10 +15,6 @@ export function editorNoticeText(error: unknown): string {
   if (/^unknown flow/i.test(text)) return 'That sequence flow is no longer in this process.';
   if (/cannot insert an end/i.test(text)) return 'End cannot be inserted where the flow continues.';
   return userFacingPlanError(text) || FALLBACK;
-}
-
-export function noticeDismissMs(hint: string | null, simulating: boolean): number | null {
-  return hint && !simulating ? NOTICE_DISMISS_MS : null;
 }
 
 /** Operational notices beat first-run onboarding — otherwise a split insert looks like a no-op. */

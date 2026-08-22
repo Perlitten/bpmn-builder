@@ -1,9 +1,9 @@
 import { rebuildStructure } from './detect.js';
 import { allRegions, getNode, incomingFlows, innerScope, insertionFlow, insertOnFlow, makeNode, outgoingFlows, rootScope, scopeOf } from './graph.js';
 import { nextId } from './ids.js';
-import type { Applied, PlaceSpec, Process, StructuredRegion } from './types.js';
+import type { Applied, PlaceSpec, SemanticProcess, StructuredRegion } from './types.js';
 
-function apply(prev: Process, fn: (draft: Process) => string): Applied {
+function apply(prev: SemanticProcess, fn: (draft: SemanticProcess) => string): Applied {
   const draft = structuredClone(prev);
   const id = fn(draft);
   rebuildStructure(draft);
@@ -19,7 +19,7 @@ function collectRegion(region: StructuredRegion, into: Set<string>): void {
   for (const nested of region.nested) collectRegion(nested, into);
 }
 
-function expandFragment(p: Process, nodeIds: string[]): Set<string> {
+function expandFragment(p: SemanticProcess, nodeIds: string[]): Set<string> {
   const set = new Set(nodeIds);
   for (const id of nodeIds) getNode(p, id);
   for (const region of allRegions(p)) {
@@ -37,7 +37,7 @@ function expandFragment(p: Process, nodeIds: string[]): Set<string> {
   return set;
 }
 
-function seedInnerProcess(draft: Process, subId: string, event: boolean): void {
+function seedInnerProcess(draft: SemanticProcess, subId: string, event: boolean): void {
   const parent = scopeOf(draft, subId);
   const start = makeNode(draft, 'start', event ? 'Message' : 'Start', undefined, 'bpmn:StartEvent', {
     ...(event ? { eventDefinition: 'MessageEventDefinition' } : {}),
@@ -55,7 +55,7 @@ function seedInnerProcess(draft: Process, subId: string, event: boolean): void {
   });
 }
 
-function resolveParentScope(draft: Process, parent?: string) {
+function resolveParentScope(draft: SemanticProcess, parent?: string) {
   if (!parent || parent === draft.id || parent === draft.rootScopeId) return rootScope(draft);
   const scope = draft.scopes.find((s) => s.id === parent);
   if (scope) return scope;
@@ -69,7 +69,7 @@ function resolveParentScope(draft: Process, parent?: string) {
 }
 
 /** Insert an expanded embedded subprocess on a sequence (inner start → end). */
-export function addSubProcess(process: Process, spec: PlaceSpec = {}): Applied {
+export function addSubProcess(process: SemanticProcess, spec: PlaceSpec = {}): Applied {
   return apply(process, (draft) => {
     const node = makeNode(draft, 'subProcess', spec.name ?? 'Subprocess', spec.id, spec.bpmnType ?? 'bpmn:SubProcess');
     insertOnFlow(draft, insertionFlow(draft, spec).id, node);
@@ -80,7 +80,7 @@ export function addSubProcess(process: Process, spec: PlaceSpec = {}): Applied {
 
 /** Event subprocess of `parent` (process or subprocess). Not on sequence flow. */
 export function createEventSubprocess(
-  process: Process,
+  process: SemanticProcess,
   spec: { parent?: string; name?: string; id?: string } = {},
 ): Applied {
   return apply(process, (draft) => {
@@ -96,7 +96,7 @@ export function createEventSubprocess(
 }
 
 /** Wrap a single-entry single-exit fragment in an embedded subprocess. */
-export function wrapInSubprocess(process: Process, nodeIds: string[], spec: { name?: string } = {}): Applied {
+export function wrapInSubprocess(process: SemanticProcess, nodeIds: string[], spec: { name?: string } = {}): Applied {
   if (!nodeIds.length) throw new Error('wrapInSubprocess needs node ids');
   return apply(process, (draft) => {
     const fragment = expandFragment(draft, nodeIds);

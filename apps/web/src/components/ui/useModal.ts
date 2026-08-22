@@ -23,7 +23,7 @@ export function focusableIn(root: ParentNode): HTMLElement[] {
   });
 }
 
-export function trapTabKey(root: HTMLElement, event: KeyboardEvent): void {
+function trapTabKey(root: HTMLElement, event: KeyboardEvent): void {
   if (event.key !== 'Tab') return;
   const nodes = focusableIn(root);
   if (nodes.length === 0) {

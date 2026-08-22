@@ -1,5 +1,5 @@
 import { layoutProcess } from '../../layout-engine/src/index.js';
-import { detectStructure, type Process } from '../../semantic-core/src/index.js';
+import { detectStructure, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { executionScore, layerExecution } from './execution.js';
 import { toLintModel, type Bounds, type LintFlow, type LintModel, type LintNode } from './model.js';
 import { hasActionVerb, isPlaceholderName, shouldCheckActionVerb } from './naming.js';
@@ -437,7 +437,7 @@ function matchesLayoutEngine(model: LintModel): boolean {
     Boolean(f.source && f.target),
   );
   if (!model.nodes.length) return false;
-  const draft: Process = {
+  const draft: SemanticProcess = {
     id: 'Process_1',
     name: 'Process',
     rootScopeId: 'Scope_1',

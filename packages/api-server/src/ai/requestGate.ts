@@ -3,6 +3,8 @@ type GateRecord = {
   requests: number[];
 };
 
+const PRUNE_EVERY_ACQUIRES = 64;
+
 type GateLease =
   | { ok: true; release: () => void }
   | { ok: false; retryAfterSeconds: number };
@@ -18,17 +20,26 @@ export function createAssistantRequestGate(env: NodeJS.ProcessEnv = process.env)
   const maxRequests = positiveInt(env.ASSISTANT_REQUESTS_PER_MINUTE, 30, 300);
   const windowMs = 60_000;
   const records = new Map<string, GateRecord>();
+  let acquires = 0;
 
   const acquire = (key: string, now = Date.now()): GateLease => {
     const cutoff = now - windowMs;
-    // A long-lived Node instance can see many one-off users. Evict idle
-    // records whose sliding window is over before accepting a new lease.
+    acquires += 1;
+    // A long-lived serverless instance can see many one-off users. Evict a
+    // bounded number of idle records eagerly once the map grows large; the
+    // regular cadence below still keeps the common path cheap.
     if (records.size > 1_000) {
       let checked = 0;
       for (const [knownKey, known] of records) {
         if (known.inFlight === 0 && known.requests.every((time) => time <= cutoff)) records.delete(knownKey);
         checked += 1;
         if (checked >= 64) break;
+      }
+    }
+    if (acquires % PRUNE_EVERY_ACQUIRES === 0) {
+      for (const [recordKey, candidate] of records) {
+        candidate.requests = candidate.requests.filter((time) => time > cutoff);
+        if (candidate.inFlight === 0 && candidate.requests.length === 0) records.delete(recordKey);
       }
     }
     const record = records.get(key) ?? { inFlight: 0, requests: [] };

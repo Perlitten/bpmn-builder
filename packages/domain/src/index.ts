@@ -1,19 +1,10 @@
 export type {
-  Process,
+  StoredProcess,
   ProcessSummary,
   ProcessQualitySummary,
   ProcessMiniPreview,
   WorkflowDocument,
-} from './types/Process.js';
-export type {
-  Process as SemanticProcess,
-  Scope,
-  FlowNode,
-  SequenceFlow,
-  StructuredRegion,
-  Branch,
-  UnstructuredMark,
-} from '../../semantic-core/src/index.js';
+} from './types/StoredProcess.js';
 export type { ProcessStatus } from './types/ProcessStatus.js';
 export type { ValidationIssue } from './types/ValidationIssue.js';
 export type { WorkflowEdge } from './types/WorkflowEdge.js';

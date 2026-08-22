@@ -3,7 +3,7 @@ import {
   createProcess,
   splitExclusive,
   splitParallel,
-  type Process,
+  type SemanticProcess,
 } from '@bpmn/semantic-core';
 import { exportProcessXml } from '@bpmn/bpmn-adapter';
 import {
@@ -330,7 +330,7 @@ function assertParallelSize(decision: ParallelDecision): void {
   );
 }
 
-function buildExclusive(name: string, decision: ExclusiveDecision): Process {
+function buildExclusive(name: string, decision: ExclusiveDecision): SemanticProcess {
   assertExclusiveSize(decision);
   let process = createProcess({ name });
   let after = 'StartEvent_1';
@@ -354,7 +354,7 @@ function buildExclusive(name: string, decision: ExclusiveDecision): Process {
   return process;
 }
 
-function buildParallel(name: string, decision: ParallelDecision): Process {
+function buildParallel(name: string, decision: ParallelDecision): SemanticProcess {
   assertParallelSize(decision);
   let process = createProcess({ name });
   let after = 'StartEvent_1';
@@ -410,7 +410,7 @@ export function descriptionInputIssue(text: string): string | null {
   }
 }
 
-export function describeSemanticProcess(name: string, description: string): Process {
+export function describeSemanticProcess(name: string, description: string): SemanticProcess {
   const trimmed = validateDescriptionText(description);
   assertSupportedDescription(trimmed);
   const exclusive = detectExclusiveDecision(trimmed);

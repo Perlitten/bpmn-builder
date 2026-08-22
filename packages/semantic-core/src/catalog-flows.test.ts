@@ -6,10 +6,10 @@ import {
   createProcess,
   setFlowKind,
   splitExclusive,
-  type Process,
+  type SemanticProcess,
 } from './index.js';
 
-function named(p: Process, name: string): string {
+function named(p: SemanticProcess, name: string): string {
   const node = p.nodes.find((n) => n.name === name);
   if (!node) throw new Error(`no node named ${name}`);
   return node.id;

@@ -6,7 +6,7 @@ import {
   createEventSubprocess,
   createProcess,
   splitExclusive,
-  type Process,
+  type SemanticProcess,
 } from '@bpmn/semantic-core';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +44,7 @@ function diXml(result: LayoutResult): string {
   return `<bpmndi:BPMNDiagram id="BPMNDiagram_1"><bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">${shapes}${edgeLabels}</bpmndi:BPMNPlane></bpmndi:BPMNDiagram>`;
 }
 
-function processXml(p: Process): string {
+function processXml(p: SemanticProcess): string {
   const tag: Record<string, string> = {
     start: 'startEvent',
     end: 'endEvent',
@@ -217,7 +217,7 @@ describe('lintProcess', () => {
     const origin = createProcess();
     const start = origin.nodes.find((n) => n.type === 'start')!;
     const end = origin.nodes.find((n) => n.type === 'end')!;
-    const graph: Process = {
+    const graph: SemanticProcess = {
       ...origin,
       nodes: [
         start,
@@ -696,7 +696,7 @@ describe('lintProcess', () => {
     const origin = createProcess();
     const start = origin.nodes.find((n) => n.type === 'start')!;
     const end = origin.nodes.find((n) => n.type === 'end')!;
-    const collapsed: Process = {
+    const collapsed: SemanticProcess = {
       ...origin,
       nodes: [start, { id: 'ComplexGateway_1', type: 'task', name: 'N of M', bpmnType: 'bpmn:ComplexGateway' }, end],
       flows: [

@@ -1,9 +1,8 @@
-import { stripXmlComments, type Process } from '../../semantic-core/src/index.js';
+import { stripXmlComments, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { xmlToProcess } from './semantic-xml.js';
 
 /** OMG BPMN 2.0.2 semantic namespace. */
 export const BPMN_20_MODEL_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
-export const BPMN_20_NS = BPMN_20_MODEL_NS;
 export const MAX_BPMN_IMPORT_BYTES = 8 * 1024 * 1024;
 
 export type BpmnImportCode =
@@ -206,7 +205,7 @@ export function bpmnXmlShapeError(xml: string): string | null {
   return sniffed.ok ? null : sniffed.message;
 }
 
-function hasFlowNodes(process: Process): boolean {
+function hasFlowNodes(process: SemanticProcess): boolean {
   return process.nodes.length > 0 || process.processes.some((peer) => peer.nodes.length > 0);
 }
 
@@ -223,10 +222,10 @@ function parseErrorMessage(err: unknown): string {
 export async function importBpmnXml(
   source: string | Uint8Array,
   options?: { filename?: string },
-): Promise<{ xml: string; process: Process }> {
+): Promise<{ xml: string; process: SemanticProcess }> {
   const sniffed = sniffBpmnXml(source, options);
   if (!sniffed.ok) throw new BpmnImportError(sniffed.code, sniffed.message);
-  let process: Process;
+  let process: SemanticProcess;
   try {
     process = await xmlToProcess(sniffed.xml);
   } catch (err) {

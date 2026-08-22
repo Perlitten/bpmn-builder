@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { Badge } from '../ui';
 import {
   LIST_PANEL_ID,
   LIST_TAB_ID,
@@ -56,7 +57,7 @@ export function ListKindTabs({ kind, onChange, counts }: ListKindTabsProps) {
           >
             {LIST_TAB_LABEL[tab]}
             {typeof counts?.[tab] === 'number' ? (
-              <span className="process-tab-count">{counts[tab]}</span>
+              <Badge className="process-tab-count">{counts[tab]}</Badge>
             ) : null}
           </button>
         );

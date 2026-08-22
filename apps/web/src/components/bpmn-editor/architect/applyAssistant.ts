@@ -7,7 +7,7 @@ import {
   type ToolCall,
 } from '@bpmn/agent-tools';
 import { lintProcess } from '@bpmn/rules';
-import type { Process } from '@bpmn/semantic-core';
+import type { SemanticProcess } from '@bpmn/semantic-core';
 
 export type AssistantPayload = {
   message: string;
@@ -19,10 +19,10 @@ export type AssistantPayload = {
 };
 
 export type AssistantApplySession = {
-  process: () => Process;
+  process: () => SemanticProcess;
   xml: () => string;
   applyPlan: (tools: ToolCall[], scope?: AgentScope) => Promise<string>;
-  applyProcess: (next: Process, selectId?: string) => Promise<string>;
+  applyProcess: (next: SemanticProcess, selectId?: string) => Promise<string>;
 };
 
 export type AssistantApplyResult = {

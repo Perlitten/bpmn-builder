@@ -1,11 +1,10 @@
 import type { AgentScope } from '@bpmn/agent-tools';
-import type { Process, ProcessPatch, ProcessSummary } from '@bpmn/domain';
-import type { AppRoute } from '../routes/types';
+import type { ProcessPatch, ProcessSummary, StoredProcess } from '@bpmn/domain';
 
-export type ProcessListKind = 'all' | 'process' | 'template';
+type ProcessListKind = 'all' | 'process' | 'template';
 export type ProcessListSort = 'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc';
 
-export type ProcessListParams = {
+type ProcessListParams = {
   q?: string;
   kind?: ProcessListKind;
   sort?: ProcessListSort;
@@ -13,7 +12,7 @@ export type ProcessListParams = {
   limit?: number;
 };
 
-export type ProcessListResponse = {
+type ProcessListResponse = {
   processes: ProcessSummary[];
   total: number;
   page: number;
@@ -56,7 +55,7 @@ type ApiClient = {
     templateId?: string;
     bpmnXml?: string;
   }, signal?: AbortSignal) => Promise<{ id: string }>;
-  renameProcess: (id: string, name: string, version: number, signal?: AbortSignal) => Promise<Process>;
+  renameProcess: (id: string, name: string, version: number, signal?: AbortSignal) => Promise<StoredProcess>;
   duplicateProcess: (id: string, name?: string, signal?: AbortSignal) => Promise<{ id: string }>;
   deleteProcess: (id: string, signal?: AbortSignal) => Promise<void>;
   sendFeedback: (input: {
@@ -129,7 +128,7 @@ export const api: ApiClient = {
     return data.process;
   },
   renameProcess: async (id, name, version, signal) => {
-    const data = await request<{ process: Process }>(`/api/processes/${id}`, {
+    const data = await request<{ process: StoredProcess }>(`/api/processes/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ name, version }),
       signal,
@@ -176,18 +175,18 @@ export const api: ApiClient = {
 };
 
 export async function fetchProcess(processId: string) {
-  return request<{ process: Process }>(`/api/processes/${processId}`);
+  return request<{ process: StoredProcess }>(`/api/processes/${processId}`);
 }
 
 export async function saveProcess(processId: string, patch: ProcessPatch) {
-  return request<{ process: Process }>(`/api/processes/${processId}`, {
+  return request<{ process: StoredProcess }>(`/api/processes/${processId}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
   });
 }
 
 export async function saveAsTemplate(processId: string, bpmnXml?: string) {
-  return request<{ process: Process }>(`/api/processes/${processId}/template`, {
+  return request<{ process: StoredProcess }>(`/api/processes/${processId}/template`, {
     method: 'POST',
     body: JSON.stringify(bpmnXml ? { bpmnXml } : {}),
   });
@@ -234,5 +233,3 @@ export async function runAssistant(input: {
   });
   return body.data;
 }
-
-export type { AppRoute };

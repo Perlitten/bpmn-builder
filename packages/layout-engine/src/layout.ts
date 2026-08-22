@@ -1,4 +1,4 @@
-import { visibleNodeName, type Process } from '../../semantic-core/src/index.js';
+import { visibleNodeName, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { routeOrthogonal, routeOrthogonalVertical } from './route.js';
 import { fromSemanticProcess } from './semanticAdapter.js';
 import { BASELINE_CY, ORIGIN_X, snapToGrid, TOKENS } from './tokens.js';
@@ -41,7 +41,7 @@ export function layout(input: LayoutInput): LayoutResult {
   return layoutCollaboration(input, inner);
 }
 
-export function layoutProcess(process: Process | unknown): LayoutResult {
+export function layoutProcess(process: SemanticProcess | unknown): LayoutResult {
   return layout(fromSemanticProcess(process));
 }
 

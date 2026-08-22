@@ -196,7 +196,19 @@ html.is-editor #root {
   inset: 0;
 }
 
-.bpmn-editor-stage .bpmn-canvas:focus-visible {
+.bpmn-canvas-keyboard-target {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bpmn-editor-stage:has(.bpmn-canvas-keyboard-target:focus-visible) .bpmn-canvas {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
@@ -292,6 +304,43 @@ html.is-editor #root {
   cursor: grabbing;
 }
 
+.bpmn-minimap {
+  position: absolute;
+  z-index: var(--z-zoom);
+  right: var(--space-8);
+  bottom: var(--space-8);
+  width: var(--editor-minimap-width);
+  height: var(--editor-minimap-height);
+  padding: 0;
+  border: 1px solid var(--color-border-interactive);
+  background: var(--color-canvas);
+  cursor: crosshair;
+}
+
+.bpmn-minimap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bpmn-minimap-shapes {
+  fill: var(--color-border);
+  stroke: var(--color-ink);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.bpmn-minimap-viewport {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.bpmn-editor-stage.is-low-detail .djs-label {
+  display: none;
+}
+
 .token-badge {
   min-width: 18px;
   height: 18px;
@@ -324,17 +373,9 @@ html.is-editor #root {
   line-height: 1.2;
 }
 
-.lint-score-chips span + span::before {
-  content: ' · ';
-}
-
-.lint-score-chips.is-error,
-.lint-score-chips.is-error span {
+.lint-score-chips.is-error {
   color: var(--color-danger);
-}
-
-.lint-score-chips span.is-execution {
-  color: var(--color-ink);
+  border-color: var(--color-danger);
 }
 
 .djs-element.sim-choice .djs-visual > :nth-child(1),
@@ -345,6 +386,11 @@ html.is-editor #root {
 
 .djs-element.sim-choice .djs-visual > :nth-child(1) {
   stroke-dasharray: 8 4;
+}
+
+.bpmn-editor-stage .djs-element.lint-error .djs-visual > :first-child {
+  stroke: var(--color-danger) !important;
+  stroke-width: 2px !important;
 }
 
 .bpmn-editor-stage.is-simulating .djs-element.sim-choice,

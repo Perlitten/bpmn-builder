@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { bpmnToWorkflow, workflowToBpmn } from './workflow.js';
 import { exportProcessXml, readDiFromXml, xmlToProcess } from './semantic-xml.js';
-import type { Process } from '@bpmn/semantic-core';
+import type { SemanticProcess } from '@bpmn/semantic-core';
 
-function graphKey(p: Process) {
+function graphKey(p: SemanticProcess) {
   return {
     id: p.id,
     nodes: [...p.nodes]

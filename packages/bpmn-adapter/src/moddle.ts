@@ -328,9 +328,9 @@ export function applyPreserve(moddle: Moddle, el: ModdleEl, preserve: BpmnPreser
   }
 }
 
-export const ARTIFACT_TYPES = new Set(['bpmn:TextAnnotation', 'bpmn:Association', 'bpmn:Group']);
+const ARTIFACT_TYPES = new Set(['bpmn:TextAnnotation', 'bpmn:Association', 'bpmn:Group']);
 
-export function isArtifactType(type: string): boolean {
+function isArtifactType(type: string): boolean {
   return ARTIFACT_TYPES.has(type) || type.endsWith(':TextAnnotation') || type.endsWith(':Association') || type.endsWith(':Group');
 }
 

@@ -37,7 +37,7 @@ export function getDb(): AppDb {
   return db;
 }
 
-export type QueryBuilderChain = {
+type QueryBuilderChain = {
   from: (table: unknown) => QueryBuilderChain;
   where: (...args: unknown[]) => QueryBuilderChain;
   orderBy: (...args: unknown[]) => QueryBuilderChain;

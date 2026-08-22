@@ -1,5 +1,5 @@
 import type { WorkflowDocument } from '../../domain/src/index.js';
-import { detectStructure, type FlowNode, type FlowNodeType, type Process, type SequenceFlow } from '../../semantic-core/src/index.js';
+import { detectStructure, type FlowNode, type FlowNodeType, type SemanticProcess, type SequenceFlow } from '../../semantic-core/src/index.js';
 import { layoutProcess } from '../../layout-engine/src/index.js';
 import { exportProcessXml, idSeqFrom, xmlToProcess } from './semantic-xml.js';
 
@@ -36,7 +36,7 @@ function workflowType(node: FlowNode): string {
   return node.type;
 }
 
-function processToWorkflow(process: Process): WorkflowDocument {
+function processToWorkflow(process: SemanticProcess): WorkflowDocument {
   const di = layoutProcess(process);
   const defaults = new Map<string, string>();
   for (const flow of process.flows) {
@@ -71,7 +71,7 @@ function processToWorkflow(process: Process): WorkflowDocument {
   };
 }
 
-export function workflowToProcess(workflow: WorkflowDocument): Process {
+export function workflowToProcess(workflow: WorkflowDocument): SemanticProcess {
   const processId = workflow.processId?.trim() || 'Process_1';
   const nodes: FlowNode[] = workflow.nodes.map((node) => {
     const mapped = FROM_WORKFLOW[node.type] ?? { type: 'task' as const, bpmnType: 'bpmn:Task' };

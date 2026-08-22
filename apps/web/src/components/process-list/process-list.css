@@ -260,8 +260,6 @@
 
 .process-tab-count {
   margin-left: var(--space-2);
-  color: var(--color-muted);
-  font: var(--fs-10)/1 var(--font-mono);
 }
 
 .process-index-sort {

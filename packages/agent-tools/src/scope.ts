@@ -5,7 +5,7 @@ import {
   findBranch,
   findRegion,
   type Branch,
-  type Process,
+  type SemanticProcess,
   type StructuredRegion,
 } from '../../semantic-core/src/index.js';
 import { ToolPlanError } from './errors.js';
@@ -49,11 +49,11 @@ export function describeAgentScope(scope: AgentScope): string {
   return `selection (${(scope.ids ?? []).join(', ')})`;
 }
 
-export function lockedBranches(process: Process): Branch[] {
+export function lockedBranches(process: SemanticProcess): Branch[] {
   return allRegions(process).flatMap((region) => region.branches.filter((branch) => branch.locked));
 }
 
-export function describeLocks(process: Process): string | undefined {
+function describeLocks(process: SemanticProcess): string | undefined {
   const locked = lockedBranches(process);
   if (!locked.length) return undefined;
   return locked.map((branch) => `${branch.name || 'branch'} (${branch.id})`).join(', ');
@@ -83,7 +83,7 @@ function branchHas(branch: Branch, id: string): boolean {
   return branch.id === id || branch.entryFlowId === id || branch.nodeIds.includes(id);
 }
 
-function findOwningBranch(process: Process, id: string): { region: StructuredRegion; branch: Branch } | undefined {
+function findOwningBranch(process: SemanticProcess, id: string): { region: StructuredRegion; branch: Branch } | undefined {
   for (const region of allRegions(process)) {
     if (region.split === id || region.join === id || region.id === id) continue;
     const branch = region.branches.find((item) => branchHas(item, id));
@@ -91,7 +91,7 @@ function findOwningBranch(process: Process, id: string): { region: StructuredReg
   }
 }
 
-function isLockedTarget(process: Process, id: string): boolean {
+function isLockedTarget(process: SemanticProcess, id: string): boolean {
   const hit = findOwningBranch(process, id);
   return Boolean(hit?.branch.locked);
 }
@@ -100,7 +100,7 @@ function nestedOnBranch(region: StructuredRegion, branch: Branch): StructuredReg
   return region.nested.filter((nested) => branch.nodeIds.includes(nested.split));
 }
 
-function mutableIds(process: Process, scope: AgentScope | undefined): Set<string> | null {
+function mutableIds(process: SemanticProcess, scope: AgentScope | undefined): Set<string> | null {
   if (!scope || scope.kind === 'process') return null;
   const ids = new Set<string>();
   if (scope.kind === 'region') {
@@ -119,7 +119,7 @@ function mutableIds(process: Process, scope: AgentScope | undefined): Set<string
   return ids;
 }
 
-function inMutable(process: Process, scope: AgentScope | undefined, id: string): boolean {
+function inMutable(process: SemanticProcess, scope: AgentScope | undefined, id: string): boolean {
   if (isLockedTarget(process, id)) return false;
   const allowed = mutableIds(process, scope);
   if (!allowed) return true;
@@ -127,7 +127,7 @@ function inMutable(process: Process, scope: AgentScope | undefined, id: string):
 }
 
 function canInsertAfter(
-  process: Process,
+  process: SemanticProcess,
   scope: AgentScope | undefined,
   afterId: string,
   branchId?: string,
@@ -167,7 +167,7 @@ function findNestedBranch(region: StructuredRegion, branchId: string): Branch | 
 }
 
 function canInsertBefore(
-  process: Process,
+  process: SemanticProcess,
   scope: AgentScope | undefined,
   beforeId: string,
   branchId?: string,
@@ -200,18 +200,18 @@ function processWide(scope: AgentScope | undefined): boolean {
   return !scope || scope.kind === 'process';
 }
 
-function regionById(process: Process, id: string): StructuredRegion | undefined {
+function regionById(process: SemanticProcess, id: string): StructuredRegion | undefined {
   return allRegions(process).find((region) => region.id === id);
 }
 
-function branchById(process: Process, id: string): Branch | undefined {
+function branchById(process: SemanticProcess, id: string): Branch | undefined {
   for (const region of allRegions(process)) {
     const hit = region.branches.find((branch) => branch.id === id);
     if (hit) return hit;
   }
 }
 
-function happyBranchOf(process: Process, region: StructuredRegion): Branch | undefined {
+function happyBranchOf(process: SemanticProcess, region: StructuredRegion): Branch | undefined {
   const def = process.flows.find((flow) => flow.source === region.split && flow.isDefault);
   if (def) {
     const hit = region.branches.find((branch) => branch.entryFlowId === def.id && !branch.locked);
@@ -221,7 +221,7 @@ function happyBranchOf(process: Process, region: StructuredRegion): Branch | und
 }
 
 function lookupPlaceRef(
-  process: Process,
+  process: SemanticProcess,
   ref: string,
   lastId?: string,
 ): { kind: 'branch' | 'region' | 'node'; id: string } | undefined {
@@ -247,7 +247,7 @@ function lookupPlaceRef(
 function rewritePlaceArgs(
   name: ToolName,
   args: Record<string, unknown>,
-  process: Process,
+  process: SemanticProcess,
   lastId: string | undefined,
   scope: AgentScope | undefined,
 ): Record<string, unknown> {
@@ -305,7 +305,7 @@ export function applyScopeDefaults(
   name: ToolName,
   args: Record<string, unknown>,
   scope: AgentScope | undefined,
-  ctx?: { process: Process; lastId?: string },
+  ctx?: { process: SemanticProcess; lastId?: string },
 ): Record<string, unknown> {
   const placed = ctx?.process ? rewritePlaceArgs(name, args, ctx.process, ctx.lastId, scope) : args;
   if (!scope) return placed;
@@ -322,7 +322,7 @@ export function applyScopeDefaults(
 }
 
 export function assertMutationAllowed(
-  process: Process,
+  process: SemanticProcess,
   name: ToolName,
   args: Record<string, unknown>,
   lastId: string | undefined,
@@ -501,7 +501,7 @@ export function assertMutationAllowed(
   }
 }
 
-function lockKey(process: Process, branch: Branch): string {
+function lockKey(process: SemanticProcess, branch: Branch): string {
   const nodes = branch.nodeIds.map((id) => {
     const node = process.nodes.find((item) => item.id === id);
     return node ? `${node.id}:${node.name}:${node.type}` : id;
@@ -509,7 +509,7 @@ function lockKey(process: Process, branch: Branch): string {
   return `${branch.id}:${branch.name}:${branch.entryFlowId}:${nodes.join(',')}`;
 }
 
-export function assertLocksIntact(before: Process, after: Process, name: ToolName): void {
+export function assertLocksIntact(before: SemanticProcess, after: SemanticProcess, name: ToolName): void {
   const prev = new Map(
     lockedBranches(before).map((branch) => [branch.id, lockKey(before, branch)]),
   );
@@ -520,7 +520,7 @@ export function assertLocksIntact(before: Process, after: Process, name: ToolNam
   }
 }
 
-function branchMutable(process: Process, scope: AgentScope | undefined, branch: Branch, region: StructuredRegion): boolean {
+function branchMutable(process: SemanticProcess, scope: AgentScope | undefined, branch: Branch, region: StructuredRegion): boolean {
   if (branch.locked) return false;
   if (!scope || scope.kind === 'process') return true;
   if (scope.kind === 'branch') {
@@ -532,7 +532,7 @@ function branchMutable(process: Process, scope: AgentScope | undefined, branch: 
   return (scope.ids ?? []).some((id) => branchHas(branch, id) || id === region.split || id === region.join);
 }
 
-export function assertOutsideScopeIntact(before: Process, after: Process, name: ToolName, scope?: AgentScope): void {
+export function assertOutsideScopeIntact(before: SemanticProcess, after: SemanticProcess, name: ToolName, scope?: AgentScope): void {
   for (const node of before.nodes) {
     if (inMutable(before, scope, node.id)) continue;
     const next = after.nodes.find((item) => item.id === node.id);
@@ -554,7 +554,7 @@ export function assertOutsideScopeIntact(before: Process, after: Process, name: 
   }
 }
 
-export function scopePromptLines(process?: Process, scope?: AgentScope): string[] {
+export function scopePromptLines(process?: SemanticProcess, scope?: AgentScope): string[] {
   const lines: string[] = [];
   if (scope) lines.push(`Active agent scope: ${describeAgentScope(scope)}. Mutations outside this scope are rejected.`);
   if (process) {

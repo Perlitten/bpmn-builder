@@ -2,7 +2,6 @@ import {
   ARCHITECT_MARGIN,
   ARCHITECT_PANEL_ESTIMATE_HEIGHT,
   ARCHITECT_PANEL_WIDTH,
-  COMPACT_MAX_WIDTH,
   EDITOR_CHROME_HEIGHT,
   EDITOR_INSPECTOR_WIDTH,
   MOBILE_PALETTE_BAR,
@@ -14,7 +13,6 @@ export {
   ARCHITECT_MARGIN,
   ARCHITECT_PANEL_ESTIMATE_HEIGHT,
   ARCHITECT_PANEL_WIDTH,
-  COMPACT_MAX_WIDTH,
   PALETTE_RAIL_WIDTH,
 };
 
@@ -23,7 +21,7 @@ export const ARCHITECT_OPEN_KEY = 'bpmn.architect.open';
 export const ARCHITECT_COMPANION_WIDTH = 80;
 export const ARCHITECT_COMPANION_HEIGHT = 100;
 /** Pointer travel past this (px) is a drag; otherwise the mascot click toggles Architect. */
-export const ARCHITECT_DRAG_THRESHOLD_PX = 4;
+const ARCHITECT_DRAG_THRESHOLD_PX = 4;
 
 export type ArchitectSurface = 'editor' | 'list';
 export type CompanionMode = 'float' | 'dock' | 'hidden';

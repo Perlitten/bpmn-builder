@@ -8,16 +8,19 @@ import {
   workflowToBpmn,
   xmlToProcess,
 } from '../../../bpmn-adapter/src/index.js';
-import type { Process, ProcessPatch, ProcessSummary, WorkflowDocument } from '../../../domain/src/index.js';
-import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
 import {
   PROCESS_NAME_MAX,
   PROCESS_DESCRIPTION_MAX,
   copyProcessName,
+  type ProcessPatch,
+  type ProcessSummary,
+  type StoredProcess,
   validateProcess,
   validateProcessPatch,
   validateWorkflowDocument,
+  type WorkflowDocument,
 } from '../../../domain/src/index.js';
+import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
 import { ProcessConflictError, ProcessValidationError } from './errors.js';
 import type { ProcessListQuery } from './processListQuery.js';
@@ -134,12 +137,12 @@ function parseStoredWorkflow(raw: string | null): WorkflowDocument | null {
   }
 }
 
-function toProcess(row: ProcessRow): Process {
+function toProcess(row: ProcessRow): StoredProcess {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
-    status: row.status as Process['status'],
+    status: row.status as StoredProcess['status'],
     bpmnXml: row.bpmnXml,
     workflowJson: parseStoredWorkflow(row.workflowJson),
     version: row.version,
@@ -275,7 +278,7 @@ function assertPatch(patch: ProcessPatch): void {
   if (!result.ok) throw new ProcessValidationError(result.error, result.issues);
 }
 
-function assertPersisted(process: Process): Process {
+function assertPersisted(process: StoredProcess): StoredProcess {
   const mode = process.status === 'published' ? 'publish' : 'draft';
   const result = validateProcess(process, { mode });
   if (!result.ok) throw new ProcessValidationError(result.error, result.issues);
@@ -363,7 +366,7 @@ export async function listProcesses(query: ProcessListQuery, userId: string): Pr
   };
 }
 
-export async function getProcessById(id: string, userId: string): Promise<Process | null> {
+export async function getProcessById(id: string, userId: string): Promise<StoredProcess | null> {
   const db = getQueryDb();
   const table = getProcessesTable();
   const rows = (await db
@@ -454,7 +457,7 @@ export async function createProcess(input: {
   templateId?: string;
   bpmnXml?: string;
   userId: string;
-}): Promise<Process> {
+}): Promise<StoredProcess> {
   const name = input.name.trim();
   if (!name) throw new ProcessValidationError('name is required');
   if (name.length > PROCESS_NAME_MAX) {
@@ -498,7 +501,7 @@ export async function createProcess(input: {
   return toProcess(row);
 }
 
-export async function duplicateProcess(id: string, userId: string, name?: string): Promise<Process | null> {
+export async function duplicateProcess(id: string, userId: string, name?: string): Promise<StoredProcess | null> {
   const existing = await getProcessById(id, userId);
   if (!existing) return null;
   return createProcess({
@@ -509,7 +512,7 @@ export async function duplicateProcess(id: string, userId: string, name?: string
   });
 }
 
-export async function createTemplateFromProcess(id: string, userId: string): Promise<Process | null> {
+export async function createTemplateFromProcess(id: string, userId: string): Promise<StoredProcess | null> {
   const existing = await getProcessById(id, userId);
   if (!existing) return null;
 
@@ -533,7 +536,7 @@ export async function createTemplateFromProcess(id: string, userId: string): Pro
   return toProcess(row);
 }
 
-export async function updateProcess(id: string, patch: ProcessPatch, userId: string): Promise<Process | null> {
+export async function updateProcess(id: string, patch: ProcessPatch, userId: string): Promise<StoredProcess | null> {
   const existing = await getProcessById(id, userId);
   if (!existing) return null;
   assertPatch(patch);

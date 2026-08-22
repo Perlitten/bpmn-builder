@@ -1,4 +1,4 @@
-import { validateProcessPatch, type Process, type ProcessPatch } from '@bpmn/domain';
+import { validateProcessPatch, type ProcessPatch, type StoredProcess } from '@bpmn/domain';
 
 export type ProcessSavePatch = Omit<ProcessPatch, 'version'>;
 export type ProcessSavePhase = 'idle' | 'dirty' | 'saving' | 'offline' | 'failed' | 'conflict';
@@ -21,7 +21,7 @@ type QueueOptions = {
   storageKey: string;
   initialVersion: number;
   initialSavedAt?: string | null;
-  save: (patch: ProcessPatch) => Promise<Process>;
+  save: (patch: ProcessPatch) => Promise<StoredProcess>;
   onState: (state: ProcessSaveState) => void;
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
   isOnline?: () => boolean;
@@ -102,7 +102,7 @@ export function guardDirtyProcessLeave(
 export function createProcessSaveQueue(options: QueueOptions) {
   const storage = options.storage ?? window.localStorage;
   const isOnline = options.isOnline ?? (() => navigator.onLine);
-  const debounceMs = options.debounceMs ?? 300;
+  const debounceMs = options.debounceMs ?? 800;
   const retryMs = options.retryMs ?? 1_000;
   const maxRetryMs = options.maxRetryMs ?? 30_000;
   let version = options.initialVersion;

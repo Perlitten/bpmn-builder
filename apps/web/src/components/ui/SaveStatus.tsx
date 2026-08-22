@@ -7,47 +7,29 @@ type SaveStatusProps = {
 };
 
 export function SaveStatus({ phase, savedAt }: SaveStatusProps) {
+  let text = 'Not saved yet';
+  let danger = false;
+  let live: 'assertive' | 'polite' = 'polite';
   if (phase === 'saving') {
-    return (
-      <span className="ui-save-status" aria-live="polite">
-        Saving…
-      </span>
-    );
+    text = 'Saving…';
+  } else if (phase === 'dirty') {
+    text = 'Unsaved changes';
+  } else if (phase === 'offline') {
+    text = 'Offline · saved locally';
+  } else if (phase === 'failed') {
+    text = 'Save failed · stored locally';
+    danger = true;
+  } else if (phase === 'conflict') {
+    text = 'Save conflict';
+    danger = true;
+    live = 'assertive';
+  } else if (savedAt) {
+    text = `Saved · ${formatSaveTime(savedAt)}`;
   }
-  if (phase === 'dirty') {
-    return (
-      <span className="ui-save-status" aria-live="polite">
-        Unsaved changes
-      </span>
-    );
-  }
-  if (phase === 'offline') {
-    return (
-      <span className="ui-save-status" aria-live="polite">
-        Offline · saved locally
-      </span>
-    );
-  }
-  if (phase === 'failed') {
-    return (
-      <span className="ui-save-status text-danger" aria-live="polite">
-        Save failed · stored locally
-      </span>
-    );
-  }
-  if (phase === 'conflict') {
-    return (
-      <span className="ui-save-status text-danger" aria-live="assertive">
-        Save conflict
-      </span>
-    );
-  }
-  if (savedAt) {
-    return (
-      <span className="ui-save-status" aria-live="polite">
-        Saved · {formatSaveTime(savedAt)}
-      </span>
-    );
-  }
-  return <span className="sr-only">Not saved yet</span>;
+
+  return (
+    <span className={`ui-save-status${danger ? ' text-danger' : ''}`} aria-live={live}>
+      {text}
+    </span>
+  );
 }

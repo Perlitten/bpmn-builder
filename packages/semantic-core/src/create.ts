@@ -15,7 +15,7 @@ import {
   splitParallel,
 } from './ops.js';
 import { addSubProcess, createEventSubprocess } from './subprocess.js';
-import type { Applied, Process } from './types.js';
+import type { Applied, SemanticProcess } from './types.js';
 
 const TASK_SET = new Set<string>(TASK_TYPES);
 
@@ -29,7 +29,7 @@ const BOUNDARY_DEFS = new Set(['TimerEventDefinition', 'ErrorEventDefinition']);
  * Throws if the id has no kernel op.
  */
 export function createFromComponent(
-  process: Process,
+  process: SemanticProcess,
   componentId: string,
   spec: {
     after?: string;
@@ -171,7 +171,7 @@ export function createFromComponent(
   throw new Error(`no semantic create op for ${componentId}`);
 }
 
-function resolveStart(process: Process, after?: string): string {
+function resolveStart(process: SemanticProcess, after?: string): string {
   if (after) {
     const node = process.nodes.find((n) => n.id === after);
     if (node?.type === 'start') return node.id;
@@ -183,7 +183,7 @@ function resolveStart(process: Process, after?: string): string {
   return start.id;
 }
 
-function resolveEnd(process: Process, after?: string): string {
+function resolveEnd(process: SemanticProcess, after?: string): string {
   if (after) {
     const node = process.nodes.find((n) => n.id === after);
     if (node?.type === 'end') return node.id;
@@ -205,7 +205,7 @@ function resolveEnd(process: Process, after?: string): string {
   return end.id;
 }
 
-function resolveSequenceFlow(process: Process, after?: string, from?: string): string {
+function resolveSequenceFlow(process: SemanticProcess, after?: string, from?: string): string {
   const hint = after ?? from;
   if (!hint) throw new Error('Select a sequence flow or a source with one outgoing flow');
   if (process.flows.some((f) => f.id === hint)) return hint;

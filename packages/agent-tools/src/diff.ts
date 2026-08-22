@@ -1,4 +1,4 @@
-import { allRegions, type FlowNodeType, type Process, type RegionKind } from '../../semantic-core/src/index.js';
+import { allRegions, type FlowNodeType, type SemanticProcess, type RegionKind } from '../../semantic-core/src/index.js';
 
 const REGION: Record<RegionKind, string> = {
   exclusive: 'XOR',
@@ -31,7 +31,7 @@ function named(kind: string, name: string): string {
 }
 
 /** Human semantic delta. Never XML / DI. */
-export function semanticDiff(before: Process, after: Process): string[] {
+export function semanticDiff(before: SemanticProcess, after: SemanticProcess): string[] {
   const lines: string[] = [];
   const prevNodes = new Map(before.nodes.map((n) => [n.id, n]));
   const nextNodes = new Map(after.nodes.map((n) => [n.id, n]));

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.5.0...bpmn-builder-v0.6.0) (2026-08-22)
+
+
+### Features
+
+* collapsible process preview and cleaner header ([567092c](https://github.com/Perlitten/bpmn-builder/commit/567092c00037d7e7c6ec77393534f13c12215c69))
+* complete editor design system contract ([#48](https://github.com/Perlitten/bpmn-builder/issues/48)) ([1082689](https://github.com/Perlitten/bpmn-builder/commit/1082689be3bfabd07d559ff8a0c85444d97525cf))
+* **process-list:** add collapsible preview mode ([857ff2c](https://github.com/Perlitten/bpmn-builder/commit/857ff2c1d0e4dc53ca5865a0038baec7ecf43e96))
+
+
+### Bug Fixes
+
+* harden audited workflow paths ([fa6c415](https://github.com/Perlitten/bpmn-builder/commit/fa6c415443737742f3cb0c7141b14efb03e4a0d0))
+* harden audited workflow paths ([1375db7](https://github.com/Perlitten/bpmn-builder/commit/1375db783f426a67ec9684636b3a35134aa57226))
+* make Vercel runtime imports traceable ([#49](https://github.com/Perlitten/bpmn-builder/issues/49)) ([141fe6b](https://github.com/Perlitten/bpmn-builder/commit/141fe6b5f273bd9fa3064f8584fde626c25a13cc))
+* **process-list:** preserve mobile actions and focus ([95a5f81](https://github.com/Perlitten/bpmn-builder/commit/95a5f8172d9796ee4ef20b945f88a89aeba93816))
+* **simulate:** complete subprocess and link semantics ([c0ac099](https://github.com/Perlitten/bpmn-builder/commit/c0ac099e6ad7b424ec58fdcb6b48f1968ad58650))
+
+
+### Refactoring
+
+* separate process models and remove dead APIs ([c0b5f63](https://github.com/Perlitten/bpmn-builder/commit/c0b5f632d79aa704af6e67b36a1b583826fca073))
+
 ## [0.5.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.4.0...bpmn-builder-v0.5.0) (2026-08-22)
 
 

@@ -69,7 +69,7 @@ export function supportLevel(support: EngineSupport, profile: 'camunda8' | 'zeeb
   return RANK[support.camunda8] <= RANK[support.zeebe] ? support.camunda8 : support.zeebe;
 }
 
-export function engineLabel(profile: 'camunda8' | 'zeebe'): string {
+function engineLabel(profile: 'camunda8' | 'zeebe'): string {
   return profile === 'zeebe' ? 'Zeebe' : 'Camunda 8 / Zeebe';
 }
 

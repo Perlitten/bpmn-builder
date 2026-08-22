@@ -1,7 +1,7 @@
 import { rebuildStructure } from './detect.js';
 import { defaultInsertAfter, flowAfter, scopeOf } from './graph.js';
 import { ID_PREFIX, nextId } from './ids.js';
-import type { Applied, FlowNode, Process, SequenceFlow } from './types.js';
+import type { Applied, FlowNode, SemanticProcess, SequenceFlow } from './types.js';
 
 export type SemanticClip = {
   nodes: FlowNode[];
@@ -13,7 +13,7 @@ export type PasteApplied = Applied & { pastedIds: string[] };
 const SIDE = new Set(['boundaryEvent', 'end']);
 
 /** Selected flow nodes + connecting flows. Start / subprocess / happy-path ends are not copied. */
-export function extractSubgraph(process: Process, ids: string[]): SemanticClip | null {
+export function extractSubgraph(process: SemanticProcess, ids: string[]): SemanticClip | null {
   const requested = new Set(ids.filter((id) => process.nodes.some((node) => node.id === id)));
   for (const node of process.nodes) {
     if (node.type === 'boundaryEvent' && node.attachedTo && requested.has(node.attachedTo)) {
@@ -41,7 +41,7 @@ export function extractSubgraph(process: Process, ids: string[]): SemanticClip |
   return { nodes: nodes.map((node) => structuredClone(node)), flows };
 }
 
-function tryAfter(draft: Process, afterId?: string): string {
+function tryAfter(draft: SemanticProcess, afterId?: string): string {
   if (afterId && draft.nodes.some((node) => node.id === afterId)) {
     try {
       flowAfter(draft, afterId);
@@ -87,7 +87,7 @@ function endpoints(group: string[], flows: SequenceFlow[]): { entry: string; exi
 }
 
 /** Insert the clip on the sequence after `afterId` (or the happy-path tail). Layout is the caller's job. */
-export function pasteSubgraph(process: Process, clip: SemanticClip, afterId?: string): PasteApplied {
+export function pasteSubgraph(process: SemanticProcess, clip: SemanticClip, afterId?: string): PasteApplied {
   const draft = structuredClone(process);
   const pastedIds = spliceClip(draft, clip, afterId);
   if (!pastedIds.length) {
@@ -97,7 +97,7 @@ export function pasteSubgraph(process: Process, clip: SemanticClip, afterId?: st
   return { process: draft, inverse: () => structuredClone(process), id: pastedIds[0]!, pastedIds };
 }
 
-function spliceClip(draft: Process, clip: SemanticClip, afterId?: string): string[] {
+function spliceClip(draft: SemanticProcess, clip: SemanticClip, afterId?: string): string[] {
   const nodes = clip.nodes.filter((node) => node.type !== 'start' && node.type !== 'subProcess');
   if (!nodes.length) return [];
   const idMap = new Map<string, string>();

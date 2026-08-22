@@ -4,7 +4,7 @@ export type GoogleAuthConfig = {
   sessionSecret: string;
 };
 
-export const AUTH_SETUP_HINT =
+const AUTH_SETUP_HINT =
   'Google sign-in is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and SESSION_SECRET (openssl rand -hex 32). In Google Cloud Console create an OAuth 2.0 Web client and add Authorized redirect URI {origin}/api/auth/google/callback (local: http://localhost:5173/api/auth/google/callback).';
 
 export class AuthConfigurationError extends Error {
@@ -47,7 +47,7 @@ export function requestOrigin(req: {
   return normalizeOrigin(`${proto}://${host}`) || 'http://localhost:5173';
 }
 
-export function configuredAuthOrigin(): string | null {
+function configuredAuthOrigin(): string | null {
   const configured = process.env.AUTH_BASE_URL?.trim();
   return configured ? normalizeOrigin(configured) || null : null;
 }

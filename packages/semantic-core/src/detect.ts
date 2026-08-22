@@ -1,6 +1,6 @@
 import { alloc } from './ids.js';
 import { allRegions, getNode, outgoingFlows, predecessors, successors } from './graph.js';
-import type { ExceptionBranch, FeedbackEdge, GatewayKind, Process, RegionKind, Scope, StructuredRegion, UnstructuredMark } from './types.js';
+import type { ExceptionBranch, FeedbackEdge, GatewayKind, SemanticProcess, RegionKind, Scope, StructuredRegion, UnstructuredMark } from './types.js';
 import { FEEDBACK, UNSTRUCTURED } from './types.js';
 
 type Memo = Map<string, string | null>;
@@ -24,13 +24,13 @@ function compatibleJoin(splitType: string, joinType: string): boolean {
 
 type Walk = { join: string; nodeIds: string[] };
 
-function sameScope(p: Process, a: string, b: string): boolean {
+function sameScope(p: SemanticProcess, a: string, b: string): boolean {
   const sa = p.scopes.find((s) => s.nodeIds.includes(a));
   const sb = p.scopes.find((s) => s.nodeIds.includes(b));
   return !!sa && sa.id === sb?.id;
 }
 
-function walkBranch(p: Process, from: string, splitId: string, memo: Memo): Walk | null {
+function walkBranch(p: SemanticProcess, from: string, splitId: string, memo: Memo): Walk | null {
   const nodeIds: string[] = [];
   let cur = from;
   const seen = new Set([splitId]);
@@ -56,7 +56,7 @@ function walkBranch(p: Process, from: string, splitId: string, memo: Memo): Walk
   }
 }
 
-function findJoin(p: Process, splitId: string, memo: Memo): string | null {
+function findJoin(p: SemanticProcess, splitId: string, memo: Memo): string | null {
   if (memo.has(splitId)) return memo.get(splitId) ?? null;
   const outs = outgoingFlows(p, splitId);
   const split = getNode(p, splitId);
@@ -79,7 +79,7 @@ function findJoin(p: Process, splitId: string, memo: Memo): string | null {
   return join;
 }
 
-function canReach(p: Process, from: string, to: string): boolean {
+function canReach(p: SemanticProcess, from: string, to: string): boolean {
   const seen = new Set<string>();
   const stack = [from];
   while (stack.length) {
@@ -92,7 +92,7 @@ function canReach(p: Process, from: string, to: string): boolean {
   return false;
 }
 
-function walkException(p: Process, from: string, hostId: string): string[] {
+function walkException(p: SemanticProcess, from: string, hostId: string): string[] {
   const nodeIds: string[] = [];
   let cur = from;
   const seen = new Set<string>([hostId]);
@@ -109,7 +109,7 @@ function walkException(p: Process, from: string, hostId: string): string[] {
   return nodeIds;
 }
 
-function rebuildFeedback(p: Process): void {
+function rebuildFeedback(p: SemanticProcess): void {
   const prevFb = new Map((p.feedback ?? []).map((f) => [f.flowId, f]));
   const prevEx = new Map((p.exceptionBranches ?? []).map((e) => [e.boundaryId, e]));
   const feedback: FeedbackEdge[] = [];
@@ -146,7 +146,7 @@ function rebuildFeedback(p: Process): void {
   p.exceptionBranches = exceptionBranches;
 }
 
-function scopeHappyPath(p: Process, scope: Scope): string[] {
+function scopeHappyPath(p: SemanticProcess, scope: Scope): string[] {
   const starts = p.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
   const start = starts.find((n) => !n.eventDefinition) ?? starts[0];
   if (!start) return [];
@@ -168,7 +168,7 @@ function isContainerKind(type: RegionKind): boolean {
   return type === 'subprocess' || type === 'eventSubprocess';
 }
 
-function containsSplit(region: StructuredRegion, splitId: string, p: Process): boolean {
+function containsSplit(region: StructuredRegion, splitId: string, p: SemanticProcess): boolean {
   if (region.split === splitId) return false;
   if (isContainerKind(region.type)) {
     const scope = p.scopes.find((s) => s.ownerId === region.split);
@@ -177,7 +177,7 @@ function containsSplit(region: StructuredRegion, splitId: string, p: Process): b
   return region.branches.some((b) => b.nodeIds.includes(splitId));
 }
 
-function rebuild(p: Process): void {
+function rebuild(p: SemanticProcess): void {
   const previous = allRegions(p);
   const prevBySplit = new Map(previous.map((r) => [r.split, r]));
   const memo: Memo = new Map();
@@ -250,13 +250,13 @@ function rebuild(p: Process): void {
   rebuildFeedback(p);
 }
 
-export function detectStructure(process: Process): Process {
+export function detectStructure(process: SemanticProcess): SemanticProcess {
   const next = structuredClone(process);
   rebuild(next);
   return next;
 }
 
-export function rebuildStructure(process: Process): Process {
+export function rebuildStructure(process: SemanticProcess): SemanticProcess {
   rebuild(process);
   return process;
 }

@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { requestOrigin } from './env.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-export const CSRF_HEADER = 'x-bpmn-csrf';
+const CSRF_HEADER = 'x-bpmn-csrf';
 
 function normaliseOrigin(value: string): string | null {
   try {

@@ -1,4 +1,6 @@
 import { scoreParts, type LintResult } from '@bpmn/rules';
+import { Chip } from '../ui';
+import { presentedFindings } from './lintPresentation';
 
 type ScoreChipsProps = {
   lint: LintResult;
@@ -6,20 +8,10 @@ type ScoreChipsProps = {
 
 export function ScoreChips({ lint }: ScoreChipsProps) {
   const parts = scoreParts(lint);
+  const count = presentedFindings(lint).length;
   return (
-    <span className={`lint-score-chips${lint.errors.length ? ' is-error' : ''}`} title={parts.join(' · ')}>
-      {parts.map((part) => (
-        <span key={part} className={chipTone(part, lint)}>
-          {part}
-        </span>
-      ))}
-    </span>
+    <Chip className={`lint-score-chips${lint.errors.length ? ' is-error' : ''}`} aria-label={parts.join(' · ')}>
+      {count ? `${count} ${count === 1 ? 'finding' : 'findings'}` : 'No findings'}
+    </Chip>
   );
-}
-
-function chipTone(part: string, lint: LintResult): string | undefined {
-  if (part.startsWith('Execution ') && lint.scores.execution !== undefined && lint.scores.execution < 100) {
-    return 'is-execution';
-  }
-  return undefined;
 }

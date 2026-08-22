@@ -1,7 +1,7 @@
 // Keep the application timeout below Vercel's 60 second function ceiling so
 // callers receive our structured 504 instead of an opaque platform timeout.
 export const ASSISTANT_TIMEOUT_MS = 50_000;
-export const ASSISTANT_CONNECT_TIMEOUT_MS = 8_000;
+const ASSISTANT_CONNECT_TIMEOUT_MS = 8_000;
 
 const TIMED_OUT =
   /timed out after \d+(?:\.\d+)?(?:s|ms)|aborted due to timeout|this operation was aborted/i;
@@ -18,7 +18,7 @@ export function assistantConnectTimeoutMs(): number {
   return Math.min(connect, overall);
 }
 
-export function assistantTimeoutLabel(ms = assistantTimeoutMs()): string {
+function assistantTimeoutLabel(ms = assistantTimeoutMs()): string {
   return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;
 }
 
@@ -62,7 +62,7 @@ export function whenAborted(signal: AbortSignal): Promise<never> {
   });
 }
 
-export type Deadline = {
+type Deadline = {
   signal: AbortSignal;
   abort: (reason?: unknown) => void;
   dispose: () => void;
@@ -104,7 +104,7 @@ export function connectGateFailed(gate: ConnectGate, overall: AbortSignal): bool
   return gate.signal.aborted && !overall.aborted;
 }
 
-export function createDeadline(ms = assistantTimeoutMs(), extra?: AbortSignal): Deadline {
+function createDeadline(ms = assistantTimeoutMs(), extra?: AbortSignal): Deadline {
   const ac = new AbortController();
   const timedOut = () => assistantTimeoutError(ms);
   const abort = (reason: unknown = timedOut()) => {

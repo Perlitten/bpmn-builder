@@ -4,7 +4,7 @@ import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/ind
 import { sessionSecret } from './env.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
 
-export function generateSessionToken(): string {
+function generateSessionToken(): string {
   return randomBytes(32).toString('base64url');
 }
 

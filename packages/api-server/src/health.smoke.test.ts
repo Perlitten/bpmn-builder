@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { resetDbForTests } from '../../db/src/index.js';
+import { resetDbForTests } from '@bpmn/db';
 import { createApp } from './app.js';
 
 describe('health and operational headers', () => {

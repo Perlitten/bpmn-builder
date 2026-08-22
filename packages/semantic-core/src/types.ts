@@ -200,7 +200,7 @@ export type Scope = {
 };
 
 /** Semantic process graph. No DI / coordinates. */
-export type Process = {
+export type SemanticProcess = {
   id: string;
   name: string;
   rootScopeId: string;
@@ -229,11 +229,9 @@ export type Process = {
   processes: ProcessGraph[];
 };
 
-export type SemanticProcess = Process;
-
 export type Applied = {
-  process: Process;
-  inverse: (current: Process) => Process;
+  process: SemanticProcess;
+  inverse: (current: SemanticProcess) => SemanticProcess;
   id: string;
 };
 

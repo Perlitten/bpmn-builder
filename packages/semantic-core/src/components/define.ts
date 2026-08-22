@@ -111,7 +111,7 @@ export const TASK_TYPES = [
   BPMN.scriptTask,
 ] as const;
 
-export const ACTIVITY_TYPES = [
+const ACTIVITY_TYPES = [
   ...TASK_TYPES,
   BPMN.subProcess,
   BPMN.callActivity,
@@ -139,10 +139,6 @@ export const SEQUENCE_FLOW_NODES = [
 
 const ACTIVITY_SET = new Set<string>(ACTIVITY_TYPES);
 const FLOW_NODE_SET = new Set<string>(SEQUENCE_FLOW_NODES);
-const TASK_SET = new Set<string>([...TASK_TYPES, BPMN.callActivity]);
-const GATEWAY_SET = new Set<string>(GATEWAY_TYPES);
-const SUBPROCESS_SET = new Set<string>([BPMN.subProcess, BPMN.transaction, BPMN.adHoc]);
-const SEQUENCE_FLOW_SET = new Set<string>([BPMN.sequenceFlow]);
 const CONDITIONAL_SOURCES = new Set<string>([...TASK_TYPES, BPMN.subProcess, BPMN.callActivity, BPMN.exclusive, BPMN.inclusive]);
 const DEFAULT_SOURCES = new Set<string>([...TASK_TYPES, BPMN.subProcess, BPMN.callActivity, BPMN.exclusive, BPMN.inclusive]);
 const MESSAGE_ENDPOINTS = new Set<string>([
@@ -184,11 +180,11 @@ export function replaceContext(element: ReplaceTarget): ComponentContext {
   };
 }
 
-export function sourceOk(allowed: readonly string[], ctx: ComponentContext): boolean {
+function sourceOk(allowed: readonly string[], ctx: ComponentContext): boolean {
   return !ctx.sourceBpmnType || allowed.includes(ctx.sourceBpmnType);
 }
 
-export function targetOk(allowed: readonly string[], ctx: ComponentContext): boolean {
+function targetOk(allowed: readonly string[], ctx: ComponentContext): boolean {
   return !ctx.targetBpmnType || allowed.includes(ctx.targetBpmnType);
 }
 
@@ -243,4 +239,4 @@ export function inFlowScope(ctx: ComponentContext): boolean {
   return parentOk(FLOW_PARENTS, ctx);
 }
 
-export { ACTIVITY_SET, CONDITIONAL_SOURCES, DEFAULT_SOURCES, FLOW_NODE_SET, GATEWAY_SET, MESSAGE_ENDPOINTS, SEQUENCE_FLOW_SET, SUBPROCESS_SET, TASK_SET };
+export { CONDITIONAL_SOURCES, DEFAULT_SOURCES, FLOW_NODE_SET, MESSAGE_ENDPOINTS };
