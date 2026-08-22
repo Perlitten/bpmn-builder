@@ -181,6 +181,9 @@ function suggestTask(ctx: NameContext, current: string, findings: Finding[]): Na
     const proposed = asTask(fromNext || fromPrev || 'Validate customer');
     return { name: proposed, reason: 'Task names are object + action' };
   }
+  // Swimlane/actor prefixes ("Sales: …") are intentional ownership labels,
+  // not malformed task names. Non-Latin names are outside this English rule.
+  if (!shouldCheckActionVerb(current) || /^[^:]{1,80}:\s*\S/.test(current)) return undefined;
   if (findings.some((f) => f.id === 'style.task-verb') || !hasActionVerb(current)) {
     const proposed = asTask(current);
     if (proposed === current) return undefined;
