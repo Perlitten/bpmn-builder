@@ -66,6 +66,23 @@ test.describe('Process List workbench', () => {
     expect(file.suggestedFilename()).toMatch(/^Invoice-approval-.*\.bpmn$/);
   });
 
+  test('collapses the desktop preview into a full-width list and reopens it from a row', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes('mobile'), 'Desktop split-view coverage');
+    const workbench = page.locator('.process-workbench');
+    const target = page.getByRole('button', { name: /Preview Invoice approval/ }).first();
+
+    await expect(page.getByRole('button', { name: 'Close preview' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close preview' }).click();
+
+    await expect(workbench).toHaveClass(/is-list-only/);
+    await expect(page.locator('.process-detail')).toHaveCount(0);
+    await expect(target).toHaveAttribute('aria-pressed', 'false');
+
+    await target.click();
+    await expect(workbench).not.toHaveClass(/is-list-only/);
+    await expect(page.getByRole('article', { name: /Preview of Invoice approval/ })).toBeVisible();
+  });
+
   test('captures a process from the mobile composer and opens the real editor', async ({ page }, testInfo) => {
     test.skip(!testInfo.project.name.includes('mobile'), 'Mobile capture coverage');
     await page.getByLabel('Describe a new process').click();
