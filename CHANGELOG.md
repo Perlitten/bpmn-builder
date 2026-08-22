@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.4.0...bpmn-builder-v0.5.0) (2026-08-22)
+
+
+### Features
+
+* complete product audit and rebuild landing ([b04494b](https://github.com/Perlitten/bpmn-builder/commit/b04494bc45926d2b52522fce82736c3584e64c5a))
+* rebuild landing showcase and harden preview ([06dca37](https://github.com/Perlitten/bpmn-builder/commit/06dca37c8e06e43e41642c4cd1a8ee8d8e5bce8c))
+* redesign process list workbench ([5440566](https://github.com/Perlitten/bpmn-builder/commit/544056664efaf503778c9a1354205dd9a3a9eee3))
+
+
+### Bug Fixes
+
+* close ci security and visual findings ([500a86d](https://github.com/Perlitten/bpmn-builder/commit/500a86d9465296abbca8dc40fdb325b4c97815b5))
+* close remaining audit gaps ([86f2ca4](https://github.com/Perlitten/bpmn-builder/commit/86f2ca4e70ffaba9b320dbb30b1efccaa4e7ada2))
+* harden architect and swimlane workflows ([1bc3a4c](https://github.com/Perlitten/bpmn-builder/commit/1bc3a4c00a686b263b9d3af8e0c09bb4f4136481))
+* keep test runtime compatible with CI ([79864b6](https://github.com/Perlitten/bpmn-builder/commit/79864b6fb730f1a66243b3fbbab876391df862cb))
+* resolve full product audit findings ([c54af18](https://github.com/Perlitten/bpmn-builder/commit/c54af1842afccd2732bc411ca46d93fb78cef271))
+* resolve process list review blockers ([1e9072c](https://github.com/Perlitten/bpmn-builder/commit/1e9072c47007d6ca8b0df0d1a492240ee7d9e52d))
+* resolve remaining review risks ([c3e3956](https://github.com/Perlitten/bpmn-builder/commit/c3e3956630171038ca3f3ef9cdd9e9151e855ade))
+* satisfy complete wildcard escaping ([3b2ea32](https://github.com/Perlitten/bpmn-builder/commit/3b2ea326067c676a60df9cdd57128977e8afce48))
+* stabilize visual preview checks ([be415da](https://github.com/Perlitten/bpmn-builder/commit/be415dac9380296f6771423412931f64b661a78f))
+
 ## [0.4.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.3.0...bpmn-builder-v0.4.0) (2026-08-21)
 
 
