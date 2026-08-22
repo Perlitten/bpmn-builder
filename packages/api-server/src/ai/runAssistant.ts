@@ -12,9 +12,9 @@ import {
   userFacingAssistantMessage,
   type AgentScope,
   type ToolCall,
-} from '@bpmn/agent-tools';
-import { xmlToProcess } from '@bpmn/bpmn-adapter';
-import { createProcess, type SemanticProcess } from '@bpmn/semantic-core';
+} from '../../../agent-tools/src/index.js';
+import { xmlToProcess } from '../../../bpmn-adapter/src/index.js';
+import { createProcess, type SemanticProcess } from '../../../semantic-core/src/index.js';
 import { assistantTimeoutError, isTimeoutError, whenAborted } from './timeout.js';
 import type { AiModelClient, ChatTurn } from './types.js';
 

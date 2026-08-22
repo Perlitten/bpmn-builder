@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
-import { bpmnToWorkflow } from '@bpmn/bpmn-adapter';
-import { getProcessesTable, getQueryDb } from '@bpmn/db';
+import { bpmnToWorkflow } from '../../bpmn-adapter/src/index.js';
+import { getProcessesTable, getQueryDb } from '../../db/src/index.js';
 import { DEFAULT_BPMN_XML } from './defaultBpmn.js';
 
 /**

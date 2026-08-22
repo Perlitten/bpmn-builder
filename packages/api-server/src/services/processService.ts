@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, ne, or, sql } from 'drizzle-orm';
-import { getDbDriver, getProcessesTable, getQueryDb } from '@bpmn/db';
+import { getDbDriver, getProcessesTable, getQueryDb } from '../../../db/src/index.js';
 import {
   BpmnImportError,
   bpmnToWorkflow,
   importBpmnXml,
   workflowToBpmn,
-} from '@bpmn/bpmn-adapter';
+} from '../../../bpmn-adapter/src/index.js';
 import {
   PROCESS_NAME_MAX,
   PROCESS_DESCRIPTION_MAX,
@@ -18,8 +18,8 @@ import {
   validateProcessPatch,
   validateWorkflowDocument,
   type WorkflowDocument,
-} from '@bpmn/domain';
-import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '@bpmn/rules';
+} from '../../../domain/src/index.js';
+import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
 import { ProcessConflictError, ProcessValidationError } from './errors.js';
 import type { ProcessListQuery } from './processListQuery.js';

@@ -5,7 +5,7 @@ import {
   happyPathIds,
   type SemanticProcess,
   type StructuredRegion,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 import type { BranchView, FlowView, NodeView, ProcessView, RegionView } from './types.js';
 
 function nodeView(process: SemanticProcess, id: string): NodeView {

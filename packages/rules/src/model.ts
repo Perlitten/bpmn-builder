@@ -7,7 +7,7 @@ import {
   parseXmlAttributes,
   type SemanticProcess,
   type SequenceFlow,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 
 type LintKind = 'start' | 'end' | 'task' | 'gateway' | 'event' | 'subprocess';
 

@@ -1,4 +1,4 @@
-import { visibleNodeName, type SemanticProcess } from '@bpmn/semantic-core';
+import { visibleNodeName, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { routeOrthogonal, routeOrthogonalVertical } from './route.js';
 import { fromSemanticProcess } from './semanticAdapter.js';
 import { BASELINE_CY, ORIGIN_X, snapToGrid, TOKENS } from './tokens.js';

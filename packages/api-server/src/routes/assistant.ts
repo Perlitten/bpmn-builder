@@ -1,4 +1,4 @@
-import { isToolPlanError, userFacingPlanError } from '@bpmn/agent-tools';
+import { isToolPlanError, userFacingPlanError } from '../../../agent-tools/src/index.js';
 import type { Application, Request, Response } from 'express';
 import { friendlyAiError, isConfigError, isUpstreamError } from '../ai/errors.js';
 import { getAiClient, getAiProviderInfo } from '../ai/provider.js';

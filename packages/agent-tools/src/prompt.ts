@@ -1,4 +1,4 @@
-import { BPMN, bpmnComponentRegistry, type SemanticProcess } from '@bpmn/semantic-core';
+import { BPMN, bpmnComponentRegistry, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { scopePromptLines } from './scope.js';
 import type { PlanOptions, ToolCall, ToolName } from './types.js';
 

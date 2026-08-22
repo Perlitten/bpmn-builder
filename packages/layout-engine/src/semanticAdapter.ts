@@ -1,4 +1,4 @@
-import type { SemanticProcess, StructuredRegion as CoreRegion } from '@bpmn/semantic-core';
+import type { SemanticProcess, StructuredRegion as CoreRegion } from '../../semantic-core/src/index.js';
 import type { Branch, LayoutArtifact, LayoutInput, LayoutNode, SequenceFlow, StructuredRegion } from './types.js';
 
 type Dict = Record<string, unknown>;
