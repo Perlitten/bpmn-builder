@@ -18,6 +18,8 @@ const FROM_WORKFLOW: Record<string, { type: FlowNodeType; bpmnType: string }> = 
   parallelGateway: { type: 'parallelGateway', bpmnType: 'bpmn:ParallelGateway' },
   inclusiveGateway: { type: 'inclusiveGateway', bpmnType: 'bpmn:InclusiveGateway' },
   eventBasedGateway: { type: 'eventBasedGateway', bpmnType: 'bpmn:EventBasedGateway' },
+  intermediateCatch: { type: 'intermediateCatch', bpmnType: 'bpmn:IntermediateCatchEvent' },
+  intermediateThrow: { type: 'intermediateThrow', bpmnType: 'bpmn:IntermediateThrowEvent' },
 };
 
 function workflowType(node: FlowNode): string {

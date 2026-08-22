@@ -69,6 +69,17 @@ function layoutGraph(
   placeRemainder(input, placed, ctx);
   placeArtifacts(input.artifacts ?? [], placed);
 
+  const initialEdges: LayoutResult['edges'] = Object.assign(
+    Object.create(null),
+    associationEdges(input.artifacts ?? [], placed),
+    routeSequenceFlows(input.sequenceFlows, placed, input.regions ?? [], ctx),
+  );
+  const initialShapes = sortRecord(placed);
+  const initialLabels = collectLabels(input, input.sequenceFlows, initialShapes, initialEdges);
+
+  /* Lane membership moves nodes vertically only; the canonical chain owns X. */
+  const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx, initialLabels) : new Map<string, LaneBand>();
+  /* Lane assignment changes shape Y, so every connector and label must be derived again. */
   const edges: LayoutResult['edges'] = Object.assign(
     Object.create(null),
     associationEdges(input.artifacts ?? [], placed),
@@ -76,9 +87,6 @@ function layoutGraph(
   );
   const shapes = sortRecord(placed);
   const labels = collectLabels(input, input.sequenceFlows, shapes, edges);
-
-  /* Lane membership moves nodes vertically only; the canonical chain owns X. */
-  const bands = lanes.length ? applyLaneBands(input, lanes, placed, ctx, labels) : new Map<string, LaneBand>();
 
   return {
     result: {
@@ -1131,7 +1139,8 @@ function sizeOf(type: string): { width: number; height: number } {
     t === 'startEvent' ||
     t === 'endEvent' ||
     t === 'boundaryEvent' ||
-    t === 'intermediateCatch'
+    t === 'intermediateCatch' ||
+    t === 'intermediateThrow'
   ) {
     return { width: TOKENS.event.width, height: TOKENS.event.height };
   }
@@ -1152,6 +1161,7 @@ function isExternalLabelType(type: string): boolean {
     t === 'endEvent' ||
     t === 'boundaryEvent' ||
     t === 'intermediateCatch' ||
+    t === 'intermediateThrow' ||
     /gateway/i.test(t)
   );
 }

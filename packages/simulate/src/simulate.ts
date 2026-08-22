@@ -4,6 +4,7 @@ import {
   innerScope,
   isEventSubProcess,
   outgoingFlows,
+  scopeOf,
   type FlowNode,
   type Process,
   type SequenceFlow,
@@ -54,6 +55,65 @@ function innerStart(process: Process, ownerId: string): FlowNode | undefined {
   if (!scope) return undefined;
   const starts = process.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
   return starts.find((n) => n.eventDefinition) ?? starts[0];
+}
+
+function hasExecutableInnerGraph(process: Process, ownerId: string): boolean {
+  const scope = innerScope(process, ownerId);
+  return Boolean(scope?.nodeIds.some((id) => {
+    const node = process.nodes.find((item) => item.id === id);
+    return node && node.type !== 'start' && node.type !== 'end';
+  }));
+}
+
+function implicitInnerEntries(process: Process, ownerId: string): FlowNode[] {
+  const scope = innerScope(process, ownerId);
+  if (!scope) return [];
+  const ids = new Set(scope.nodeIds);
+  return process.nodes.filter((node) => (
+    ids.has(node.id)
+    && node.type !== 'start'
+    && node.type !== 'end'
+    && !incomingFlows(process, node.id).some((flow) => ids.has(flow.source))
+  ));
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : undefined;
+}
+
+function linkDefinition(node: FlowNode): Record<string, unknown> | undefined {
+  const definitions = node.bpmnPreserve?.props?.eventDefinitions;
+  if (!Array.isArray(definitions)) return undefined;
+  return definitions
+    .map(asRecord)
+    .find((definition) => String(definition?.$type ?? '').endsWith('LinkEventDefinition'));
+}
+
+function refId(value: unknown): string | undefined {
+  const record = asRecord(value);
+  return typeof record?.$ref === 'string' ? record.$ref : undefined;
+}
+
+function matchingLinkCatch(process: Process, source: FlowNode): FlowNode | undefined {
+  const sourceScope = scopeOf(process, source.id).id;
+  const sourceDefinition = linkDefinition(source);
+  const targetId = refId(sourceDefinition?.target);
+  const linkName = typeof sourceDefinition?.name === 'string'
+    ? sourceDefinition.name.trim()
+    : source.name.trim();
+  return process.nodes.find((candidate) => {
+    if (
+      candidate.type !== 'intermediateCatch'
+      || candidate.eventDefinition !== 'LinkEventDefinition'
+      || scopeOf(process, candidate.id).id !== sourceScope
+    ) return false;
+    const candidateDefinition = linkDefinition(candidate);
+    if (targetId && candidateDefinition?.id === targetId) return true;
+    const candidateName = typeof candidateDefinition?.name === 'string'
+      ? candidateDefinition.name.trim()
+      : candidate.name.trim();
+    return Boolean(linkName) && candidateName === linkName;
+  });
 }
 
 function ownerSubtreeIds(process: Process, ownerId: string): string[] {
@@ -136,6 +196,12 @@ export function createTokenSimulation(process: Process): TokenSimulation {
   const queue: Array<{ nodeId: string; via: string }> = [];
   let draining = false;
 
+  function ownerHasPendingWork(ownerId: string): boolean {
+    const ids = new Set(ownerSubtreeIds(process, ownerId));
+    return [...ids].some((id) => (tokens[id] ?? 0) > 0 || waitHasToken(joinWait[id]))
+      || queue.some((item) => ids.has(item.nodeId));
+  }
+
   function snapshot(): SimSnapshot {
     const wait: Record<string, Record<string, number>> = Object.create(null);
     for (const [id, buf] of Object.entries(joinWait)) {
@@ -184,7 +250,40 @@ export function createTokenSimulation(process: Process): TokenSimulation {
   function arrive(nodeId: string, via: string): void {
     const node = getNode(process, nodeId);
     if (node.type === 'end') {
+      const ownerId = scopeOf(process, nodeId).ownerId;
+      const owner = ownerId ? process.nodes.find((item) => item.id === ownerId) : undefined;
+      if (owner?.type === 'subProcess' && !owner.triggeredByEvent) {
+        if (!ownerHasPendingWork(owner.id)) emitAll(outgoingFlows(process, owner.id));
+        return;
+      }
       bump(completed, nodeId);
+      return;
+    }
+    if (node.type === 'subProcess' && !node.triggeredByEvent && hasExecutableInnerGraph(process, node.id)) {
+      const start = innerStart(process, node.id);
+      if (start) {
+        emitAll(outgoingFlows(process, start.id));
+        return;
+      }
+      const entries = implicitInnerEntries(process, node.id);
+      if (!entries.length) throw new Error(`subprocess ${node.id} has no entry node`);
+      for (const entry of entries) queue.push({ nodeId: entry.id, via: `subprocess:${node.id}` });
+      drain();
+      return;
+    }
+    if (node.type === 'intermediateThrow') {
+      if (node.eventDefinition === 'LinkEventDefinition') {
+        const target = matchingLinkCatch(process, node);
+        if (!target) throw new Error(`link throw ${node.id} has no matching catch event`);
+        queue.push({ nodeId: target.id, via: `link:${node.id}` });
+        drain();
+        return;
+      }
+      emitAll(outgoingFlows(process, nodeId));
+      return;
+    }
+    if (node.type === 'intermediateCatch' && node.eventDefinition === 'LinkEventDefinition') {
+      emitAll(outgoingFlows(process, nodeId));
       return;
     }
     if (node.type === 'parallelGateway') {

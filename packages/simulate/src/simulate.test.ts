@@ -8,6 +8,7 @@ import {
   innerScope,
   outgoingFlows,
   splitExclusive,
+  wrapInSubprocess,
   type Process,
 } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
@@ -80,6 +81,72 @@ describe('token simulation', () => {
     expect(afterB.joinWait).toEqual({});
   });
 
+  it('passes through an intermediate throw event without parking a token', () => {
+    let p = addTask(createProcess(), { name: 'Notify' }).process;
+    p = {
+      ...p,
+      nodes: p.nodes.map((node) => node.name === 'Notify'
+        ? { ...node, type: 'intermediateThrow', bpmnType: 'bpmn:IntermediateThrowEvent' }
+        : node),
+    };
+    const sim = createTokenSimulation(p);
+
+    const result = sim.signal('StartEvent_1');
+
+    expect(result.tokens).toEqual({});
+    expect(result.completed.EndEvent_1).toBe(1);
+  });
+
+  it('enters a normal subprocess and resumes the parent flow after its inner end', () => {
+    let p = addTask(createProcess(), { name: 'Review' }).process;
+    const reviewId = p.nodes.find((node) => node.name === 'Review')!.id;
+    p = wrapInSubprocess(p, [reviewId], { name: 'Review subprocess' }).process;
+    const sim = createTokenSimulation(p);
+
+    const inside = sim.signal('StartEvent_1');
+    expect(inside.tokens[reviewId]).toBe(1);
+    expect(completedCount(inside)).toBe(0);
+
+    const done = sim.signal(reviewId);
+    expect(done.tokens).toEqual({});
+    expect(done.completed.EndEvent_1).toBe(1);
+  });
+
+  it('waits for every active subprocess branch before resuming the parent flow', () => {
+    const p = parallelSubprocess();
+    const sim = createTokenSimulation(p);
+
+    const inside = sim.signal('OuterStart');
+    expect(inside.tokens).toMatchObject({ InnerA: 1, InnerB: 1 });
+
+    const firstEnd = sim.signal('InnerA');
+    expect(firstEnd.tokens.InnerB).toBe(1);
+    expect(firstEnd.completed.OuterEnd).toBeUndefined();
+
+    const done = sim.signal('InnerB');
+    expect(done.tokens).toEqual({});
+    expect(done.completed.OuterEnd).toBe(1);
+  });
+
+  it('uses inner nodes without incoming flows as implicit subprocess entries', () => {
+    const p = implicitStartSubprocess();
+    const sim = createTokenSimulation(p);
+
+    const inside = sim.signal('OuterStart');
+    expect(inside.tokens.InnerTask).toBe(1);
+
+    const done = sim.signal('InnerTask');
+    expect(done.completed.OuterEnd).toBe(1);
+  });
+
+  it('jumps from a link throw to its matching link catch', () => {
+    const p = linkPair();
+    const result = createTokenSimulation(p).signal('Start');
+
+    expect(result.tokens).toEqual({});
+    expect(result.completed.End).toBe(1);
+  });
+
   it('exclusive split takes one branch', () => {
     let p = createProcess();
     p = splitExclusive(p, { after: 'StartEvent_1' }).process;
@@ -145,6 +212,101 @@ describe('token simulation', () => {
     expect(() => sim.signal('StartA')).toThrow(/step limit/);
   });
 });
+
+function scopedProcess(
+  nodes: Process['nodes'],
+  flows: Process['flows'],
+  scopes: Process['scopes'],
+): Process {
+  return {
+    id: 'Process_1',
+    name: 'Scoped process',
+    rootScopeId: 'Root',
+    idSeq: {},
+    nodes,
+    flows,
+    scopes,
+    regions: [],
+    unstructured: [],
+    feedback: [],
+    exceptionBranches: [],
+    participants: [],
+    lanes: [],
+    messageFlows: [],
+    processes: [],
+  };
+}
+
+function parallelSubprocess(): Process {
+  return scopedProcess(
+    [
+      { id: 'OuterStart', type: 'start', name: 'Start' },
+      { id: 'Sub', type: 'subProcess', name: 'Parallel work' },
+      { id: 'OuterEnd', type: 'end', name: 'End' },
+      { id: 'InnerStart', type: 'start', name: 'Start' },
+      { id: 'Fork', type: 'parallelGateway', name: 'Fork' },
+      { id: 'InnerA', type: 'task', name: 'A' },
+      { id: 'InnerB', type: 'task', name: 'B' },
+      { id: 'EndA', type: 'end', name: 'End A' },
+      { id: 'EndB', type: 'end', name: 'End B' },
+    ],
+    [
+      { id: 'outer-1', source: 'OuterStart', target: 'Sub' },
+      { id: 'outer-2', source: 'Sub', target: 'OuterEnd' },
+      { id: 'inner-1', source: 'InnerStart', target: 'Fork' },
+      { id: 'inner-2', source: 'Fork', target: 'InnerA' },
+      { id: 'inner-3', source: 'Fork', target: 'InnerB' },
+      { id: 'inner-4', source: 'InnerA', target: 'EndA' },
+      { id: 'inner-5', source: 'InnerB', target: 'EndB' },
+    ],
+    [
+      { id: 'Root', parentId: null, ownerId: null, nodeIds: ['OuterStart', 'Sub', 'OuterEnd'], flowIds: ['outer-1', 'outer-2'] },
+      { id: 'Inner', parentId: 'Root', ownerId: 'Sub', nodeIds: ['InnerStart', 'Fork', 'InnerA', 'InnerB', 'EndA', 'EndB'], flowIds: ['inner-1', 'inner-2', 'inner-3', 'inner-4', 'inner-5'] },
+    ],
+  );
+}
+
+function implicitStartSubprocess(): Process {
+  return scopedProcess(
+    [
+      { id: 'OuterStart', type: 'start', name: 'Start' },
+      { id: 'Sub', type: 'subProcess', name: 'Implicit start' },
+      { id: 'OuterEnd', type: 'end', name: 'End' },
+      { id: 'InnerTask', type: 'task', name: 'Inner task' },
+      { id: 'InnerEnd', type: 'end', name: 'Inner end' },
+    ],
+    [
+      { id: 'outer-1', source: 'OuterStart', target: 'Sub' },
+      { id: 'outer-2', source: 'Sub', target: 'OuterEnd' },
+      { id: 'inner-1', source: 'InnerTask', target: 'InnerEnd' },
+    ],
+    [
+      { id: 'Root', parentId: null, ownerId: null, nodeIds: ['OuterStart', 'Sub', 'OuterEnd'], flowIds: ['outer-1', 'outer-2'] },
+      { id: 'Inner', parentId: 'Root', ownerId: 'Sub', nodeIds: ['InnerTask', 'InnerEnd'], flowIds: ['inner-1'] },
+    ],
+  );
+}
+
+function linkPair(): Process {
+  const linkDefinition = (id: string) => ({
+    props: { eventDefinitions: [{ $type: 'bpmn:LinkEventDefinition', id, name: 'Continue' }] },
+  });
+  return scopedProcess(
+    [
+      { id: 'Start', type: 'start', name: 'Start' },
+      { id: 'Throw', type: 'intermediateThrow', name: 'Continue', eventDefinition: 'LinkEventDefinition', bpmnPreserve: linkDefinition('ThrowDef') },
+      { id: 'Catch', type: 'intermediateCatch', name: 'Continue', eventDefinition: 'LinkEventDefinition', bpmnPreserve: linkDefinition('CatchDef') },
+      { id: 'End', type: 'end', name: 'End' },
+    ],
+    [
+      { id: 'before-link', source: 'Start', target: 'Throw' },
+      { id: 'after-link', source: 'Catch', target: 'End' },
+    ],
+    [
+      { id: 'Root', parentId: null, ownerId: null, nodeIds: ['Start', 'Throw', 'Catch', 'End'], flowIds: ['before-link', 'after-link'] },
+    ],
+  );
+}
 
 describe('describeSimulation', () => {
   it('names the XOR and tells the user to click a sequence flow', () => {

@@ -455,7 +455,7 @@ export function executePlan(process: Process, calls: ToolCall[], options?: PlanO
     steps.push(step);
     inverses.push(step.inverse);
     current = step.process;
-    lastId = step.id;
+    if (!isReadOnlyTool(call.name)) lastId = step.id;
   }
   return {
     process: current,

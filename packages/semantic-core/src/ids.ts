@@ -11,6 +11,7 @@ export const ID_PREFIX: Record<FlowNodeType, string> = {
   eventBasedGateway: 'EventBasedGateway',
   complexGateway: 'ComplexGateway',
   intermediateCatch: 'IntermediateCatchEvent',
+  intermediateThrow: 'IntermediateThrowEvent',
   boundaryEvent: 'BoundaryEvent',
 };
 

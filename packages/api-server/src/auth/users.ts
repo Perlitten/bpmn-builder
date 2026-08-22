@@ -35,19 +35,6 @@ export async function upsertGoogleUser(profile: GoogleProfile): Promise<AuthUser
   const now = new Date().toISOString();
   const name = profile.name?.trim() || null;
   const avatarUrl = profile.picture?.trim() || null;
-  const existing = (await db
-    .select()
-    .from(table)
-    .where(eq(table.googleSub, profile.sub))
-    .limit(1)) as UserRow[];
-  const row = existing[0];
-  if (row) {
-    await db
-      .update(table)
-      .set({ email: profile.email, name, avatarUrl, updatedAt: now })
-      .where(eq(table.id, row.id));
-    return toAuthUser({ ...row, email: profile.email, name, avatarUrl, updatedAt: now });
-  }
   const created: UserRow = {
     id: randomUUID(),
     googleSub: profile.sub,
@@ -57,6 +44,19 @@ export async function upsertGoogleUser(profile: GoogleProfile): Promise<AuthUser
     createdAt: now,
     updatedAt: now,
   };
-  await db.insert(table).values(created);
-  return toAuthUser(created);
+  await db
+    .insert(table)
+    .values(created)
+    .onConflictDoUpdate({
+      target: table.googleSub,
+      set: { email: profile.email, name, avatarUrl, updatedAt: now },
+    });
+  const rows = (await db
+    .select()
+    .from(table)
+    .where(eq(table.googleSub, profile.sub))
+    .limit(1)) as UserRow[];
+  const row = rows[0];
+  if (!row) throw new Error('Google user upsert did not return a user');
+  return toAuthUser(row);
 }

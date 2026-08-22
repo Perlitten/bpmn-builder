@@ -1,8 +1,9 @@
 import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getProcessesTable, getQueryDb, migrate, resetDbForTests } from '@bpmn/db';
+import { getProcessesTable, getQueryDb, getUsersTable, migrate, resetDbForTests } from '@bpmn/db';
 import { createApp } from '../app.js';
 import { issueTestSession } from '../auth/testSession.js';
+import { upsertGoogleUser } from '../auth/users.js';
 import { hashOAuthStateNonce, parseOAuthState } from '../auth/session.js';
 import { OAUTH_STATE_COOKIE, SESSION_COOKIE } from '../auth/types.js';
 import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
@@ -91,6 +92,17 @@ describe('google auth and process isolation', () => {
       body: JSON.stringify({ message: 'add a task' }),
     });
     expect(assistant.status).toBe(401);
+  });
+
+  it('atomically upserts one Google user across concurrent callbacks', async () => {
+    const [first, second] = await Promise.all([
+      upsertGoogleUser({ sub: 'google-concurrent', email: 'first@example.com', name: 'First' }),
+      upsertGoogleUser({ sub: 'google-concurrent', email: 'second@example.com', name: 'Second' }),
+    ]);
+    const rows = await getQueryDb().select().from(getUsersTable()) as Array<{ googleSub: string }>;
+
+    expect(first.id).toBe(second.id);
+    expect(rows.filter((row) => row.googleSub === 'google-concurrent')).toHaveLength(1);
   });
 
   it('fails closed with a setup hint when Google OAuth env is missing', async () => {
