@@ -1,5 +1,5 @@
-import { layoutProcess } from '@bpmn/layout-engine';
-import { detectStructure, type SemanticProcess } from '@bpmn/semantic-core';
+import { layoutProcess } from '../../layout-engine/src/index.js';
+import { detectStructure, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { executionScore, layerExecution } from './execution.js';
 import { toLintModel, type Bounds, type LintFlow, type LintModel, type LintNode } from './model.js';
 import { hasActionVerb, isPlaceholderName, shouldCheckActionVerb } from './naming.js';

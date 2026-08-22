@@ -32,7 +32,9 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    // Vite bundles app imports. The raw Vercel Node function traces package
+    // source directly until internal packages emit real runtime JS artifacts.
+    files: ['apps/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

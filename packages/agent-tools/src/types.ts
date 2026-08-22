@@ -1,4 +1,4 @@
-import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, RegionKind, UnstructuredMark } from '@bpmn/semantic-core';
+import type { Applied, ExceptionBranch, FeedbackEdge, FlowNodeType, RegionKind, UnstructuredMark } from '../../semantic-core/src/index.js';
 
 export const TOOL_NAMES = [
   'inspectProcess',

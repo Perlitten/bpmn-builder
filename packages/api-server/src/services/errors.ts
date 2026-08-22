@@ -1,4 +1,4 @@
-import type { ValidationIssue } from '@bpmn/domain';
+import type { ValidationIssue } from '../../../domain/src/index.js';
 import type { Response } from 'express';
 
 export class ProcessValidationError extends Error {

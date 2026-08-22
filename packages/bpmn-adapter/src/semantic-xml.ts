@@ -1,4 +1,4 @@
-import { layoutProcess, type LayoutResult } from '@bpmn/layout-engine';
+import { layoutProcess, type LayoutResult } from '../../layout-engine/src/index.js';
 import {
   detectStructure,
   getNode,
@@ -16,7 +16,7 @@ import {
   type Scope,
   type SequenceFlow,
   visibleNodeName,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 import {
   appendExtras,
   applyPreserve,

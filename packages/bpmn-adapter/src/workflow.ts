@@ -1,6 +1,6 @@
-import type { WorkflowDocument } from '@bpmn/domain';
-import { detectStructure, type FlowNode, type FlowNodeType, type SemanticProcess, type SequenceFlow } from '@bpmn/semantic-core';
-import { layoutProcess } from '@bpmn/layout-engine';
+import type { WorkflowDocument } from '../../domain/src/index.js';
+import { detectStructure, type FlowNode, type FlowNodeType, type SemanticProcess, type SequenceFlow } from '../../semantic-core/src/index.js';
+import { layoutProcess } from '../../layout-engine/src/index.js';
 import { exportProcessXml, idSeqFrom, xmlToProcess } from './semantic-xml.js';
 
 const FROM_WORKFLOW: Record<string, { type: FlowNodeType; bpmnType: string }> = {

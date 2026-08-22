@@ -7,7 +7,7 @@ import {
   type Branch,
   type SemanticProcess,
   type StructuredRegion,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 import { ToolPlanError } from './errors.js';
 import { READ_ONLY_TOOLS, type AgentScope, type AgentScopeKind, type ToolName } from './types.js';
 

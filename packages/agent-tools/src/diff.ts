@@ -1,4 +1,4 @@
-import { allRegions, type FlowNodeType, type SemanticProcess, type RegionKind } from '@bpmn/semantic-core';
+import { allRegions, type FlowNodeType, type SemanticProcess, type RegionKind } from '../../semantic-core/src/index.js';
 
 const REGION: Record<RegionKind, string> = {
   exclusive: 'XOR',

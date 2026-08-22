@@ -3,7 +3,7 @@ import {
   type BpmnComponentDefinition,
   type EngineSupport,
   type EngineSupportLevel,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 import { normalizeEventDefinition, type LintModel, type LintNode } from './model.js';
 import type { ExecutionProfile, Finding } from './types.js';
 

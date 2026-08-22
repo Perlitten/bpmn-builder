@@ -1,4 +1,4 @@
-import { stripXmlComments, type SemanticProcess } from '@bpmn/semantic-core';
+import { stripXmlComments, type SemanticProcess } from '../../semantic-core/src/index.js';
 import { xmlToProcess } from './semantic-xml.js';
 
 /** OMG BPMN 2.0.2 semantic namespace. */

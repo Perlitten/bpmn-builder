@@ -1,4 +1,4 @@
-import { lintProcess, normalizeTaskName } from '@bpmn/rules';
+import { lintProcess, normalizeTaskName } from '../../rules/src/index.js';
 import {
   BPMN,
   addAfter as coreAddAfter,
@@ -35,7 +35,7 @@ import {
   type FlowNodeType,
   type PlaceSpec,
   type SemanticProcess,
-} from '@bpmn/semantic-core';
+} from '../../semantic-core/src/index.js';
 import { ToolPlanError, userFacingPlanError } from './errors.js';
 import { assertNoGeometry } from './geometry.js';
 import { inspectBranchView, inspectRegionView, processView } from './inspect.js';

@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { and, eq, lt } from 'drizzle-orm';
-import { getQueryDb, getSessionsTable, getUsersTable } from '@bpmn/db';
+import { getQueryDb, getSessionsTable, getUsersTable } from '../../../db/src/index.js';
 import { sessionSecret } from './env.js';
 import { SESSION_TTL_MS, type AuthUser } from './types.js';
 
