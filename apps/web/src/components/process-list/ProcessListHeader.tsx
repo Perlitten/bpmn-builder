@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
 import { TextField } from '../ui/TextField';
-import { ListArchitectMascot } from './ListArchitectMascot';
 
 type ProcessListHeaderProps = {
   query: string;
@@ -46,20 +45,17 @@ export function ProcessListHeader({
 
       <div className="process-list-desktop-actions">
         {!empty ? (
-          <>
-            <label className="process-search">
-              <span className="sr-only">{searchLabel}</span>
-              <Search size={14} strokeWidth={1.8} aria-hidden="true" />
-              <TextField
-                type="search"
-                value={query}
-                variant="plain"
-                placeholder={searchLabel}
-                onChange={(event) => onQueryChange(event.target.value)}
-              />
-            </label>
-            <ListArchitectMascot />
-          </>
+          <label className="process-search">
+            <span className="sr-only">{searchLabel}</span>
+            <Search size={14} strokeWidth={1.8} aria-hidden="true" />
+            <TextField
+              type="search"
+              value={query}
+              variant="plain"
+              placeholder={searchLabel}
+              onChange={(event) => onQueryChange(event.target.value)}
+            />
+          </label>
         ) : null}
         {actions}
         {!empty ? <span className="process-list-header-divider" aria-hidden="true" /> : null}
@@ -79,7 +75,6 @@ export function ProcessListHeader({
         >
           {mobileSearch ? <X size={18} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
         </button>
-        <ListArchitectMascot />
         {account}
       </div>
 

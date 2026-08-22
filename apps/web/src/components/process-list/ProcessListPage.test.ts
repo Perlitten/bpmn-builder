@@ -210,7 +210,7 @@ describe('ProcessListPage', () => {
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
     expect(header).toContain('process-list-header');
     expect(header).toContain('Search processes');
-    expect(header).toContain('Architect mascot');
+    expect(header).not.toContain('Architect mascot');
     expect(header).not.toContain('Describe the process');
     expect(header).not.toContain('<textarea');
     expect(html).toContain('Describe → BPMN');
@@ -219,6 +219,18 @@ describe('ProcessListPage', () => {
     expect(html).toContain('maxLength="20000"');
     expect(header).toContain('New blank');
     expect(header).toContain('Import BPMN');
+  });
+
+  it('offers a desktop control for collapsing the preview into a full-width list', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProcessDetailPanel, {
+        process: summary('Invoice approval'),
+        kind: 'process',
+        onClose: () => undefined,
+      }),
+    );
+    expect(html).toContain('aria-label="Close preview"');
+    expect(html).toContain('process-detail-close');
   });
 
   it('uses one compact sort control with explicit options instead of tab-like toggles', () => {

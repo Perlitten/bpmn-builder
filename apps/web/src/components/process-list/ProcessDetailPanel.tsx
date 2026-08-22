@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { ProcessSummary } from '@bpmn/domain';
-import { ArrowRight, ChevronLeft, MoreHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowRight, ChevronLeft, MoreHorizontal, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   absoluteTime,
   relativeTime,
@@ -10,6 +10,7 @@ import {
 } from '../../lib/relativeTime';
 import { Button } from '../ui/Button';
 import { ChromeMenu, ChromeMenuItem } from '../ui/ChromeMenu';
+import { IconButton } from '../ui/IconButton';
 import { BpmnSchematic } from './BpmnSchematic';
 import { listQualitySignal } from './listQuality';
 
@@ -19,6 +20,7 @@ type ProcessDetailPanelProps = {
   busy?: boolean;
   exporting?: boolean;
   onBack?: () => void;
+  onClose?: () => void;
   onOpenEditor?: (id: string) => void;
   onUseTemplate?: (process: ProcessSummary) => void;
   onDuplicate?: (process: ProcessSummary) => void;
@@ -51,6 +53,7 @@ export function ProcessDetailPanel({
   busy = false,
   exporting = false,
   onBack,
+  onClose,
   onOpenEditor,
   onUseTemplate,
   onDuplicate,
@@ -120,6 +123,11 @@ export function ProcessDetailPanel({
               {onRename ? <ChromeMenuItem onSelect={() => onRename(process)}>Rename</ChromeMenuItem> : null}
               {onDelete ? <ChromeMenuItem onSelect={() => onDelete(process)}>Delete</ChromeMenuItem> : null}
             </ChromeMenu>
+          ) : null}
+          {onClose ? (
+            <IconButton label="Close preview" className="process-detail-close" onClick={onClose}>
+              <X size={16} strokeWidth={1.8} aria-hidden="true" />
+            </IconButton>
           ) : null}
         </div>
       </header>

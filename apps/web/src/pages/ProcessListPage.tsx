@@ -65,6 +65,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const [processTotal, setProcessTotal] = useState(0);
   const [templateTotal, setTemplateTotal] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(true);
   const [mobileDetail, setMobileDetail] = useState(false);
   const [mobileCapture, setMobileCapture] = useState(false);
   const [mobileFilter, setMobileFilter] = useState<MobileFilter>('all');
@@ -83,11 +84,19 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const [rowActionBusy, setRowActionBusy] = useState(false);
   const [rowActionError, setRowActionError] = useState<string | null>(null);
   const importRef = useRef<ImportBpmnButtonHandle>(null);
+  const selectedRowRef = useRef<HTMLButtonElement>(null);
+  const restoreRowFocusOnClose = useRef(false);
   const firstQuerySync = useRef(true);
 
   useEffect(() => {
     document.title = pageTitle('list');
   }, []);
+
+  useEffect(() => {
+    if (previewOpen || !restoreRowFocusOnClose.current) return;
+    restoreRowFocusOnClose.current = false;
+    selectedRowRef.current?.focus();
+  }, [previewOpen]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -323,7 +332,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
   const fullEmptyState = !initialLoading && !loadError && kind === 'process' && !searching && total === 0;
 
   return (
-    <div className={`process-list-page ${mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
+    <div className={`process-list-page ${previewOpen && mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
       <ProcessListHeader
         query={query}
         total={total}
@@ -373,7 +382,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
           onUseTemplate={useTemplate}
         />
       ) : (
-        <div className={`process-workbench ${mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
+        <div className={`process-workbench ${previewOpen ? '' : 'is-list-only'} ${previewOpen && mobileDetail && selectedProcess ? 'is-mobile-detail' : ''}`}>
           <section className="process-index" aria-label={kind === 'template' ? 'Templates' : 'Processes'}>
             <ProcessComposer
               value={prompt}
@@ -454,9 +463,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
                     <ProcessRow
                       key={process.id}
                       process={process}
-                      selected={process.id === selectedProcess?.id}
+                      selected={previewOpen && process.id === selectedProcess?.id}
+                      focusRef={process.id === selectedProcess?.id ? selectedRowRef : undefined}
                       onOpen={(id) => {
                         setSelectedId(id);
+                        setPreviewOpen(true);
                         setMobileDetail(true);
                       }}
                     />
@@ -494,13 +505,18 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
             </div>
           </section>
 
-          {selectedProcess ? (
+          {previewOpen && selectedProcess ? (
             <ProcessDetailPanel
               process={selectedProcess}
               kind={kind}
               busy={rowActionBusy || creating}
               exporting={exportingId === selectedProcess.id}
               onBack={() => setMobileDetail(false)}
+              onClose={() => {
+                restoreRowFocusOnClose.current = true;
+                setPreviewOpen(false);
+                setMobileDetail(false);
+              }}
               onOpenEditor={kind === 'process' || !selectedProcess.builtin ? onOpenProcess : undefined}
               onUseTemplate={kind === 'template' ? useTemplate : undefined}
               onDuplicate={kind === 'process' ? setDuplicateTarget : undefined}
@@ -509,11 +525,11 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
               onDelete={!selectedProcess.builtin ? setDeleteTarget : undefined}
               onRegenerate={(description) => handleDescribe(description)}
             />
-          ) : (
+          ) : previewOpen ? (
             <div className="process-detail-placeholder">
               <p>Select a process to inspect its diagram, checks, and source description.</p>
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
