@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Process, ProcessPatch } from '@bpmn/domain';
-import { ProcessEditorPage } from './ProcessEditorPage';
+import { mergeLatestProcessWithPendingPatch, ProcessEditorPage } from './ProcessEditorPage';
 
 const mocks = vi.hoisted(() => ({
   editorProps: null as null | { xml: string; onChange: (xml: string) => void },
@@ -73,6 +73,22 @@ afterEach(() => {
 });
 
 describe('ProcessEditorPage persistence orchestration', () => {
+  it('reconciles untouched fields from the latest server version before keeping local changes', () => {
+    const latest = processFixture({
+      name: 'Remote name',
+      description: 'Remote description',
+      bpmnXml: '<bpmn:startEvent id="remote-new" />',
+      version: 8,
+    });
+
+    expect(mergeLatestProcessWithPendingPatch(latest, { name: 'My local name' })).toMatchObject({
+      name: 'My local name',
+      description: 'Remote description',
+      bpmnXml: '<bpmn:startEvent id="remote-new" />',
+      version: 8,
+    });
+  });
+
   it('journals live XML, guards leaving, and saves it with the current version', async () => {
     const initial = processFixture();
     mocks.fetchProcess.mockResolvedValue({ process: initial });

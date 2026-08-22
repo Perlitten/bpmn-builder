@@ -1,9 +1,11 @@
 import http from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { migrate, resetDbForTests } from '@bpmn/db';
+import { getProcessesTable, getQueryDb, migrate, resetDbForTests } from '@bpmn/db';
 import { PROCESS_NAME_MAX } from '../../../domain/src/index.js';
+import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
 import { createApp } from '../app.js';
 import { issueTestSession } from '../auth/testSession.js';
+import { DEFAULT_BPMN_XML } from '../defaultBpmn.js';
 import { copyProcessName } from '../services/processService.js';
 
 const listen = (app: ReturnType<typeof createApp>) =>
@@ -17,6 +19,7 @@ const listen = (app: ReturnType<typeof createApp>) =>
   });
 
 let cookie = '';
+let testUserId = '';
 
 function authed(url: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
@@ -45,7 +48,9 @@ describe('process template routes', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
-    cookie = (await issueTestSession()).cookie;
+    const session = await issueTestSession();
+    cookie = session.cookie;
+    testUserId = session.user.id;
   });
 
   afterEach(async () => {
@@ -179,6 +184,63 @@ describe('process template routes', () => {
     expect(copy.id).not.toBe(process.id);
     expect(copy.name).toBe('AP clone');
   });
+
+  it('paginates and searches built-in plus user templates on the server', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const db = getQueryDb();
+    const table = getProcessesTable();
+    const now = '2026-08-22T00:00:00.000Z';
+    const workflowJson = JSON.stringify({
+      processId: 'Process_1',
+      nodes: [
+        { id: 'StartEvent_1', type: 'startEvent', label: 'Start' },
+        { id: 'Task_1', type: 'task', label: 'Task' },
+        { id: 'EndEvent_1', type: 'endEvent', label: 'End' },
+      ],
+      edges: [
+        { id: 'Flow_1', source: 'StartEvent_1', target: 'Task_1' },
+        { id: 'Flow_2', source: 'Task_1', target: 'EndEvent_1' },
+      ],
+    });
+    await db.insert(table).values(Array.from({ length: 25 }, (_, index) => ({
+      id: `template-${index}`,
+      userId: testUserId,
+      name: `Custom ${String(index).padStart(2, '0')}`,
+      description: null,
+      status: 'template',
+      bpmnXml: DEFAULT_BPMN_XML,
+      workflowJson,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    })));
+
+    const first = await authed(`${url}/api/templates?sort=name_asc&page=1&limit=20`);
+    expect(first.status).toBe(200);
+    const firstPage = (await first.json()) as {
+      templates: { id: string; builtin?: boolean }[];
+      total: number;
+      page: number;
+      limit: number;
+    };
+    expect(firstPage).toMatchObject({ total: 28, page: 1, limit: 20 });
+    expect(firstPage.templates).toHaveLength(20);
+    expect(firstPage.templates.slice(0, 3).every((template) => template.builtin)).toBe(true);
+
+    const secondPage = (await (
+      await authed(`${url}/api/templates?sort=name_asc&page=2&limit=20`)
+    ).json()) as { templates: { id: string }[]; total: number };
+    expect(secondPage.total).toBe(28);
+    expect(secondPage.templates).toHaveLength(8);
+    expect(secondPage.templates.every((template) => template.id.startsWith('template-'))).toBe(true);
+
+    const search = (await (
+      await authed(`${url}/api/templates?q=custom%2024&limit=20`)
+    ).json()) as { templates: { name: string }[]; total: number };
+    expect(search.total).toBe(1);
+    expect(search.templates.map((template) => template.name)).toEqual(['Custom 24']);
+  });
 });
 
 describe('process list query', () => {
@@ -191,7 +253,9 @@ describe('process list query', () => {
     delete process.env.SQLITE_PATH;
     resetDbForTests();
     await migrate();
-    cookie = (await issueTestSession()).cookie;
+    const session = await issueTestSession();
+    cookie = session.cookie;
+    testUserId = session.user.id;
   });
 
   afterEach(async () => {
@@ -312,6 +376,94 @@ describe('process list query', () => {
     expect(badKind.status).toBe(400);
     const badLimit = await authed(`${url}/api/processes?limit=101`);
     expect(badLimit.status).toBe(400);
+  });
+
+  it('lints canonical XML and builds previews for legacy rows without workflow JSON', async () => {
+    const { server, url } = await listen(createApp());
+    servers.push(server);
+    const db = getQueryDb();
+    const table = getProcessesTable();
+    const now = '2026-08-22T00:00:00.000Z';
+    const boundaryXml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Boundary">
+  <bpmn:process id="Process_Boundary" isExecutable="false">
+    <bpmn:startEvent id="Start" name="Start" />
+    <bpmn:userTask id="Review" name="Review" />
+    <bpmn:boundaryEvent id="Timeout" name="Timeout" attachedToRef="Review">
+      <bpmn:timerEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Done" name="Done" />
+    <bpmn:endEvent id="Escalated" name="Escalated" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Review" targetRef="Done" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Timeout" targetRef="Escalated" />
+  </bpmn:process>
+</bpmn:definitions>`;
+    const lossyWorkflowJson = JSON.stringify({
+      processId: 'Process_Boundary',
+      nodes: [
+        { id: 'Start', type: 'startEvent', label: 'Start' },
+        { id: 'Review', type: 'userTask', label: 'Review' },
+        { id: 'Timeout', type: 'task', label: 'Timeout' },
+        { id: 'Done', type: 'endEvent', label: 'Done' },
+        { id: 'Escalated', type: 'endEvent', label: 'Escalated' },
+      ],
+      edges: [
+        { id: 'Flow_1', source: 'Start', target: 'Review' },
+        { id: 'Flow_2', source: 'Review', target: 'Done' },
+        { id: 'Flow_3', source: 'Timeout', target: 'Escalated' },
+      ],
+    });
+    await db.insert(table).values([
+      {
+        id: 'boundary-process',
+        userId: testUserId,
+        name: 'Boundary process',
+        description: null,
+        status: 'draft',
+        bpmnXml: boundaryXml,
+        workflowJson: lossyWorkflowJson,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'legacy-no-workflow',
+        userId: testUserId,
+        name: 'Legacy process',
+        description: null,
+        status: 'draft',
+        bpmnXml: DEFAULT_BPMN_XML,
+        workflowJson: null,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
+
+    const response = await authed(`${url}/api/processes?kind=process&limit=20`);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      processes: Array<{
+        id: string;
+        structure: string;
+        quality: { errors: number; warnings: number; style: number };
+        preview: { nodes: unknown[]; edges: unknown[] };
+      }>;
+    };
+    const expectedQuality = lintProcess(boundaryXml, {
+      executionProfile: DEFAULT_EXECUTION_PROFILE,
+      geometry: 'skip',
+    });
+    expect(body.processes.find((process) => process.id === 'boundary-process')?.quality).toEqual({
+      errors: expectedQuality.errors.length,
+      warnings: expectedQuality.warnings.length,
+      style: expectedQuality.style.length,
+    });
+    const legacy = body.processes.find((process) => process.id === 'legacy-no-workflow');
+    expect(legacy?.structure).not.toBe('Empty process');
+    expect(legacy?.preview.nodes.length).toBeGreaterThan(0);
+    expect(legacy?.preview.edges.length).toBeGreaterThan(0);
   });
 });
 

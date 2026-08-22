@@ -203,6 +203,54 @@ describe('process save queue', () => {
     vi.useRealTimers();
   });
 
+  it('does not schedule another retry after the queue is destroyed', async () => {
+    vi.useFakeTimers();
+    let rejectSave!: (error: unknown) => void;
+    const save = vi.fn(() => new Promise<Process>((_resolve, reject) => {
+      rejectSave = reject;
+    }));
+    const queue = createProcessSaveQueue({
+      storageKey: 'destroyed-retry',
+      initialVersion: 1,
+      save,
+      onState: () => undefined,
+      storage: memoryStorage(),
+      isOnline: () => true,
+      debounceMs: 0,
+      retryMs: 1_000,
+    });
+
+    queue.enqueue({ name: 'Do not retry' }, true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(save).toHaveBeenCalledOnce();
+    queue.destroy();
+    rejectSave(Object.assign(new Error('Temporarily unavailable'), { status: 503 }));
+    await vi.runAllTimersAsync();
+
+    expect(save).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('preserves a recovered journal base version until the conflict is explicitly resolved', () => {
+    const storage = memoryStorage();
+    const queue = createProcessSaveQueue({
+      storageKey: 'stale-recovery',
+      initialVersion: 9,
+      save: async () => saved(10),
+      onState: () => undefined,
+      storage,
+      isOnline: () => true,
+    });
+
+    queue.restore({ name: 'Recovered name' }, 7);
+
+    expect(queue.getState()).toMatchObject({ phase: 'conflict', currentVersion: 9 });
+    expect(readProcessSaveJournal('stale-recovery', storage)).toMatchObject({
+      baseVersion: 7,
+      patch: { name: 'Recovered name' },
+    });
+  });
+
   it('guards browser leave only while the queue is dirty', () => {
     const cleanEvent = { preventDefault: vi.fn(), returnValue: 'untouched' };
     expect(guardDirtyProcessLeave({ isDirty: () => false }, cleanEvent)).toBe(false);

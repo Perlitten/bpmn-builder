@@ -106,6 +106,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
   const retryMs = options.retryMs ?? 1_000;
   const maxRetryMs = options.maxRetryMs ?? 30_000;
   let version = options.initialVersion;
+  let journalBaseVersion = version;
   let savedAt = options.initialSavedAt ?? null;
   let pending: ProcessSavePatch | null = null;
   let active: ProcessSavePatch | null = null;
@@ -130,7 +131,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
       } else {
         const journal: SaveJournal = {
           schema: 1,
-          baseVersion: version,
+          baseVersion: journalBaseVersion,
           patch,
           updatedAt: new Date().toISOString(),
         };
@@ -150,6 +151,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
   };
 
   const schedule = (delay: number) => {
+    if (stopped) return;
     clearTimer();
     timer = setTimeout(() => {
       timer = null;
@@ -159,6 +161,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
 
   const flush = (): Promise<void> => {
     clearTimer();
+    if (stopped) return Promise.resolve();
     if (inFlight) return inFlight;
     if (!pending || state.phase === 'conflict') return Promise.resolve();
     if (!isOnline()) {
@@ -181,6 +184,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
       .then((saved) => {
         active = null;
         version = saved.version;
+        journalBaseVersion = version;
         savedAt = saved.updatedAt;
         retries = 0;
         writeJournal();
@@ -224,6 +228,8 @@ export function createProcessSaveQueue(options: QueueOptions) {
   };
 
   const enqueue = (patch: ProcessSavePatch, immediate = false) => {
+    if (stopped) return;
+    if (!pending && !active && !inFlight) journalBaseVersion = version;
     pending = { ...(pending ?? {}), ...patch };
     writeJournal();
     const online = isOnline();
@@ -240,7 +246,9 @@ export function createProcessSaveQueue(options: QueueOptions) {
   };
 
   const restore = (patch: ProcessSavePatch, baseVersion: number) => {
+    if (stopped) return;
     pending = { ...(pending ?? {}), ...patch };
+    journalBaseVersion = baseVersion;
     writeJournal();
     if (baseVersion !== version) {
       publish({
@@ -255,14 +263,17 @@ export function createProcessSaveQueue(options: QueueOptions) {
   };
 
   const retry = () => {
+    if (stopped) return;
     if (!pending || state.phase === 'conflict') return;
     publish({ phase: 'dirty', error: null, currentVersion: null });
     schedule(0);
   };
 
   const resolveConflict = (currentVersion: number) => {
+    if (stopped) return;
     if (!Number.isInteger(currentVersion) || currentVersion < 1) return;
     version = currentVersion;
+    journalBaseVersion = currentVersion;
     retries = 0;
     publish({ phase: pending ? 'dirty' : 'idle', error: null, currentVersion: null });
     writeJournal();
@@ -270,10 +281,12 @@ export function createProcessSaveQueue(options: QueueOptions) {
   };
 
   const discard = () => {
+    if (stopped) return;
     clearTimer();
     pending = null;
     active = null;
     retries = 0;
+    journalBaseVersion = version;
     writeJournal();
     publish({ phase: 'idle', error: null, currentVersion: null });
   };
@@ -293,6 +306,7 @@ export function createProcessSaveQueue(options: QueueOptions) {
     destroy,
     isDirty: () => Boolean(pending || active || inFlight || state.phase !== 'idle'),
     getState: () => state,
+    getPendingPatch: () => ({ ...journalPatch() }),
   };
 }
 

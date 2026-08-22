@@ -14,6 +14,7 @@ import {
   guardDirtyProcessLeave,
   processSaveStorageKey,
   readProcessSaveJournal,
+  type ProcessSavePatch,
   type ProcessSaveQueue,
   type ProcessSaveState,
 } from '../lib/processSaveQueue';
@@ -23,6 +24,13 @@ type ProcessEditorPageProps = {
   processId: string;
   onBack: () => void;
 };
+
+export function mergeLatestProcessWithPendingPatch(
+  latest: Process,
+  pending: ProcessSavePatch,
+): Process {
+  return { ...latest, ...pending };
+}
 
 export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps) {
   const { user } = useAuth();
@@ -127,7 +135,12 @@ export function ProcessEditorPage({ processId, onBack }: ProcessEditorPageProps)
   const handleKeepLocalChanges = useCallback(async () => {
     try {
       const latest = (await fetchProcess(processId)).process;
-      saveQueueRef.current?.resolveConflict(latest.version);
+      const queue = saveQueueRef.current;
+      if (!queue) return;
+      const reconciled = mergeLatestProcessWithPendingPatch(latest, queue.getPendingPatch());
+      setProcess(reconciled);
+      setName(reconciled.name);
+      queue.resolveConflict(latest.version);
       setError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to read the server version');

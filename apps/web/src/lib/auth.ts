@@ -15,6 +15,10 @@ export type AuthBootstrap = AuthStatus & {
   user: SessionUser | null;
 };
 
+function clearOAuthHandoffFragment(): void {
+  window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+}
+
 export async function fetchAuthBootstrap(signal?: AbortSignal): Promise<AuthBootstrap> {
   const response = await fetch('/api/auth/status', { credentials: 'same-origin', signal });
   if (!response.ok) throw new Error('Failed to read authentication status');
@@ -49,8 +53,19 @@ export async function completeOAuthHandoff(signal?: AbortSignal): Promise<void> 
     body: JSON.stringify({ token }),
     signal,
   });
-  if (!response.ok) throw new Error('Failed to complete OAuth handoff');
-  window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+  if (!response.ok) {
+    const terminalTokenFailure =
+      response.status >= 400 &&
+      response.status < 500 &&
+      response.status !== 408 &&
+      response.status !== 429;
+    if (terminalTokenFailure) {
+      clearOAuthHandoffFragment();
+      return;
+    }
+    throw new Error('Failed to complete OAuth handoff');
+  }
+  clearOAuthHandoffFragment();
 }
 
 export async function signOut(): Promise<void> {

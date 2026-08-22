@@ -6,7 +6,6 @@ import {
   bpmnToWorkflow,
   importBpmnXml,
   workflowToBpmn,
-  workflowToProcess,
 } from '../../../bpmn-adapter/src/index.js';
 import type { Process, ProcessPatch, ProcessSummary, WorkflowDocument } from '../../../domain/src/index.js';
 import { DEFAULT_EXECUTION_PROFILE, lintProcess } from '../../../rules/src/index.js';
@@ -135,9 +134,19 @@ function toProcess(row: ProcessRow): Process {
   };
 }
 
-function toSummary(row: ProcessRow): ProcessSummary {
-  const workflow = parseStoredWorkflow(row.workflowJson);
-  const quality = lintProcess(workflow ? workflowToProcess(workflow) : row.bpmnXml, {
+async function workflowForSummary(row: ProcessRow): Promise<WorkflowDocument | null> {
+  const stored = parseStoredWorkflow(row.workflowJson);
+  if (stored) return stored;
+  try {
+    return await bpmnToWorkflow(row.bpmnXml);
+  } catch {
+    return null;
+  }
+}
+
+async function toSummary(row: ProcessRow): Promise<ProcessSummary> {
+  const workflow = await workflowForSummary(row);
+  const quality = lintProcess(row.bpmnXml, {
     executionProfile: DEFAULT_EXECUTION_PROFILE,
     geometry: 'skip',
   });
@@ -295,7 +304,7 @@ export async function listProcesses(query: ProcessListQuery, userId: string): Pr
   ) as ProcessRow[];
 
   return {
-    processes: rows.map(toSummary),
+    processes: await Promise.all(rows.map(toSummary)),
     total: Number(countRows[0]?.total ?? 0),
     page: query.page,
     limit: query.limit,
@@ -314,29 +323,75 @@ export async function getProcessById(id: string, userId: string): Promise<Proces
   return row ? toProcess(row) : null;
 }
 
-export async function listTemplates(userId: string): Promise<ProcessSummary[]> {
+function builtinTemplateRows(): ProcessRow[] {
+  return BUILTIN_TEMPLATES.map((template) => ({
+    id: template.id,
+    userId: null,
+    name: template.name,
+    description: template.description,
+    status: 'template',
+    bpmnXml: workflowToBpmn(template.workflow),
+    workflowJson: JSON.stringify(template.workflow),
+    version: 1,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  }));
+}
+
+function compareBuiltinTemplates(a: ProcessRow, b: ProcessRow, sort: ProcessListQuery['sort']): number {
+  if (sort === 'name_asc') return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  if (sort === 'name_desc') return b.name.localeCompare(a.name) || a.id.localeCompare(b.id);
+  const updated = a.updatedAt.localeCompare(b.updatedAt);
+  return (sort === 'updated_asc' ? updated : -updated) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+}
+
+export async function listTemplates(query: ProcessListQuery, userId: string): Promise<ProcessListResult> {
   const db = getQueryDb();
   const table = getProcessesTable();
-  const rows = (await db
-    .select()
-    .from(table)
-    .where(and(eq(table.status, 'template'), eq(table.userId, userId)))
-    .orderBy(desc(table.updatedAt))) as ProcessRow[];
-  const builtins = BUILTIN_TEMPLATES.map((template) =>
-    toSummary({
-      id: template.id,
-      userId: null,
-      name: template.name,
-      description: template.description,
-      status: 'template',
-      bpmnXml: workflowToBpmn(template.workflow),
-      workflowJson: JSON.stringify(template.workflow),
-      version: 1,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    }),
-  );
-  return [...builtins, ...rows.map(toSummary)];
+  const where = listWhere(table, { ...query, kind: 'template' }, userId);
+  const q = query.q.toLocaleLowerCase();
+  const builtins = builtinTemplateRows()
+    .filter((row) => !q || `${row.name} ${row.description ?? ''}`.toLocaleLowerCase().includes(q))
+    .sort((a, b) => compareBuiltinTemplates(a, b, query.sort));
+  const offset = (query.page - 1) * query.limit;
+  const selectedBuiltins = builtins.slice(offset, offset + query.limit);
+  const userOffset = Math.max(0, offset - builtins.length);
+  const userLimit = Math.max(0, query.limit - selectedBuiltins.length);
+  const normalizedName = sql`lower(${table.name})`;
+  const order = (() => {
+    if (query.sort === 'updated_asc') return [asc(table.updatedAt), asc(normalizedName), asc(table.id)];
+    if (query.sort === 'name_asc') return [asc(normalizedName), desc(table.updatedAt), asc(table.id)];
+    if (query.sort === 'name_desc') return [desc(normalizedName), desc(table.updatedAt), asc(table.id)];
+    return [desc(table.updatedAt), asc(normalizedName), asc(table.id)];
+  })();
+  const columns = {
+    id: table.id,
+    name: table.name,
+    description: table.description,
+    status: table.status,
+    bpmnXml: table.bpmnXml,
+    workflowJson: table.workflowJson,
+    version: table.version,
+    createdAt: table.createdAt,
+    updatedAt: table.updatedAt,
+  };
+  const countQuery = db.select({ total: sql<number>`cast(count(*) as int)` }).from(table);
+  const countRows = (where ? await countQuery.where(where) : await countQuery) as { total: number }[];
+  let rows: ProcessRow[] = [];
+  if (userLimit > 0) {
+    const listQuery = db.select(columns).from(table);
+    rows = (
+      where
+        ? await listQuery.where(where).orderBy(...order).limit(userLimit).offset(userOffset)
+        : await listQuery.orderBy(...order).limit(userLimit).offset(userOffset)
+    ) as ProcessRow[];
+  }
+  return {
+    processes: await Promise.all([...selectedBuiltins, ...rows].map(toSummary)),
+    total: builtins.length + Number(countRows[0]?.total ?? 0),
+    page: query.page,
+    limit: query.limit,
+  };
 }
 
 export { copyProcessName };

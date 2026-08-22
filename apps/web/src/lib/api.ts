@@ -33,7 +33,10 @@ export class ApiError extends Error {
 
 type ApiClient = {
   listProcesses: (params?: ProcessListParams, signal?: AbortSignal) => Promise<ProcessListResponse>;
-  listTemplates: (signal?: AbortSignal) => Promise<ProcessSummary[]>;
+  listTemplates: (
+    params?: Omit<ProcessListParams, 'kind'>,
+    signal?: AbortSignal,
+  ) => Promise<ProcessListResponse>;
   createProcess: (input: {
     name: string;
     description?: string;
@@ -77,9 +80,25 @@ export const api: ApiClient = {
     const qs = search.toString();
     return request<ProcessListResponse>(`/api/processes${qs ? `?${qs}` : ''}`, { signal });
   },
-  listTemplates: async (signal) => {
-    const data = await request<{ templates: ProcessSummary[] }>('/api/templates', { signal });
-    return data.templates;
+  listTemplates: async (params = {}, signal) => {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set('q', params.q.trim());
+    if (params.sort) search.set('sort', params.sort);
+    if (params.page != null) search.set('page', String(params.page));
+    if (params.limit != null) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    const data = await request<{
+      templates: ProcessSummary[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(`/api/templates${qs ? `?${qs}` : ''}`, { signal });
+    return {
+      processes: data.templates,
+      total: data.total,
+      page: data.page,
+      limit: data.limit,
+    };
   },
   createProcess: async (input, signal) => {
     const data = await request<{ process: { id: string } }>('/api/processes', {

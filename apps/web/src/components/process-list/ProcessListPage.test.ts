@@ -5,7 +5,7 @@ import type { ProcessSummary } from '@bpmn/domain';
 import { AuthProvider } from '../auth/AuthGate';
 import { ListKindTabs } from './ListKindTabs';
 import { ListPaginationFooter } from './ListPaginationFooter';
-import { ProcessListPage, templatePage } from '../../pages/ProcessListPage';
+import { ProcessListPage } from '../../pages/ProcessListPage';
 import { draftNameFromTemplate, TemplatesSection } from './TemplatesSection';
 import {
   listRange,
@@ -33,24 +33,6 @@ function summary(name: string): ProcessSummary {
 }
 
 describe('list tabs', () => {
-  it('filters and pages built-in and user templates without a second XML payload', () => {
-    const approval = { ...summary('Approval decision'), builtin: true };
-    const onboarding = summary('Employee onboarding');
-    const page = templatePage([onboarding, approval], 'approval', 'name_asc', 1);
-    expect(page.total).toBe(1);
-    expect(page.processes).toEqual([approval]);
-    expect(page.processes[0]).not.toHaveProperty('bpmnXml');
-  });
-
-  it('keeps built-in starters discoverable before user templates', () => {
-    const builtin = { ...summary('Approval decision'), builtin: true };
-    const userTemplate = summary('Aardvark custom template');
-    expect(templatePage([userTemplate, builtin], '', 'name_asc', 1).processes).toEqual([
-      builtin,
-      userTemplate,
-    ]);
-  });
-
   it('defaults to processes and deep-links ?kind=template', () => {
     expect(listTabFromSearch('')).toBe('process');
     expect(listTabFromSearch('?q=order')).toBe('process');

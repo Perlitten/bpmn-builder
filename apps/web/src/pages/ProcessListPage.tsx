@@ -36,34 +36,6 @@ export const DESCRIPTION_PLACEHOLDER =
 
 const PAGE_SIZE = 20;
 
-export function templatePage(
-  templates: ProcessSummary[],
-  q: string,
-  sort: ProcessListSort,
-  page: number,
-): { processes: ProcessSummary[]; total: number; page: number; limit: number } {
-  const query = q.trim().toLocaleLowerCase();
-  const filtered = query
-    ? templates.filter((template) =>
-        `${template.name} ${template.description ?? ''}`.toLocaleLowerCase().includes(query),
-      )
-    : [...templates];
-  filtered.sort((a, b) => {
-    if (Boolean(a.builtin) !== Boolean(b.builtin)) return a.builtin ? -1 : 1;
-    if (sort === 'name_asc') return a.name.localeCompare(b.name);
-    if (sort === 'name_desc') return b.name.localeCompare(a.name);
-    const time = a.updatedAt.localeCompare(b.updatedAt);
-    return sort === 'updated_asc' ? time : -time;
-  });
-  const offset = (page - 1) * PAGE_SIZE;
-  return {
-    processes: filtered.slice(offset, offset + PAGE_SIZE),
-    total: filtered.length,
-    page,
-    limit: PAGE_SIZE,
-  };
-}
-
 type ProcessListPageProps = {
   onOpenProcess: (id: string) => void;
 };
@@ -121,7 +93,7 @@ export function ProcessListPage({ onOpenProcess }: ProcessListPageProps) {
     setLoading(true);
     const request =
       kind === 'template'
-        ? api.listTemplates(ac.signal).then((templates) => templatePage(templates, debouncedQuery, sort, page))
+        ? api.listTemplates({ q: debouncedQuery, sort, page, limit: PAGE_SIZE }, ac.signal)
         : api.listProcesses({ q: debouncedQuery, kind: 'process', sort, page, limit: PAGE_SIZE }, ac.signal);
     void request
       .then((data) => {
