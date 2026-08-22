@@ -4,7 +4,9 @@ import {
   applySpacePanDown,
   applySpacePanUp,
   bindKeyboardToHost,
+  canvasNavigationTarget,
   createSpacePanHold,
+  isCanvasNavigationKey,
   isCopyKey,
   isPasteKey,
   isRedoKey,
@@ -79,6 +81,10 @@ describe('bindKeyboardToHost', () => {
     expect(src).toMatch(/session\.undo/);
     expect(src).toMatch(/createSelectMarqueeModule/);
     expect(src).toMatch(/silenceCanvasTabStop/);
+    const canvas = readFileSync(new URL('./BpmnCanvas.tsx', import.meta.url), 'utf8');
+    expect(canvas).toMatch(/tabIndex=\{0\}/);
+    expect(canvas).toMatch(/role="application"/);
+    expect(canvas).toMatch(/aria-keyshortcuts/);
     expect(src).toMatch(/applyViewerLabel/);
     expect(src).toMatch(/labelWriteRef/);
     expect(src).not.toMatch(/activateHand/);
@@ -110,6 +116,18 @@ describe('bindKeyboardToHost', () => {
     expect(isRedoKey({ key: 'y', ctrlKey: true, metaKey: false, shiftKey: false, altKey: false } as KeyboardEvent)).toBe(
       true,
     );
+  });
+
+  it('cycles through diagram elements with arrows and jumps with Home/End', () => {
+    const ids = ['Start_1', 'Task_1', 'End_1'];
+    expect(isCanvasNavigationKey('ArrowRight')).toBe(true);
+    expect(isCanvasNavigationKey('Enter')).toBe(false);
+    expect(canvasNavigationTarget(ids, undefined, 'ArrowRight')).toBe('Start_1');
+    expect(canvasNavigationTarget(ids, 'Task_1', 'ArrowRight')).toBe('End_1');
+    expect(canvasNavigationTarget(ids, 'Start_1', 'ArrowLeft')).toBe('End_1');
+    expect(canvasNavigationTarget(ids, 'Task_1', 'Home')).toBe('Start_1');
+    expect(canvasNavigationTarget(ids, 'Task_1', 'End')).toBe('End_1');
+    expect(canvasNavigationTarget([], undefined, 'ArrowDown')).toBeUndefined();
   });
 });
 

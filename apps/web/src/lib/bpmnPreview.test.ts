@@ -103,11 +103,28 @@ describe('previewBpmn', () => {
     expect(preview.happyPath).toBe('Could not parse BPMN');
     expect(preview.happyPath).not.toMatch(/○\s*▭\s*○/);
   });
+
+  it('never treats commented markup as process nodes', () => {
+    const commented = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+      <bpmn:process id="P"><!-- <bpmn:task id="Injected" name="Injected" /> --></bpmn:process>
+    </bpmn:definitions>`;
+    expect(previewBpmn(commented)).toMatchObject({ kind: 'empty', happyPath: 'Empty process' });
+  });
 });
 
 describe('process names', () => {
   it('uses the first line of a description', () => {
     expect(processNameFromDescription('Invoice approval\nthen pay')).toBe('Invoice approval');
+  });
+
+  it('turns a natural-language request into a concise process name', () => {
+    expect(processNameFromDescription('сделай мне базовую регистрацию с подтверждением почты')).toBe(
+      'Базовую регистрацию',
+    );
+    expect(processNameFromDescription('Create a customer onboarding process with manager approval')).toBe(
+      'Customer onboarding process',
+    );
+    expect(processNameFromDescription('Receive order. Process payment. Dispatch shipment.')).toBe('Receive order');
   });
 
   it('reads the BPMN process name', () => {

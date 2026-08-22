@@ -11,9 +11,10 @@ import {
 type ListKindTabsProps = {
   kind: ListTab;
   onChange: (kind: ListTab) => void;
+  counts?: Partial<Record<ListTab, number>>;
 };
 
-export function ListKindTabs({ kind, onChange }: ListKindTabsProps) {
+export function ListKindTabs({ kind, onChange, counts }: ListKindTabsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,12 +51,13 @@ export function ListKindTabs({ kind, onChange }: ListKindTabsProps) {
             aria-selected={selected}
             aria-controls={LIST_PANEL_ID}
             tabIndex={selected ? 0 : -1}
-            className={`min-h-8 border-b px-2 text-[12px] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 ${
-              selected ? 'border-ink font-medium text-ink' : 'border-transparent text-muted hover:text-ink'
-            }`}
+            className="ui-tab"
             onClick={() => onChange(tab)}
           >
             {LIST_TAB_LABEL[tab]}
+            {typeof counts?.[tab] === 'number' ? (
+              <span className="process-tab-count">{counts[tab]}</span>
+            ) : null}
           </button>
         );
       })}

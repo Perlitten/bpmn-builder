@@ -23,6 +23,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       root: webRoot,
+      configFile: path.join(webRoot, 'vite.config.ts'),
       server: { middlewareMode: true },
       appType: 'spa',
     });
@@ -30,9 +31,10 @@ async function startServer() {
   } else {
     const express = (await import('express')).default;
     const distPath = path.join(webRoot, 'dist');
+    const indexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf8');
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.type('html').send(indexHtml);
     });
   }
 

@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/dist/**',
       '**/node_modules/**',
       '**/build/**',
+      '**/coverage/**',
       '**/graphify-out/**',
       'packages/db/migrations/**',
     ],

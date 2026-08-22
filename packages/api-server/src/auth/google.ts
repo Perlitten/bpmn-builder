@@ -4,6 +4,7 @@ import type { GoogleProfile } from './users.js';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_HTTP_TIMEOUT_MS = 10_000;
 
 export function googleAuthorizeUrl(input: {
   clientId: string;
@@ -50,6 +51,7 @@ export async function exchangeGoogleCode(
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body,
+    signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS),
   });
   const tokenJson = (await tokenRes.json().catch(() => ({}))) as TokenResponse;
   if (!tokenRes.ok || !tokenJson.access_token) {
@@ -57,6 +59,7 @@ export async function exchangeGoogleCode(
   }
   const userRes = await fetch(USERINFO_URL, {
     headers: { Authorization: `Bearer ${tokenJson.access_token}`, Accept: 'application/json' },
+    signal: AbortSignal.timeout(GOOGLE_HTTP_TIMEOUT_MS),
   });
   const profile = (await userRes.json().catch(() => ({}))) as UserInfoResponse;
   if (!userRes.ok || !profile.sub || !profile.email) {

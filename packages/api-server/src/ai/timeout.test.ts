@@ -26,7 +26,7 @@ describe('assistant timeout', () => {
   it('raceTimeout rejects after the budget and leaves a finished job alone', async () => {
     vi.useFakeTimers();
     const hung = raceTimeout(new Promise(() => {}), ASSISTANT_TIMEOUT_MS);
-    const expectHung = expect(hung).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 120s/ });
+    const expectHung = expect(hung).rejects.toMatchObject({ name: 'TimeoutError', message: /timed out after 50s/ });
     await vi.advanceTimersByTimeAsync(ASSISTANT_TIMEOUT_MS);
     await expectHung;
 
@@ -56,8 +56,8 @@ describe('assistant timeout', () => {
     expect(assistantTimeoutMs()).toBe(40);
     expect(useFastConnectTimeout()).toBe(false);
     delete process.env.ASSISTANT_TIMEOUT_MS;
-    expect(assistantTimeoutMs()).toBe(120_000);
-    expect(assistantTimeoutError().message).toMatch(/timed out after 120s/);
+    expect(assistantTimeoutMs()).toBe(50_000);
+    expect(assistantTimeoutError().message).toMatch(/timed out after 50s/);
     expect(assistantTimeoutError(40).message).toMatch(/timed out after 40ms/);
   });
 

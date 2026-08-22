@@ -2,7 +2,7 @@ import type { Finding } from './types.js';
 
 /** Infinitive verbs used for Camunda-style task names (object + action). */
 export const ACTION_VERBS = new Set(
-  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue notify open pay prepare print process publish quote receive record refund register reject release report request resolve review route run save schedule select send ship sign submit update upload validate verify wait'.split(
+  'accept add allocate analyze apply approve archive assign audit book calculate call cancel capture check close collect complete compute confirm create decide deliver dispatch email escalate evaluate execute export fetch file generate handle identify import inspect invoice issue notify open pay pick prepare print process publish quote receive record refund register reject release report request resolve return review route run save schedule select send ship sign submit update upload validate verify wait'.split(
     ' ',
   ),
 );
@@ -266,7 +266,10 @@ function looksYes(condition: string | undefined): boolean {
 }
 
 function stripQuestion(label: string | undefined): string {
-  return (label ?? '').replace(/\?+\s*$/g, '').trim();
+  const trimmed = (label ?? '').trim();
+  let end = trimmed.length;
+  while (end > 0 && trimmed.charCodeAt(end - 1) === 63) end -= 1;
+  return trimmed.slice(0, end).trimEnd();
 }
 
 function sentenceCase(value: string): string {

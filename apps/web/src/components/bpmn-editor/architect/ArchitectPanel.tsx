@@ -16,6 +16,7 @@ import {
 import type { AssistantApplyResult } from './applyAssistant';
 import { isArchitectComposeSubmitKey } from './architectComposeKey';
 import { ArchitectShell } from './ArchitectShell';
+import { Button, TextAreaField } from '../../ui';
 import './architect.css';
 
 type ArchitectPanelProps = {
@@ -45,8 +46,6 @@ export function ArchitectPanel({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [failedText, setFailedText] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [diff, setDiff] = useState<string[]>([]);
   const [history, setHistory] = useState<ChatTurn[]>([]);
   const [kind, setKind] = useState<AgentScopeKind>('process');
@@ -65,14 +64,10 @@ export function ArchitectPanel({
   }, [kind, context]);
 
   useEffect(() => {
-    if (busy || error || !message) {
-      if (busy || error) setSuccess(false);
-      return;
-    }
-    setSuccess(true);
+    if (!success) return;
     const timer = window.setTimeout(() => setSuccess(false), 1400);
     return () => window.clearTimeout(timer);
-  }, [busy, error, message]);
+  }, [success]);
 
   const submit = (text = draft) => {
     const value = text.trim();
@@ -87,7 +82,6 @@ export function ArchitectPanel({
     cancelledRef.current = false;
     setBusy(true);
     setError(null);
-    setFailedText(null);
     setSuccess(false);
     void waitOrAbort(onApply(value, history, buildAssistantScope(kind, context), timed.signal), timed.signal)
       .then((result) => {
@@ -97,15 +91,13 @@ export function ArchitectPanel({
             -12,
           ),
         );
-        setMessage(result.message);
         setDiff(result.diff);
+        setSuccess(result.applied);
         setDraft('');
-        setFailedText(null);
       })
       .catch((err: unknown) => {
         if (cancelledRef.current) return;
         setDraft(value);
-        setFailedText(value);
         setError(mapAssistantError(err, false).message);
       })
       .finally(() => {
@@ -127,7 +119,6 @@ export function ArchitectPanel({
 
   const dismissError = () => {
     setError(null);
-    setFailedText(null);
   };
 
   const editFailed = () => {
@@ -151,6 +142,7 @@ export function ArchitectPanel({
                   type="radio"
                   name="agent-scope"
                   className="sr-only"
+                  aria-label={option.label}
                   checked={kind === option.kind}
                   disabled={!enabled || busy || disabled}
                   onChange={() => setKind(option.kind)}
@@ -174,7 +166,7 @@ export function ArchitectPanel({
       ) : null}
       <label>
         <span className="sr-only">Describe a semantic edit</span>
-        <textarea
+        <TextAreaField
           ref={textareaRef}
           value={draft}
           disabled={busy || disabled}
@@ -190,37 +182,30 @@ export function ArchitectPanel({
         />
       </label>
       <div className="architect-actions">
+        <Button
+          variant="accent"
+          size="sm"
+          loading={busy}
+          loadingLabel="Applying…"
+          disabled={!error && (disabled || !draft.trim() || configured === false)}
+          onClick={() => submit()}
+        >
+          {error ? 'Retry' : 'Apply'}
+        </Button>
         {busy ? (
-          <>
-            <button type="button" className="architect-apply" disabled>
-              Applying…
-            </button>
-            <button type="button" className="architect-secondary" onClick={cancelBusy}>
-              Cancel
-            </button>
-          </>
+          <Button variant="ghost" size="sm" onClick={cancelBusy}>
+            Cancel
+          </Button>
         ) : error ? (
           <>
-            <button type="button" className="architect-apply" onClick={() => submit(failedText ?? draft)}>
-              Retry
-            </button>
-            <button type="button" className="architect-secondary" onClick={editFailed}>
+            <Button variant="ghost" size="sm" onClick={editFailed}>
               Edit
-            </button>
-            <button type="button" className="architect-secondary" onClick={dismissError}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={dismissError}>
               Cancel
-            </button>
+            </Button>
           </>
-        ) : (
-          <button
-            type="button"
-            className="architect-apply"
-            disabled={disabled || !draft.trim() || configured === false}
-            onClick={() => submit()}
-          >
-            Apply
-          </button>
-        )}
+        ) : null}
       </div>
       {configured === false ? (
         <p className="architect-hint">AI is not configured. Add a provider key and restart.</p>
@@ -242,7 +227,16 @@ export function ArchitectPanel({
           ))}
         </ul>
       ) : null}
-      {message ? <p className="architect-message">{message}</p> : null}
+      {history.length > 0 ? (
+        <div className="architect-conversation" role="log" aria-live="polite" aria-relevant="additions">
+          {history.map((turn, index) => (
+            <div key={`${index}:${turn.role}:${turn.text}`} className="architect-turn" data-role={turn.role}>
+              <span className="architect-turn-role">{turn.role === 'user' ? 'You' : 'Architect'}</span>
+              <p>{turn.text}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </ArchitectShell>
   );
 }

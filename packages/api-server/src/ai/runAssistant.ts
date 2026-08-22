@@ -80,6 +80,13 @@ function resultsOf(tools: ToolCall[], plan: ReturnType<typeof executePlan>): Ass
   }));
 }
 
+const ACTION_COMPLETION = /(?:^|[.!?]\s+)(?:(?:i|we)(?:'ve| have)?\s+)?(?:added|created|renamed|removed|deleted|updated|changed|split|connected|assigned|moved|inserted|replaced|applied)\b|\b(?:was|were|has been|have been)\s+(?:added|created|renamed|removed|deleted|updated|changed|split|connected|assigned|moved|inserted|replaced|applied)\b|\b(добавлен(?:а|о|ы)?|создан(?:а|о|ы)?|переименован(?:а|о|ы)?|удален(?:а|о|ы)?|обновлен(?:а|о|ы)?|изменен(?:а|о|ы)?)\b/i;
+
+function truthfulNoEditMessage(message: string, tools: ToolCall[]): string {
+  if (tools.length || !ACTION_COMPLETION.test(message)) return message;
+  return "I couldn't map that request to a process edit. Describe the step, branch, role, or change you want.";
+}
+
 export async function runAssistant(
   ai: AiModelClient | null,
   input: {
@@ -127,6 +134,7 @@ export async function runAssistant(
       typeof raw.message === 'string' ? raw.message : '',
       { collaboration: collaborationRequested(message) },
     );
+    message = truthfulNoEditMessage(message, tools);
   }
 
   const plan = executePlan(previousProcess, tools, { scope });

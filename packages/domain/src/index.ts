@@ -1,4 +1,10 @@
-export type { Process, ProcessSummary, WorkflowDocument } from './types/Process.js';
+export type {
+  Process,
+  ProcessSummary,
+  ProcessQualitySummary,
+  ProcessMiniPreview,
+  WorkflowDocument,
+} from './types/Process.js';
 export type {
   Process as SemanticProcess,
   Scope,

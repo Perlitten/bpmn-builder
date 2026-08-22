@@ -173,7 +173,7 @@ jobs:
       - name: Build production application
         run: pnpm build
 
-      - name: Enforce Lighthouse budgets
+      - name: Enforce Lighthouse and bundle-size budgets
         run: pnpm quality:performance
 
       - name: Upload Lighthouse reports

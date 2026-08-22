@@ -1,8 +1,8 @@
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../auth/AuthGate';
-import { ChromeMenu, ChromeMenuItem } from '../ui';
+import { Avatar, ChromeMenu, ChromeMenuItem } from '../ui';
 
-export function UserMenu() {
+export function UserMenu({ compact = false }: { compact?: boolean }) {
   const { user, signOut } = useAuth();
   const label = user.name?.trim() || user.email;
 
@@ -10,16 +10,11 @@ export function UserMenu() {
     <ChromeMenu
       align="right"
       ariaLabel="Account"
+      triggerVariant={compact ? 'ghost' : 'outline'}
       label={
         <>
-          {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="h-5 w-5 rounded-sm object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            <span className="flex h-5 w-5 items-center justify-center bg-surface font-mono text-[10px] text-ink">
-              {label.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-          <span className="hidden max-w-[9rem] truncate sm:inline">{label}</span>
+          <Avatar name={label} src={user.avatarUrl} />
+          {compact ? null : <span className="hidden max-w-[9rem] truncate sm:inline">{label}</span>}
         </>
       }
     >

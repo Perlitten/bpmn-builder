@@ -13,7 +13,8 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { useModal } from '../../ui/useModal';
+import { usePopover } from '../../ui/usePopover';
+import { TextField } from '../../ui/TextField';
 import type { DiagramElement } from '../diagramElement';
 import {
   catalogEnterTarget,
@@ -68,7 +69,7 @@ export function CatalogFlyout({
   onPick,
   onClose,
 }: CatalogFlyoutProps) {
-  const { ref } = useModal({ open: true, onClose });
+  const { ref } = usePopover({ open: true, onClose });
   const category = view === 'home' ? null : view;
   const searching = query.trim().length > 0;
   const { groups, emptyHint } = useMemo(() => {
@@ -110,7 +111,6 @@ export function CatalogFlyout({
       id="palette-catalog"
       className="palette-flyout"
       role="dialog"
-      aria-modal="true"
       aria-label="Add element"
       tabIndex={-1}
     >
@@ -130,14 +130,15 @@ export function CatalogFlyout({
         </div>
         <label className="palette-search">
           <Search size={17} strokeWidth={1.8} aria-hidden />
-          <input
+          <TextField
+            variant="plain"
             type="search"
             value={query}
             placeholder="Search elements"
             aria-label="Search BPMN elements"
             aria-controls="palette-catalog-list"
             aria-activedescendant={highlightedId ? `catalog-item-${highlightedId}` : undefined}
-            data-modal-initial-focus
+            data-popover-initial-focus
             onChange={(event) => onQueryChange(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

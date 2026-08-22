@@ -38,7 +38,7 @@ pnpm dev   # Opens http://localhost:5173
 | `pnpm test` | Runs the complete Vitest suite |\n| `pnpm test:coverage` | Runs Vitest with enforced line, function, statement, and branch thresholds |
 | `pnpm test:integration` | Vitest integration test run against disposable Postgres |
 | `pnpm test:e2e` | Playwright critical journeys on desktop and mobile Chromium, including accessibility, visual regression, and tenant isolation |
-| `pnpm quality:performance` | Runs Lighthouse against the production build and enforces performance, accessibility, and best-practice budgets |
+| `pnpm quality:performance` | Enforces production JavaScript and CSS bundle-size budgets without downloading a browser |
 | `pnpm build` | Production build across packages (`pnpm -r build`) |\n| `pnpm audit:deps` | Fails on high or critical production dependency vulnerabilities |
 
 ---
@@ -99,7 +99,8 @@ The Express API server runs a custom Google OAuth 2.0 flow using `GOOGLE_CLIENT_
 ### OAuth Client Isolation
 - **Production**: Dedicated Google Cloud OAuth 2.0 Web Client ID & Secret. Redirect URI: `https://<your-domain>/api/auth/google/callback`.
 - **Development / Staging / Preview**: Separate Google Cloud OAuth client.
-- **Dynamic Vercel Preview Redirect Strategy**: Google OAuth requires exact registered redirect URIs. For dynamic preview URLs (`https://*-perlitten.vercel.app`), register a stable staging domain (`https://staging.example.com/api/auth/google/callback`) as the callback URI and forward the original preview origin via the `state` parameter cookie.
+- **Dynamic Vercel Preview Redirect Strategy**: Google OAuth requires exact registered redirect URIs. Register a stable staging callback, set it as `AUTH_BASE_URL`, and explicitly allow only this project's preview hosts with `OAUTH_RELAY_ORIGINS` (for example `https://bpmn-builder-*.perlittens-projects.vercel.app`). Arbitrary `*.vercel.app` relays are rejected.
+- **Browser write protection**: every `POST`, `PUT`, `PATCH`, and `DELETE` under `/api` requires `X-BPMN-CSRF: 1`; browser `Origin` and Fetch Metadata must also be same-site.
 
 ---
 

@@ -35,7 +35,18 @@ export function registerProcessRoutes(app: Application): void {
 
   app.get('/api/templates', async (req: Request, res: Response) => {
     try {
-      res.json({ templates: await listTemplates(ownerId(req)) });
+      const parsed = parseProcessListQuery(req.query as Record<string, unknown>);
+      if (!parsed.ok) {
+        res.status(400).json({ error: parsed.error });
+        return;
+      }
+      const result = await listTemplates({ ...parsed.value, kind: 'template' }, ownerId(req));
+      res.json({
+        templates: result.processes,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+      });
     } catch (error) {
       sendProcessError(res, error, 'Failed to list templates');
     }

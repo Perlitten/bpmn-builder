@@ -1,6 +1,8 @@
 import { userFacingPlanError } from '@bpmn/agent-tools';
 
-export const ASSISTANT_TIMEOUT_MS = 120_000;
+// The server aborts at 50s; this small grace period lets its structured 504
+// reach the client before the browser-side deadline fires.
+export const ASSISTANT_TIMEOUT_MS = 55_000;
 
 export function assistantTimeoutLabel(ms = ASSISTANT_TIMEOUT_MS): string {
   return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;
@@ -61,6 +63,10 @@ export function mapAssistantError(err: unknown, userCancelled: boolean): Error {
   if (userCancelled) return new Error('Cancelled');
   if (isAbortError(err)) {
     return timeoutFailure(ASSISTANT_TIMEOUT_MS);
+  }
+  const rawMessage = err instanceof Error ? err.message : String(err);
+  if (/failed to fetch|networkerror|network request failed/i.test(rawMessage)) {
+    return new Error('Architect could not reach the server. Check your connection and retry; the process was left unchanged.');
   }
   const mapped = diagramImportError(err);
   if (mapped.message === 'Could not import the generated BPMN diagram') {

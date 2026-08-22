@@ -5,6 +5,8 @@ import type { ProcessSummary } from '@bpmn/domain';
 import { AuthProvider } from '../auth/AuthGate';
 import { ListKindTabs } from './ListKindTabs';
 import { ListPaginationFooter } from './ListPaginationFooter';
+import { MobileProcessCapture } from './MobileProcessCapture';
+import { ProcessDetailPanel } from './ProcessDetailPanel';
 import { ProcessListPage } from '../../pages/ProcessListPage';
 import { draftNameFromTemplate, TemplatesSection } from './TemplatesSection';
 import {
@@ -17,27 +19,18 @@ import {
   searchWithListTab,
 } from './listTabs';
 
-const STARTER = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
-  <bpmn:process id="Process_1" isExecutable="false">
-    <bpmn:startEvent id="StartEvent_1" name="Start" />
-    <bpmn:task id="Activity_1" name="Task" />
-    <bpmn:endEvent id="EndEvent_1" name="End" />
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Activity_1" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_1" targetRef="EndEvent_1" />
-  </bpmn:process>
-</bpmn:definitions>`;
-
 function summary(name: string): ProcessSummary {
   return {
     id: name,
     name,
     description: null,
     status: 'template',
-    bpmnXml: STARTER,
     version: 1,
     createdAt: '2026-08-13T00:00:00.000Z',
     updatedAt: '2026-08-13T00:00:00.000Z',
+    structure: 'Starter · 1 task · 1 end',
+    quality: { errors: 0, warnings: 0, style: 1 },
+    preview: { caption: 'Start → Task → End', nodes: [], edges: [] },
   };
 }
 
@@ -113,6 +106,7 @@ describe('list pagination footer', () => {
     expect(singlePageHtml).toMatch(/^<footer\b/);
     expect(singlePageHtml).toContain('shrink-0');
     expect(singlePageHtml).toContain('Showing 1–7 of 7');
+    expect(singlePageHtml).toContain('End of list · 7 processes');
     expect(singlePageHtml).not.toContain('Prev');
     expect(singlePageHtml).not.toContain('Next');
 
@@ -129,6 +123,39 @@ describe('list pagination footer', () => {
     );
     expect(multiPageHtml).toContain('Prev');
     expect(multiPageHtml).toContain('Next');
+    expect(multiPageHtml).toContain('Page 1 of 2 · 25 processes');
+  });
+});
+
+describe('mobile process actions', () => {
+  it('keeps creation failures visible inside the full-screen capture dialog', () => {
+    const html = renderToStaticMarkup(
+      createElement(MobileProcessCapture, {
+        initialValue: 'Receive and approve an invoice.',
+        templates: [],
+        busy: false,
+        error: 'Network unavailable',
+        onClose: () => undefined,
+        onCreate: () => undefined,
+        onUseTemplate: () => undefined,
+      }),
+    );
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('Network unavailable');
+  });
+
+  it('disables the mobile template action while creation is pending', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProcessDetailPanel, {
+        process: summary('Invoice template'),
+        kind: 'template',
+        busy: true,
+        onUseTemplate: () => undefined,
+      }),
+    );
+    const mobileActions = html.slice(html.indexOf('<div class="process-detail-mobile-actions">'));
+    expect(mobileActions).toContain('disabled=""');
+    expect(mobileActions).toContain('Use template');
   });
 });
 
@@ -160,7 +187,7 @@ function listPage(): ReactElement {
 }
 
 describe('ProcessListPage', () => {
-  it('uses two tabs and a pinned pagination footer instead of kind pills', () => {
+  it('uses a two-tab workbench with a pinned pagination footer', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
@@ -169,39 +196,41 @@ describe('ProcessListPage', () => {
     expect(html).toContain('>Templates<');
     expect(html).not.toContain('>All<');
     expect(html).not.toMatch(/<h2[^>]*>Templates</);
-    expect(html).toMatch(/overflow-y-auto[\s\S]*<footer\b/);
+    expect(html).toMatch(/process-index-list[\s\S]*<footer\b/);
     expect(html).toContain('Showing 0–0 of 0');
-    expect(html).toContain('flex h-full min-h-0 flex-col');
+    expect(html).toContain('process-list-page');
+    expect(html).toContain('process-workbench');
+    expect(html).toContain('process-detail-placeholder');
   });
 
-  it('keeps search, actions, and describe-to-create in one sticky header', () => {
+  it('keeps search and account actions in the header and docks describe-to-create in the index', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
     const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
-    expect(header).toContain('sticky');
-    expect(header).not.toMatch(/\bh-11\b/);
+    expect(header).toContain('process-list-header');
     expect(header).toContain('Search processes');
-    expect(header).toContain('Open Architect');
-    expect(header).toContain('Describe the process');
-    expect(header).toContain('Create process');
-    expect(header).toContain('maxLength="20000"');
-    expect(header).not.toContain('0/20,000');
+    expect(header).toContain('Architect mascot');
+    expect(header).not.toContain('Describe the process');
+    expect(header).not.toContain('<textarea');
+    expect(html).toContain('Describe → BPMN');
+    expect(html).toContain('Create process');
+    expect(html).toContain('<textarea');
+    expect(html).toContain('maxLength="20000"');
     expect(header).toContain('New blank');
-    expect(header).not.toContain('+ New');
+    expect(header).toContain('Import BPMN');
   });
 
-  it('uses one explicit sort control with visible directions instead of tab-like toggles', () => {
+  it('uses one compact sort control with explicit options instead of tab-like toggles', () => {
     const html = renderToStaticMarkup(
       createElement(listPage),
     );
-    expect(html).toContain('Sort by');
     expect(html).toContain('aria-label="Sort processes"');
-    expect(html).toContain('Recently updated');
-    expect(html).toContain('Least recently updated');
-    expect(html).toContain('Name A–Z');
-    expect(html).toContain('Name Z–A');
-    expect(html).not.toContain('aria-pressed');
+    expect(html).toContain('>Recent<');
+    expect(html).toContain('>Oldest<');
+    expect(html).toContain('>A–Z<');
+    expect(html).toContain('>Z–A<');
+    expect(html).not.toContain('Sort: newest');
   });
 
   it('does not show the duplicate dialog until the user confirms from the row menu', () => {

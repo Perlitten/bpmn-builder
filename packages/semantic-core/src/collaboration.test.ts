@@ -68,6 +68,18 @@ describe('pool / lane mutations', () => {
     expect(p.lanes.every((lane) => lane.participantId === first.participantId)).toBe(true);
   });
 
+  it('treats a lane passed as participantId as its owning pool', () => {
+    let p = createProcess();
+    p = addLane(p, { name: 'Requester' }).process;
+    const first = p.lanes[0]!;
+    p = addLane(p, { participantId: first.id, name: 'Approver' }).process;
+
+    expect(p.participants).toHaveLength(1);
+    expect(p.lanes.map((lane) => lane.name)).toEqual(['Requester', 'Approver']);
+    expect(p.lanes.every((lane) => lane.participantId === first.participantId)).toBe(true);
+    expect(p.lanes.every((lane) => !lane.parentLaneId)).toBe(true);
+  });
+
   it('moveAfter and removeElement keep a unique flowNodeRef membership', () => {
     let p = createProcess();
     p = addTask(p, { name: 'A' }).process;

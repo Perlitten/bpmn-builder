@@ -1,0 +1,109 @@
+/* Generated from tokens.json v1.4.0. Run pnpm tokens:generate; do not edit. */
+
+@theme {
+  /* Product palette */
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-border-interactive: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-disabled: #aab3bf;
+  --color-surface: #f8fafc;
+  --color-canvas: #ffffff;
+  --color-accent: #0f766e;
+  --color-danger: #be123c;
+  --color-danger-fill: #fb7185;
+  --color-ink-disabled: #7b7f8a;
+
+  /* Marketing aliases */
+  --color-ink-soft: #334155;
+  --color-line-strong: #cbd5e1;
+  --color-danger-strong: #be123c;
+  --color-google-blue: #4285f4;
+  --color-google-green: #34a853;
+  --color-google-yellow: #fbbc05;
+  --color-google-red: #ea4335;
+  --font-display: 'Pixelify Sans', ui-monospace, monospace;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --shadow-pixel-sm: 4px 4px 0 var(--color-ink);
+  --shadow-pixel-md: 6px 6px 0 var(--color-ink);
+  --shadow-pixel-cta: 7px 7px 0 var(--color-ink);
+  --shadow-pixel-lg: 10px 10px 0 var(--color-ink);
+}
+
+:root {
+  /* Spacing */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 18px;
+  --space-10: 24px;
+
+  /* Geometry */
+  --radius-0: 0;
+  --radius-2: 2px;
+
+  /* Typography */
+  --fs-10: 10px;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --lh-tight: 1.15;
+  --lh-base: 1.3;
+  --lh-relaxed: 1.6;
+  --ls-caps: 0.06em;
+
+  /* Motion */
+  --dur-instant: 80ms;
+  --dur-ui: 160ms;
+  --dur-overlay: 220ms;
+  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Landing geometry */
+  --landing-stroke-heavy: 4px;
+  --landing-stroke-medium: 3px;
+  --landing-step-duration: 90ms;
+  --landing-blink-duration: 900ms;
+  --landing-token-morph-duration: 3400ms;
+
+  /* Effects */
+  --mask-opaque: #000000;
+  --mask-soft: rgb(0 0 0 / 0.5);
+  --shadow-overlay: 0 8px 22px rgb(15 23 42 / 0.16);
+
+  /* Layers */
+  --z-import-hold: 2;
+  --z-inspector: 6;
+  --z-rail: 8;
+  --z-zoom: 10;
+  --z-scrim: 11;
+  --z-catalog: 12;
+  --z-menu: 300;
+  --z-rail-open: 14;
+  --z-landing-overlay: 20;
+  --z-chrome: 20;
+  --z-architect: 200;
+  --z-dialog: 400;
+  --z-skip-link: 500;
+
+  /* Product geometry */
+  --editor-rail-width: 64px;
+  --editor-catalog-width: 260px;
+  --editor-inspector-width: 252px;
+  --editor-compact-rail: 56px;
+  --control-hit: 44px;
+  --control-visual: 26px;
+  --control-visual-inset: 9px;
+  --process-list-index-width: 396px;
+  --process-list-header-height: 52px;
+  --process-list-detail-header-height: 56px;
+  --process-list-row-height: 56px;
+  --process-list-mobile-row-height: 88px;
+}

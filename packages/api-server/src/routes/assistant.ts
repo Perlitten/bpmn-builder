@@ -10,8 +10,17 @@ import {
   whenAborted,
 } from '../ai/timeout.js';
 import type { AiModelClient, ChatTurn } from '../ai/types.js';
+import { createAssistantRequestGate } from '../ai/requestGate.js';
 
 type ClientFactory = () => AiModelClient;
+
+function writeAssistantWarning(event: string, error: unknown): void {
+  const detail =
+    error instanceof Error
+      ? { name: error.name, message: error.message }
+      : { message: String(error) };
+  process.stderr.write(`${JSON.stringify({ level: 'warn', event, error: detail })}\n`);
+}
 
 const parseHistory = (value: unknown): ChatTurn[] => {
   if (!Array.isArray(value)) return [];
@@ -28,12 +37,18 @@ function sendJson(res: Response, status: number, body: unknown): void {
   try {
     res.status(status).json(body);
   } catch (error) {
-    console.warn('[assistant] failed to write response:', error instanceof Error ? error.message : error);
+    writeAssistantWarning('assistant_response_write_failed', error);
   }
 }
 
 function createAssistantHandler(getClient: ClientFactory = getAiClient) {
+  const requestGate = createAssistantRequestGate();
   return async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      sendJson(res, 401, { error: 'Sign in required' });
+      return;
+    }
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
     const tools = Array.isArray(req.body?.tools) ? req.body.tools : undefined;
     const hasTools = Boolean(tools?.length);
@@ -50,6 +65,13 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
         provider: info.provider,
         model: info.model,
       });
+      return;
+    }
+
+    const lease = requestGate.acquire(userId);
+    if (!lease.ok) {
+      res.setHeader('Retry-After', String(lease.retryAfterSeconds));
+      sendJson(res, 429, { error: 'Too many Architect requests. Try again shortly.' });
       return;
     }
 
@@ -82,7 +104,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     });
     void work.catch((error) => {
       if (res.headersSent) {
-        console.warn('[assistant] upstream after abort:', error instanceof Error ? error.message : error);
+        writeAssistantWarning('assistant_upstream_after_abort', error);
       }
     });
     const stop = whenAborted(ac.signal);
@@ -94,7 +116,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     } catch (error: unknown) {
       if (res.headersSent) return;
       if (isTimeoutError(error)) {
-        console.warn('[assistant] aborted:', error instanceof Error ? `${error.name}: ${error.message}` : error);
+        writeAssistantWarning('assistant_aborted', error);
         sendTimeout();
         return;
       }
@@ -111,6 +133,7 @@ function createAssistantHandler(getClient: ClientFactory = getAiClient) {
     } finally {
       clearTimeout(timer);
       res.off('close', onClose);
+      lease.release();
     }
   };
 }

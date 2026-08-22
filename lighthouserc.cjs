@@ -1,8 +1,7 @@
 module.exports = {
   ci: {
     collect: {
-      startServerCommand:
-        'NODE_ENV=production DB_PROVIDER=sqlite DATABASE_URL=file:./data/lighthouse.db SESSION_SECRET=lighthouse-ci-session-secret-at-least-16-chars PORT=4173 pnpm --filter @bpmn/api-server start',
+      startServerCommand: 'node scripts/start-lighthouse-server.mjs',
       startServerReadyPattern: 'BPMN builder running',
       url: ['http://localhost:4173/'],
       numberOfRuns: 2,
@@ -13,12 +12,13 @@ module.exports = {
     },
     assert: {
       assertions: {
-        'categories:performance': ['error', { minScore: 0.75 }],
-        'categories:accessibility': ['error', { minScore: 0.9 }],
-        'categories:best-practices': ['error', { minScore: 0.9 }],
+        'categories:performance': ['error', { minScore: 0.85 }],
+        'categories:accessibility': ['error', { minScore: 0.95 }],
+        'categories:best-practices': ['error', { minScore: 0.95 }],
+        'categories:seo': ['error', { minScore: 0.9 }],
         'first-contentful-paint': ['error', { maxNumericValue: 3000 }],
-        'largest-contentful-paint': ['error', { maxNumericValue: 4000 }],
-        'total-blocking-time': ['error', { maxNumericValue: 500 }],
+        'largest-contentful-paint': ['error', { maxNumericValue: 3500 }],
+        'total-blocking-time': ['error', { maxNumericValue: 350 }],
         'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }],
       },
     },

@@ -1,12 +1,13 @@
 import {
   addLane,
   addTask,
+  assignLane,
   createFromComponent,
   createProcess,
   renameElement,
 } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
-import { exportProcessXml, xmlToProcess } from './semantic-xml.js';
+import { exportProcessXml, readDiFromXml, xmlToProcess } from './semantic-xml.js';
 
 async function reload(process: Parameters<typeof exportProcessXml>[0]) {
   return xmlToProcess(exportProcessXml(process));
@@ -91,5 +92,24 @@ describe('lane / pool XML round-trip', () => {
     const loaded = await xmlToProcess(xml);
     expect(loaded.lanes.map((lane) => lane.name)).toEqual(['Front Office', 'Claims Adjuster']);
     expect(loaded.lanes.every((lane) => !lane.parentLaneId)).toBe(true);
+  });
+
+  it('keeps sequence flows when connected tasks are assigned across lanes', async () => {
+    let process = createProcess({ name: 'Approval' });
+    process = addTask(process, { name: 'Submit request' }).process;
+    process = addTask(process, { name: 'Review request' }).process;
+    process = addLane(process, { name: 'Requester' }).process;
+    process = addLane(process, { name: 'Approver' }).process;
+    const review = process.nodes.find((node) => node.name === 'Review request')!;
+    process = assignLane(process, review.id, process.lanes[1]!.id).process;
+
+    const expectedFlows = process.flows.map((flow) => [flow.source, flow.target]);
+    const xml = exportProcessXml(process);
+    const loaded = await xmlToProcess(xml);
+    const di = await readDiFromXml(xml);
+
+    expect(loaded.flows.map((flow) => [flow.source, flow.target])).toEqual(expectedFlows);
+    expect(Object.keys(di.edges).sort()).toEqual(process.flows.map((flow) => flow.id).sort());
+    expect(loaded.lanes.find((lane) => lane.name === 'Approver')?.nodeIds).toContain(review.id);
   });
 });

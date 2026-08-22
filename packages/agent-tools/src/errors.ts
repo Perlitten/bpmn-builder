@@ -14,6 +14,18 @@ export function isToolPlanError(error: unknown): error is ToolPlanError {
 /** One BPMN sentence for Architect — never raw `addTask: unknown branch: Region_1`. */
 export function userFacingPlanError(raw: string): string {
   const text = raw.trim();
+  const stepPrefix = 'Step ';
+  const open = text.startsWith(stepPrefix) ? text.indexOf(' (', stepPrefix.length) : -1;
+  const marker = ') failed:';
+  const close = open > stepPrefix.length ? text.indexOf(marker, open + 2) : -1;
+  if (close > open + 2) {
+    const stepNumber = text.slice(stepPrefix.length, open);
+    const validNumber = stepNumber.length > 0 && [...stepNumber].every((char) => char >= '0' && char <= '9');
+    const detail = text.slice(close + marker.length).trimStart();
+    if (validNumber && detail) {
+      return `${text.slice(0, close + marker.length - 1)}: ${userFacingPlanError(detail)}`;
+    }
+  }
   if (/unknown branch/i.test(text)) {
     return 'Cannot add a task on a region. Use a gateway branch (Yes/No), or omit the branch for the whole process.';
   }

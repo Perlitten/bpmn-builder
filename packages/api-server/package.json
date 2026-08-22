@@ -13,10 +13,12 @@
     "@bpmn/bpmn-adapter": "workspace:*",
     "@bpmn/db": "workspace:*",
     "@bpmn/domain": "workspace:*",
+    "@bpmn/rules": "workspace:*",
     "@bpmn/semantic-core": "workspace:*",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.2",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.6.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

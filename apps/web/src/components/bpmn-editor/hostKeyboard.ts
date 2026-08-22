@@ -9,6 +9,8 @@ export type EditorKeyboard = {
 
 export type EditorTool = 'select' | 'pan';
 
+export type CanvasNavigationKey = 'ArrowLeft' | 'ArrowUp' | 'ArrowRight' | 'ArrowDown' | 'Home' | 'End';
+
 export type SpacePanHold = {
   restore: EditorTool | null;
 };
@@ -119,4 +121,24 @@ export function isRedoKey(event: KeyboardEvent): boolean {
   if (!isMod(event)) return false;
   if (event.key.toLowerCase() === 'y' && !event.shiftKey) return true;
   return event.shiftKey && event.key.toLowerCase() === 'z';
+}
+
+export function isCanvasNavigationKey(key: string): key is CanvasNavigationKey {
+  return ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Home', 'End'].includes(key);
+}
+
+/** Resolve the next keyboard-selected diagram id without coupling navigation to bpmn-js. */
+export function canvasNavigationTarget(
+  ids: readonly string[],
+  currentId: string | undefined,
+  key: CanvasNavigationKey,
+): string | undefined {
+  if (!ids.length) return undefined;
+  if (key === 'Home') return ids[0];
+  if (key === 'End') return ids.at(-1);
+  const current = currentId ? ids.indexOf(currentId) : -1;
+  if (key === 'ArrowLeft' || key === 'ArrowUp') {
+    return ids[current <= 0 ? ids.length - 1 : current - 1];
+  }
+  return ids[current < 0 || current === ids.length - 1 ? 0 : current + 1];
 }

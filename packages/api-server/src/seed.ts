@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { bpmnToWorkflow } from '../../bpmn-adapter/src/index.js';
 import { getProcessesTable, getQueryDb } from '../../db/src/index.js';
 import { DEFAULT_BPMN_XML } from './defaultBpmn.js';
@@ -13,7 +13,10 @@ export async function seedIfEmpty(): Promise<void> {}
 export async function repairEmptyDiagrams(): Promise<void> {
   const db = getQueryDb();
   const table = getProcessesTable();
-  const rows = (await db.select({ id: table.id, bpmnXml: table.bpmnXml }).from(table)) as {
+  const rows = (await db
+    .select({ id: table.id, bpmnXml: table.bpmnXml })
+    .from(table)
+    .where(sql`trim(${table.bpmnXml}) = ''`)) as {
     id: string;
     bpmnXml: string;
   }[];

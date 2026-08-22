@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { AuthGate } from './components/auth/AuthGate';
 import { AppShell } from './components/shell/AppShell';
-import { ProcessEditorPage } from './pages/ProcessEditorPage';
-import { ProcessListPage } from './pages/ProcessListPage';
 import type { AppRoute } from './routes/types';
 import { readRoute, writeRoute } from './routes/appRouting';
+
+const ProcessListPage = lazy(() =>
+  import('./pages/ProcessListPage').then((module) => ({ default: module.ProcessListPage })),
+);
+const ProcessEditorPage = lazy(() =>
+  import('./pages/ProcessEditorPage').then((module) => ({ default: module.ProcessEditorPage })),
+);
 
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => readRoute());
@@ -31,14 +36,13 @@ export default function App() {
   return (
     <AuthGate>
       <AppShell route={route} onNavigate={navigate}>
-        {route.name === 'list' ? (
-          <ProcessListPage onOpenProcess={(id) => navigate({ name: 'editor', processId: id })} />
-        ) : (
-          <ProcessEditorPage
-            processId={route.processId}
-            onBack={returnToList}
-          />
-        )}
+        <Suspense fallback={<p className="p-6 text-sm text-muted" role="status">Loading workspace…</p>}>
+          {route.name === 'list' ? (
+            <ProcessListPage onOpenProcess={(id) => navigate({ name: 'editor', processId: id })} />
+          ) : (
+            <ProcessEditorPage processId={route.processId} onBack={returnToList} />
+          )}
+        </Suspense>
       </AppShell>
     </AuthGate>
   );

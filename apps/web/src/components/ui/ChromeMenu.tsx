@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from './Button';
-import { useModal } from './useModal';
 
 const CloseMenu = createContext<() => void>(() => {});
 
@@ -9,6 +8,7 @@ type ChromeMenuProps = {
   ariaLabel: string;
   disabled?: boolean;
   align?: 'left' | 'right';
+  triggerVariant?: 'ghost' | 'outline';
   children: ReactNode;
 };
 
@@ -21,22 +21,47 @@ export function nextMenuIndex(count: number, current: number, key: string): numb
   return null;
 }
 
-export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', children }: ChromeMenuProps) {
+export function ChromeMenu({
+  label,
+  ariaLabel,
+  disabled,
+  align = 'right',
+  triggerVariant = 'outline',
+  children,
+}: ChromeMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-  const { ref: menuRef } = useModal({ open, onClose: () => setOpen(false) });
 
   useEffect(() => {
     if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')?.focus();
+    });
     const onPointer = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+      rootRef.current?.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')?.focus();
+    };
     document.addEventListener('pointerdown', onPointer);
-    return () => document.removeEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onEscape, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onEscape, true);
+    };
   }, [open]);
 
   const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Tab') {
+      setOpen(false);
+      return;
+    }
     const menu = menuRef.current;
     if (!menu) return;
     const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])'));
@@ -50,7 +75,7 @@ export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', childr
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button
-        variant="outline"
+        variant={triggerVariant}
         size="sm"
         disabled={disabled}
         aria-expanded={open}
@@ -75,7 +100,7 @@ export function ChromeMenu({ label, ariaLabel, disabled, align = 'right', childr
             aria-label={ariaLabel}
             tabIndex={-1}
             onKeyDown={onMenuKeyDown}
-            className={`absolute top-full z-30 mt-1 min-w-[11rem] border border-border bg-canvas py-1.5 outline-none ${
+            className={`ui-menu ${
               align === 'right' ? 'right-0' : 'left-0'
             }`}
           >
@@ -101,14 +126,14 @@ export function ChromeMenuItem({ onSelect, disabled, icon, children }: ChromeMen
       type="button"
       role="menuitem"
       disabled={disabled}
-      className="flex w-full items-start gap-2 px-3 py-1.5 text-left text-sm text-ink outline-none hover:bg-surface focus-visible:bg-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-[-1px] focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
+      className="ui-menu-item"
       onClick={() => {
         close();
         onSelect();
       }}
     >
       {icon ? (
-        <span className="flex h-5 w-3.5 shrink-0 items-center justify-center" aria-hidden>
+        <span className="flex h-5 w-4 shrink-0 items-center justify-center" aria-hidden>
           {icon}
         </span>
       ) : null}

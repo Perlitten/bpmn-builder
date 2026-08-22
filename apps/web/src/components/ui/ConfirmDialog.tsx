@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Button } from './Button';
+import { DialogActions, DialogBackdrop, DialogSurface } from './Dialog';
 import { useModal } from './useModal';
 
 type ConfirmDialogProps = {
@@ -30,31 +31,34 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-ink/40 p-4" role="presentation">
-      <div
+    <DialogBackdrop>
+      <DialogSurface
         ref={ref}
         role={role}
-        aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        tabIndex={-1}
-        className="w-full max-w-sm rounded border border-border bg-canvas p-5 outline-none"
       >
-        <h2 id={titleId} className="text-base font-semibold text-ink">
+        <h2 id={titleId} className="ui-dialog-title">
           {title}
         </h2>
-        <p id={bodyId} className="mt-2 text-sm text-muted">
+        <p id={bodyId} className="ui-dialog-body">
           {body}
         </p>
-        <div className="mt-5 flex justify-end gap-2">
+        <DialogActions>
           <Button variant="ghost" size="sm" data-modal-initial-focus disabled={busy} onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="accent" size="sm" disabled={busy} onClick={onConfirm}>
+          <Button
+            variant={role === 'alertdialog' && title.toLowerCase().startsWith('delete') ? 'danger' : 'accent'}
+            size="sm"
+            loading={busy}
+            loadingLabel={`${confirmLabel}…`}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogActions>
+      </DialogSurface>
+    </DialogBackdrop>
   );
 }

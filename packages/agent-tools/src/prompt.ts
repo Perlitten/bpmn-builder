@@ -21,8 +21,19 @@ const COLLAB_TOOLS = new Set<ToolName>(['addPool', 'addLane', 'addMessageInterac
 const COLLAB_REQUEST =
   /\b(pools?|lanes?|swimlanes?|participants?|collaboration|message\s+flows?|black\s*box)\b|пул(?:а|е|ом|ы|ов)?\b|дорожк|свимлейн|участник|коллаборац|партн[её]р|сообщен(?:ие|ия|ий)\s+межд/i;
 
-const CENSUS_LEAK =
-  /not in modeling profile yet|каталог собран|catalog (?:is )?(?:assembled|collected)|~\s*\d+\s*компонент|\d+\s*(?:of|\/|из)\s*~?\s*\d+|строю из того, что есть|building from what (?:there )?is/i;
+const CENSUS_PHRASES = [
+  'not in modeling profile yet',
+  'каталог собран',
+  'catalog is assembled',
+  'catalog assembled',
+  'catalog is collected',
+  'catalog collected',
+  'строю из того, что есть',
+  'building from what there is',
+  'building from what is',
+];
+const CENSUS_COUNT =
+  /(?:~\s{0,8})?\d{1,6}\s{0,8}компонент|\d{1,6}\s{0,8}(?:of|\/|из)\s{0,8}~?\s{0,8}\d{1,6}/i;
 
 const UNSOLICITED_POOL = /начинаю с пул|start(?:ing)? with (?:a )?pool/i;
 
@@ -51,11 +62,16 @@ export function constrainToolPlan(message: string, tools: ToolCall[]): ToolCall[
   return tools.filter((tool) => !isCollabTool(tool));
 }
 
+function leaksCatalogCensus(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return CENSUS_PHRASES.some((phrase) => normalized.includes(phrase)) || CENSUS_COUNT.test(text);
+}
+
 /** Strip catalog-census chatter from the user-visible Architect reply. */
 export function userFacingAssistantMessage(raw: string, opts?: { collaboration?: boolean }): string {
   const text = raw.trim();
   if (!text) return 'No semantic edits. Say what to add next.';
-  if (CENSUS_LEAK.test(text)) return 'Updated the process from your request.';
+  if (leaksCatalogCensus(text)) return 'Updated the process from your request.';
   if (!opts?.collaboration && UNSOLICITED_POOL.test(text)) return 'Updated the process from your request.';
   return text;
 }
@@ -136,6 +152,8 @@ Rules:
 - branchId is a gateway arm (Branch_*), never a region id (Region_*). Whole-process scope: omit branchId. If you pass after: Region_1 it means after the join.
 - Node names resolve when unique. XOR branches are named Yes/No by default.
 - Decisions: splitExclusive, splitParallel, splitInclusive, splitEventBased, or splitComplex — never a lone gateway node.
+- Branch names label sequence flows; they do not create tasks. To put work on a branch, call addTask once per unique branch name using branchId after the split. This is required for parallel work; never leave requested parallel tasks as empty split-to-join arms.
+- Lanes subdivide one participant. The first addLane creates the host participant automatically. Never use addPool for lane names, and never pass a Lane_* id as participantId; use a Participant_* id, a unique pool name, or omit participantId for the host pool.
 - Timeout while a task is active: attachBoundaryTimer. Failure on a task: attachBoundaryError. Not an event-based gateway.
 - A new process already has Start and End. Insert tasks on that sequence. start.message / start.timer change the existing start.
 - Do not call inspect* unless the process view is missing an id you need. inspect* is the process graph, not the component catalog.

@@ -209,6 +209,13 @@ export function addLane(
       if (!parent) throw new Error(`unknown lane: ${parentLaneId}`);
       participantId = parent.participantId;
     }
+    // Agent plans sometimes carry the previous lane as `participantId` when
+    // adding sibling swimlanes. Treat that as the lane's owning participant;
+    // nested lanes still require the explicit `parentLaneId` field.
+    const participantLane = participantId
+      ? draft.lanes.find((lane) => lane.id === participantId)
+      : undefined;
+    if (participantLane?.participantId) participantId = participantLane.participantId;
     if (!participantId) participantId = ensureHostPool(draft).id;
     const participant = draft.participants.find((p) => p.id === participantId);
     if (!participant) throw new Error(`unknown participant: ${participantId}`);

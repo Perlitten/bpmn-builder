@@ -1,5 +1,8 @@
 # Dead-code audit (conservative)
 
+> [!WARNING]
+> Historical deletion record. Its test totals and implementation-status notes are not current product health data. Use `pnpm check` and the active CI run for current evidence; see [GAPS.md](GAPS.md) for maintained gaps.
+
 Scope: first-party `apps/` and `packages/` (not `node_modules` / `dist`).  
 Rule: delete only with **zero imports**, and never sibling in-flight work (`packages/agent-tools`, `packages/simulate`, layout-engine wire, `apps/web` simulate views).  
 `@bpmn/semantic-core` **public** exports in `packages/semantic-core/src/index.ts` were not removed.
