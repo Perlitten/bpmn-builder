@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { allFindings, suggestName, type LintResult } from '@bpmn/rules';
+import { suggestName, type LintResult } from '@bpmn/rules';
 import { bpmnComponentRegistry, findFlowNode, type BpmnComponentDefinition, type SemanticProcess } from '@bpmn/semantic-core';
 import { ScoreChips } from '../../lint/ScoreChips';
+import { presentedFindings } from '../../lint/lintPresentation';
 import { SelectField } from '../../ui/SelectField';
 import { TextField } from '../../ui/TextField';
 import { isActivity } from '../palette/contextFilter';
@@ -50,6 +51,7 @@ type ElementInspectorProps = {
   nodeLanes?: PoolLaneRow[];
   currentLaneId?: string;
   onAssignLane?: (laneId: string) => void;
+  onValidate?: () => void;
 };
 
 function LaneNameField({
@@ -112,6 +114,7 @@ export function ElementInspector({
   nodeLanes = [],
   currentLaneId,
   onAssignLane,
+  onValidate,
 }: ElementInspectorProps) {
   const registry = bpmnComponentRegistry;
   const [query, setQuery] = useState('');
@@ -428,13 +431,21 @@ export function ElementInspector({
         </button>
         <p className="element-inspector-hint">Backspace</p>
       </div>
-      <InspectorLintFooter lint={lint} elementId={element.id} />
+      <InspectorLintFooter lint={lint} elementId={element.id} onValidate={onValidate} />
     </>
   );
 }
 
-export function InspectorLintFooter({ lint, elementId }: { lint: LintResult; elementId?: string }) {
-  const findings = allFindings(lint);
+export function InspectorLintFooter({
+  lint,
+  elementId,
+  onValidate,
+}: {
+  lint: LintResult;
+  elementId?: string;
+  onValidate?: () => void;
+}) {
+  const findings = presentedFindings(lint);
   const focused = elementId ? findings.filter((f) => f.elementId === elementId) : [];
   const rest = elementId ? findings.filter((f) => f.elementId !== elementId) : findings;
   const shown = [...focused, ...rest].slice(0, 4);
@@ -444,7 +455,12 @@ export function InspectorLintFooter({ lint, elementId }: { lint: LintResult; ele
       <p>
         <ScoreChips lint={lint} />
       </p>
-      {shown.length === 0 ? (
+      {onValidate && findings.length ? (
+        <button type="button" className="element-inspector-validate" onClick={onValidate}>
+          Review {findings.length} {findings.length === 1 ? 'finding' : 'findings'}
+        </button>
+      ) : null}
+      {onValidate && findings.length ? null : shown.length === 0 ? (
         <p className="element-inspector-hint">
           {incompleteChecks ? 'Some checks were not run' : 'No rule findings'}
         </p>

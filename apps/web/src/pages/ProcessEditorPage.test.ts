@@ -116,7 +116,7 @@ describe('ProcessEditorPage persistence orchestration', () => {
     window.dispatchEvent(dirtyLeave);
     expect(dirtyLeave.defaultPrevented).toBe(true);
 
-    await act(async () => vi.advanceTimersByTimeAsync(300));
+    await act(async () => vi.advanceTimersByTimeAsync(800));
     expect(mocks.saveProcess).toHaveBeenCalledWith(initial.id, {
       bpmnXml: localXml,
       version: initial.version,

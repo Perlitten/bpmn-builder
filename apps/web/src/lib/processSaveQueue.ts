@@ -102,7 +102,7 @@ export function guardDirtyProcessLeave(
 export function createProcessSaveQueue(options: QueueOptions) {
   const storage = options.storage ?? window.localStorage;
   const isOnline = options.isOnline ?? (() => navigator.onLine);
-  const debounceMs = options.debounceMs ?? 300;
+  const debounceMs = options.debounceMs ?? 800;
   const retryMs = options.retryMs ?? 1_000;
   const maxRetryMs = options.maxRetryMs ?? 30_000;
   let version = options.initialVersion;

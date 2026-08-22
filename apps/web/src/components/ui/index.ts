@@ -1,9 +1,13 @@
 export { Avatar } from './Avatar';
+export { Badge } from './Badge';
 export { Button } from './Button';
+export { Chip } from './Chip';
 export { ChromeMenu, ChromeMenuItem } from './ChromeMenu';
 export { ConfirmDialog } from './ConfirmDialog';
 export { IconButton } from './IconButton';
 export { ModeBar } from './ModeBar';
 export { SaveStatus } from './SaveStatus';
+export { Toast } from './Toast';
+export { Tooltip } from './Tooltip';
 export { TextAreaField } from './TextAreaField';
 export { TextField } from './TextField';

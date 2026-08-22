@@ -83,7 +83,9 @@ describe('bindKeyboardToHost', () => {
     expect(src).toMatch(/silenceCanvasTabStop/);
     const canvas = readFileSync(new URL('./BpmnCanvas.tsx', import.meta.url), 'utf8');
     expect(canvas).toMatch(/tabIndex=\{0\}/);
-    expect(canvas).toMatch(/role="application"/);
+    expect(canvas).toMatch(/role="listbox"/);
+    expect(canvas).toMatch(/aria-multiselectable="true"/);
+    expect(canvas).toMatch(/role="option"/);
     expect(canvas).toMatch(/aria-keyshortcuts/);
     expect(src).toMatch(/applyViewerLabel/);
     expect(src).toMatch(/labelWriteRef/);

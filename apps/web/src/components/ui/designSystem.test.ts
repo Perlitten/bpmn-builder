@@ -42,6 +42,7 @@ describe('product design-system contract', () => {
       '--fs-14',
       '--dur-instant',
       '--dur-overlay',
+      '--dur-tooltip',
       '--landing-token-morph-duration',
       '--z-import-hold',
       '--z-inspector',
@@ -50,6 +51,11 @@ describe('product design-system contract', () => {
       '--z-landing-overlay',
       '--control-hit',
       '--control-visual',
+      '--editor-inspector-min',
+      '--editor-inspector-max',
+      '--editor-inspector-stub',
+      '--editor-minimap-width',
+      '--editor-minimap-height',
     ]) {
       expect(css, `missing ${token}`).toContain(token);
     }

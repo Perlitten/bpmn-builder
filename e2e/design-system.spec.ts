@@ -37,7 +37,24 @@ test.describe('product design system', () => {
       expect(inspectorBox!.width).toBe(252);
       await expect(page.locator('.editor-onboarding')).toContainText('Double-click a shape');
       await expect(page.locator('.editor-onboarding')).toContainText('hold Space');
+
+      const resizeHandle = page.getByRole('separator', { name: 'Resize inspector' });
+      await resizeHandle.focus();
+      await page.keyboard.press('ArrowLeft');
+      await expect(resizeHandle).toHaveAttribute('aria-valuenow', '262');
+
+      await page.getByRole('button', { name: 'Collapse inspector' }).click();
+      await expect(inspector).toHaveClass(/is-collapsed/);
+      expect((await inspector.boundingBox())!.width).toBe(28);
+      await page.getByRole('button', { name: 'Expand inspector' }).click();
+      await expect(inspector).not.toHaveClass(/is-collapsed/);
     }
+
+    const diagram = page.getByRole('listbox', { name: /Process diagram/ });
+    await diagram.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(diagram).toHaveAttribute('aria-activedescendant', /diagram-option-/);
+    await expect(page.getByRole('option', { selected: true })).toHaveCount(1);
 
     const back = page.getByRole('button', { name: 'Back to process list' });
     await expect(back).toBeVisible();

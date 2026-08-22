@@ -1,4 +1,4 @@
-/* Generated from tokens.json v1.4.0. Run pnpm tokens:generate; do not edit. */
+/* Generated from tokens.json v1.5.0. Run pnpm tokens:generate; do not edit. */
 
 @theme {
   /* Product palette */
@@ -64,6 +64,7 @@
   --dur-instant: 80ms;
   --dur-ui: 160ms;
   --dur-overlay: 220ms;
+  --dur-tooltip: 400ms;
   --ease-ui: cubic-bezier(0.2, 0, 0, 1);
 
   /* Landing geometry */
@@ -97,6 +98,11 @@
   --editor-rail-width: 64px;
   --editor-catalog-width: 260px;
   --editor-inspector-width: 252px;
+  --editor-inspector-min: 220px;
+  --editor-inspector-max: 380px;
+  --editor-inspector-stub: 28px;
+  --editor-minimap-width: 128px;
+  --editor-minimap-height: 96px;
   --editor-compact-rail: 56px;
   --control-hit: 44px;
   --control-visual: 26px;
