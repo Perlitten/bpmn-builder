@@ -161,11 +161,11 @@ export function ElementInspector({
 
   const root = (children: ReactNode) =>
     framed ? (
-      <aside className={`element-inspector${readOnly ? ' is-readonly' : ''}`} aria-label="Element inspector" aria-readonly={readOnly || undefined}>
+      <aside className={`element-inspector${readOnly ? ' is-readonly' : ''}`} aria-label="Element inspector">
         {children}
       </aside>
     ) : (
-      <div className={`element-inspector-main${readOnly ? ' is-readonly' : ''}`} aria-readonly={readOnly || undefined}>{children}</div>
+      <div className={`element-inspector-main${readOnly ? ' is-readonly' : ''}`}>{children}</div>
     );
 
   return root(

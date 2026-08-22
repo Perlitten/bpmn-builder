@@ -13,7 +13,6 @@
 /* Simulation exposes the inspector as context, never as an edit surface. */
 .element-inspector.is-readonly .element-inspector-body,
 .element-inspector-main.is-readonly .element-inspector-body {
-  opacity: 0.72;
   pointer-events: none;
 }
 
