@@ -1,5 +1,8 @@
 # UX audit — semantic BPMN 2.0 builder
 
+> [!WARNING]
+> Historical code-review snapshot from 2026-08-13. Mini BPMN previews, export, modal focus handling, rail labels/targets, keyboard blocking, font loading, and several other findings below have since changed. Reproduce a finding in the current UI and code before acting on it; current architectural gaps live in [GAPS.md](GAPS.md).
+
 **Date:** 2026-08-13  
 **Scope:** `apps/web` only. Do not implement the layout engine. Do not revert sibling work in `packages/*`.  
 **Method:** Code review of `apps/web/src/**` against `.cursor/rules/product-ui-bpmn-native.mdc`, `semantic-bpmn-north-star.mdc`, `semantic-component-library.mdc`, `ARCHITECTURE.md`, `GAPS.md`. Curl of `http://localhost:5173/` and `/processes/onboarding` (SPA shell 200). Live `GET /api/processes` used to confirm real drafts + BPMN XML. No OS browser.

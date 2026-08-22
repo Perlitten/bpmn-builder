@@ -23,6 +23,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       root: webRoot,
+      configFile: path.join(webRoot, 'vite.config.ts'),
       server: { middlewareMode: true },
       appType: 'spa',
     });

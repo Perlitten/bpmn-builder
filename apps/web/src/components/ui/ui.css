@@ -359,6 +359,14 @@
   background: var(--color-canvas);
   color: var(--color-ink);
   font: 600 var(--fs-10)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+}
+
+.ui-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .ui-save-status {

@@ -1,6 +1,8 @@
 import { userFacingPlanError } from '@bpmn/agent-tools';
 
-export const ASSISTANT_TIMEOUT_MS = 120_000;
+// The server aborts at 50s; this small grace period lets its structured 504
+// reach the client before the browser-side deadline fires.
+export const ASSISTANT_TIMEOUT_MS = 55_000;
 
 export function assistantTimeoutLabel(ms = ASSISTANT_TIMEOUT_MS): string {
   return ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`;

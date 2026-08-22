@@ -1,115 +1,179 @@
-import { useState } from 'react';
-import { describeBpmnXml } from '../../lib/describeProcess';
-import { SHOWCASE_EXAMPLES, type ShowcaseExample } from '../../lib/showcaseExamples';
-import { ShowcaseViewer } from './ShowcaseViewer';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { ShowcaseDiagram } from './ShowcaseDiagram';
+import {
+  advanceShowcasePlayback,
+  pointAtShowcasePath,
+  SHOWCASE_GEOMETRIES,
+  SHOWCASE_RUN_MS,
+  SHOWCASE_SCENARIOS,
+  SHOWCASE_TICK_MS,
+  showcaseXml,
+  type ShowcasePlayback,
+} from './showcaseAttract';
+import './showcase.css';
 
-function countBpmnElements(xml: string | null): number {
-  if (!xml) return 0;
-  return (
-    xml.match(
-      /<bpmn:(?:startEvent|endEvent|task|userTask|serviceTask|exclusiveGateway|parallelGateway)\b/g,
-    )?.length ?? 0
+const PHASE_LABELS: Record<ShowcasePlayback['phase'], string> = {
+  type: 'TYPING',
+  build: 'BUILDING',
+  run: 'SIMULATING',
+  off: 'ATTRACT MODE',
+};
+
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return reduced;
+}
+
+function useIsVisible(target: RefObject<HTMLElement | null>): boolean {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const element = target.current;
+    if (!element || typeof IntersectionObserver !== 'function') return;
+    const observer = new IntersectionObserver(
+      (entries) => setVisible(entries.some((entry) => entry.isIntersecting)),
+      { rootMargin: '80px' },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return visible;
 }
 
 export function ShowcaseDemo() {
-  const [selectedId, setSelectedId] = useState<string>(SHOWCASE_EXAMPLES[0].id);
-  const [text, setText] = useState<string>(SHOWCASE_EXAMPLES[0].description);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const isVisible = useIsVisible(rootRef);
   const [showXml, setShowXml] = useState(false);
+  const [playback, setPlayback] = useState<ShowcasePlayback>({
+    scenarioIndex: 0,
+    phase: 'type',
+    elapsed: 0,
+    lap: 1,
+  });
 
-  let xml: string | null = null;
-  let parseError: string | null = null;
-
-  if (text.trim()) {
-    try {
-      xml = describeBpmnXml('Showcase process', text);
-    } catch (err) {
-      parseError = err instanceof Error ? err.message : 'Could not generate BPMN from this description.';
+  useEffect(() => {
+    if (reducedMotion) {
+      setPlayback((current) => ({ ...current, scenarioIndex: 1, phase: 'run', elapsed: 2_200 }));
+      return;
     }
-  }
+    if (showXml || !isVisible) return;
+    const interval = window.setInterval(() => {
+      setPlayback((current) => advanceShowcasePlayback(current));
+    }, SHOWCASE_TICK_MS);
+    return () => window.clearInterval(interval);
+  }, [isVisible, reducedMotion, showXml]);
 
-  const handleSelectExample = (example: ShowcaseExample) => {
-    setSelectedId(example.id);
-    setText(example.description);
+  const scenario = SHOWCASE_SCENARIOS[playback.scenarioIndex] ?? SHOWCASE_SCENARIOS[0];
+  const geometry = SHOWCASE_GEOMETRIES[playback.scenarioIndex] ?? SHOWCASE_GEOMETRIES[0];
+  const branchIndex = scenario.branches ? playback.lap % scenario.branches.length : 0;
+
+  const visibleShapeCount = useMemo(() => {
+    if (reducedMotion || showXml || playback.phase === 'run' || playback.phase === 'off') {
+      return geometry.shapes.length;
+    }
+    if (playback.phase === 'build') {
+      return Math.min(geometry.shapes.length, Math.floor(playback.elapsed / 190) + 1);
+    }
+    return 0;
+  }, [geometry.shapes.length, playback.elapsed, playback.phase, reducedMotion, showXml]);
+
+  const tokenProgress = useMemo(() => {
+    if (reducedMotion) return [0.62];
+    if (playback.phase !== 'run' || showXml) return [];
+    const phaseProgress = playback.elapsed / SHOWCASE_RUN_MS;
+    return [0, 0.2, 0.4, 0.6]
+      .map((offset) => (phaseProgress - offset) * 1.6)
+      .filter((progress) => progress >= 0 && progress <= 1);
+  }, [playback.elapsed, playback.phase, reducedMotion, showXml]);
+
+  const path = geometry.paths[Math.min(branchIndex, geometry.paths.length - 1)] ?? [];
+  const tokenPoints = tokenProgress.map((progress) => pointAtShowcasePath(path, progress));
+  const typed =
+    reducedMotion || showXml || playback.phase !== 'type'
+      ? scenario.phrase
+      : scenario.phrase.slice(0, Math.floor(playback.elapsed / 52));
+  const phaseLabel = reducedMotion
+    ? 'STATIC FRAME'
+    : showXml
+      ? 'BPMN XML EXCERPT'
+      : PHASE_LABELS[playback.phase];
+  const pathLabel = scenario.branchLabels?.[branchIndex] ?? 'SINGLE';
+  const gatewayHot = tokenProgress.some((progress) => progress > 0.3 && progress < 0.52);
+
+  const pickScenario = (scenarioIndex: number) => {
     setShowXml(false);
+    setPlayback({ scenarioIndex, phase: reducedMotion ? 'run' : 'type', elapsed: 0, lap: 1 });
   };
-
-  const handleTextChange = (value: string) => {
-    setText(value);
-    setSelectedId('');
-  };
-
-  const elementCount = countBpmnElements(xml);
-  const selectedExample = SHOWCASE_EXAMPLES.find((example) => example.id === selectedId);
 
   return (
-    <div className="landing-panel overflow-hidden bg-canvas">
-      <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-2 bg-ink px-3 py-2 font-mono text-[10px] font-medium tracking-[0.14em] text-canvas">
-        <span>{parseError ? 'INVALID INPUT' : showXml ? 'CANONICAL XML' : 'LIVE INPUT'}</span>
-        <span className="text-line-strong">TOKENS LIVE {String(elementCount).padStart(2, '0')}</span>
-        <span className="text-line-strong">PATH {selectedExample?.label.toUpperCase() ?? 'CUSTOM'}</span>
+    <div ref={rootRef} className="landing-panel showcase-demo overflow-hidden bg-canvas">
+      <div className="showcase-statusbar">
+        <span>{phaseLabel}</span>
+        <span className="showcase-status-muted">TOKENS LIVE {String(tokenPoints.length).padStart(2, '0')}</span>
+        <span className="showcase-status-muted">PATH {pathLabel}</span>
         <button
           type="button"
           onClick={() => setShowXml((current) => !current)}
-          disabled={!xml}
-          className="ml-auto min-h-8 border-2 border-canvas px-2 text-[10px] tracking-[0.12em] text-canvas outline-none hover:bg-canvas hover:text-ink focus-visible:ring-2 focus-visible:ring-canvas focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:cursor-not-allowed disabled:opacity-50"
+          className={`showcase-xml-toggle ${showXml ? 'showcase-xml-toggle-active' : ''}`}
         >
           {showXml ? 'HIDE XML' : 'SHOW XML'}
         </button>
       </div>
 
       <div className="landing-scanlines relative">
-        <div className="border-b border-line-strong px-4 pb-3 pt-3.5">
-          <label htmlFor="showcase-description" className="font-mono text-[10px] font-medium tracking-[0.12em] text-ink-soft">
-            YOU TYPE
-          </label>
-          <textarea
-            id="showcase-description"
-            value={text}
-            rows={3}
-            placeholder="Receive request, verify details, then approve or reject."
-            className="mt-1.5 min-h-[72px] w-full resize-y border-0 bg-transparent p-0 font-mono text-sm leading-6 text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
-            onChange={(event) => handleTextChange(event.target.value)}
-          />
-          {parseError ? (
-            <p className="mt-2 border-2 border-danger-strong p-2 font-mono text-xs leading-5 text-danger-strong" role="alert">
-              {parseError}
-            </p>
-          ) : null}
+        <div className="showcase-typed">
+          <span className="showcase-caption">YOU TYPE</span>
+          <p data-testid="showcase-typed-phrase">
+            <span className="sr-only">{scenario.phrase}</span>
+            <span aria-hidden="true">{typed}</span>
+            <span className="showcase-cursor" aria-hidden="true" />
+          </p>
         </div>
 
-        {showXml && xml ? (
-          <div className="p-3 sm:p-4">
-            <pre className="mx-auto max-h-[300px] max-w-[620px] overflow-auto border border-line-strong bg-canvas p-3 font-mono text-[11px] leading-5 text-ink">
-              {xml}
+        {showXml ? (
+          <div className="showcase-viewport">
+            <pre className="showcase-xml" data-testid="showcase-xml">
+              {showcaseXml(playback.scenarioIndex)}
             </pre>
           </div>
         ) : (
-          <div className="min-h-[250px] p-2 sm:p-3">
-            <div className="mx-auto h-[250px] max-w-[650px] overflow-hidden">
-              {xml ? (
-                <ShowcaseViewer xml={xml} />
-              ) : (
-                <div className="grid h-full place-items-center font-mono text-[10px] tracking-[0.14em] text-muted">
-                  READING THE SENTENCE
-                </div>
-              )}
-            </div>
+          <div className="showcase-viewport">
+            <ShowcaseDiagram
+              scenario={scenario}
+              geometry={geometry}
+              visibleShapeCount={visibleShapeCount}
+              tokenPoints={tokenPoints}
+              branchIndex={branchIndex}
+              gatewayHot={gatewayHot}
+            />
           </div>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t-3 border-ink px-3 py-2.5">
-        <span className="mr-1 font-mono text-[10px] font-medium tracking-[0.12em] text-ink-soft">PLAY</span>
-        {SHOWCASE_EXAMPLES.map((example) => (
+      <div className="showcase-playbar">
+        <span className="showcase-caption">PLAY</span>
+        {SHOWCASE_SCENARIOS.map((item, index) => (
           <button
-            key={example.id}
+            key={item.id}
             type="button"
-            aria-pressed={selectedId === example.id}
-            className={`landing-chip ${selectedId === example.id ? 'landing-chip-active' : ''}`}
-            onClick={() => handleSelectExample(example)}
+            aria-pressed={playback.scenarioIndex === index}
+            className={`landing-chip ${playback.scenarioIndex === index ? 'landing-chip-active' : ''}`}
+            onClick={() => pickScenario(index)}
           >
-            {example.label.toUpperCase()}
+            {item.chipLabel.toUpperCase()}
           </button>
         ))}
       </div>

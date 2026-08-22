@@ -1,5 +1,8 @@
 # Architecture audit — Semantic BPMN north star
 
+> [!WARNING]
+> Historical snapshot from before the 2026-08-22 semantic-core, bpmn-moddle, collaboration, execution-profile, and agent-tools work. Several findings below are resolved and must not be used as current implementation status. See [GAPS.md](GAPS.md) for the maintained gap list and verify claims against current tests.
+
 Read-only audit of `/Users/a.damashkevich/Documents/BPMN 2.0` against `ARCHITECTURE.md`, `GAPS.md`, and `.cursor/rules/*.mdc`. No `UX_AUDIT.md` in the repo.
 
 **Verdict:** the target package map exists and the **happy-path compiler** works for a **narrow kernel** (Start → typed Task → XOR/AND/OR → End). The running product is still a **hybrid**: semantic graph + layout-engine for that slice, **bpmn-js Modeler** for connect / replace / attach / message flow, **BPMN XML as persistence**, and a **second palette catalog**. The assistant **emits XML**. Coordinates are derived on semantic commits, then stored as DI in XML.

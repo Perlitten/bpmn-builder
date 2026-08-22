@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify('0.1.0'),
+    __COMMIT_SHA__: 'undefined',
+  },
   plugins: [
     {
       name: 'stub-css',

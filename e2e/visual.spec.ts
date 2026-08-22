@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.describe('landing page visual regression', () => {
   test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/api/auth/status', async (route) => {
       await route.fulfill({
         json: {

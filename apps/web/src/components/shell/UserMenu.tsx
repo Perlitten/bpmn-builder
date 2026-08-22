@@ -12,7 +12,7 @@ export function UserMenu() {
       ariaLabel="Account"
       label={
         <>
-          <Avatar name={label} />
+          <Avatar name={label} src={user.avatarUrl} />
           <span className="hidden max-w-[9rem] truncate sm:inline">{label}</span>
         </>
       }

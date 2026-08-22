@@ -162,6 +162,10 @@ html.is-editor #root {
   overflow: hidden;
 }
 
+.landing-action-cta {
+  box-shadow: var(--shadow-pixel-cta);
+}
+
 .bpmn-canvas-host {
   position: relative;
   min-width: 0;

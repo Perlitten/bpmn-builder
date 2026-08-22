@@ -7,6 +7,24 @@ export type GoogleAuthConfig = {
 export const AUTH_SETUP_HINT =
   'Google sign-in is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and SESSION_SECRET (openssl rand -hex 32). In Google Cloud Console create an OAuth 2.0 Web client and add Authorized redirect URI {origin}/api/auth/google/callback (local: http://localhost:5173/api/auth/google/callback).';
 
+export class AuthConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthConfigurationError';
+  }
+}
+
+export function sessionSecret(env: NodeJS.ProcessEnv = process.env): string {
+  const value = env.SESSION_SECRET?.trim() ?? '';
+  if (value.length >= 16) return value;
+  if (env.NODE_ENV !== 'production') return 'dev-insecure-session-pepper';
+  throw new AuthConfigurationError(
+    value
+      ? 'SESSION_SECRET must be at least 16 characters.'
+      : 'Session authentication is unavailable because SESSION_SECRET is not configured.',
+  );
+}
+
 function normalizeOrigin(value: string): string {
   try {
     const url = new URL(value);

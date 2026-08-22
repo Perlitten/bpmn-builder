@@ -1,4 +1,4 @@
-/* Generated from tokens.json v1.2.0. Run pnpm tokens:generate; do not edit. */
+/* Generated from tokens.json v1.3.0. Run pnpm tokens:generate; do not edit. */
 
 @theme {
   /* Product palette */
@@ -27,6 +27,7 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --shadow-pixel-sm: 4px 4px 0 var(--color-ink);
   --shadow-pixel-md: 6px 6px 0 var(--color-ink);
+  --shadow-pixel-cta: 7px 7px 0 var(--color-ink);
   --shadow-pixel-lg: 10px 10px 0 var(--color-ink);
 }
 
@@ -66,6 +67,8 @@
   --landing-stroke-heavy: 4px;
   --landing-stroke-medium: 3px;
   --landing-step-duration: 90ms;
+  --landing-blink-duration: 900ms;
+  --landing-token-morph-duration: 3400ms;
 
   /* Effects */
   --mask-opaque: #000000;

@@ -1,4 +1,6 @@
-export const ASSISTANT_TIMEOUT_MS = 120_000;
+// Keep the application timeout below Vercel's 60 second function ceiling so
+// callers receive our structured 504 instead of an opaque platform timeout.
+export const ASSISTANT_TIMEOUT_MS = 50_000;
 export const ASSISTANT_CONNECT_TIMEOUT_MS = 8_000;
 
 const TIMED_OUT =

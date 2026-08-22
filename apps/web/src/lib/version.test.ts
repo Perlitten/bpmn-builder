@@ -4,6 +4,7 @@ import { formatVersionInfo, getBuildVersionInfo, resolveCommitSha } from './vers
 describe('version helper', () => {
   it('resolves commit SHA to 7 characters when SHA is provided', () => {
     expect(resolveCommitSha('a1b2c3d4e5f6789')).toBe('a1b2c3d');
+    expect(resolveCommitSha('a1b2c3d-dirty')).toBe('a1b2c3d-dirty');
   });
 
   it('falls back to "dev" when SHA is undefined, empty, or whitespace', () => {

@@ -11,6 +11,6 @@ describe('friendly AI errors', () => {
     expect(friendlyAiError(assistantUpstreamError())).toMatch(/did not respond/i);
     expect(isUpstreamError(assistantUpstreamError())).toBe(true);
     expect(isUpstreamError(assistantTimeoutError())).toBe(false);
-    expect(friendlyAiError(assistantTimeoutError())).toMatch(/timed out after 120s/i);
+    expect(friendlyAiError(assistantTimeoutError())).toMatch(/timed out after 50s/i);
   });
 });

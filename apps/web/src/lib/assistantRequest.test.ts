@@ -14,7 +14,7 @@ describe('mergeTimeoutSignal', () => {
   });
 
   it('aborts after the assistant timeout', () => {
-    expect(ASSISTANT_TIMEOUT_MS).toBe(120_000);
+    expect(ASSISTANT_TIMEOUT_MS).toBe(55_000);
     vi.useFakeTimers();
     const merged = mergeTimeoutSignal(undefined, ASSISTANT_TIMEOUT_MS);
     expect(merged.signal.aborted).toBe(false);
@@ -48,7 +48,7 @@ describe('mapAssistantError', () => {
   it('maps timeout, cancel, and root-0 import failures', () => {
     expect(mapAssistantError(new Error('x'), true).message).toBe('Cancelled');
     expect(mapAssistantError(new DOMException('Aborted', 'AbortError'), false).message).toMatch(
-      /timed out after 120s/i,
+      /timed out after 55s/i,
     );
     expect(diagramImportError(new Error("Cannot read properties of undefined (reading 'root-0')")).message).toMatch(
       /could not import/i,

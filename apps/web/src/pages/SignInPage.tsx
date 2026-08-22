@@ -47,8 +47,8 @@ export function SignInPage({ initialStatus = null }: { initialStatus?: AuthStatu
 
   return (
     <div className="landing-shell flex min-h-dvh flex-col bg-canvas" aria-busy={status === null}>
-      <LandingHeader configured={configured} buildVersion={buildVersion} />
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      <LandingHeader buildVersion={buildVersion} />
+      <main className="min-h-0 flex-1">
         <LandingHero />
         <LandingProofStrip />
         <LandingSignInPanel
@@ -58,7 +58,7 @@ export function SignInPage({ initialStatus = null }: { initialStatus?: AuthStatu
           callbackUrl={status?.callbackUrl}
         />
       </main>
-      <LandingFooter buildVersion={buildVersion} />
+      <LandingFooter />
     </div>
   );
 }
