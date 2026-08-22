@@ -1,16 +1,16 @@
-# Graph Report - BPMN-pr42  (2026-08-22)
+# Graph Report - BPMN-boundaries  (2026-08-22)
 
 ## Corpus Check
-- 409 files · ~234,632 words
+- 408 files · ~227,468 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2686 nodes · 6104 edges · 154 communities (143 shown, 11 thin omitted)
+- 2670 nodes · 6084 edges · 151 communities (141 shown, 10 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fa6c4154`
+- Built from commit: `ff1462f4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -139,17 +139,14 @@
 - [[_COMMUNITY_@bpmndomain|@bpmn/domain]]
 - [[_COMMUNITY_Pull Request Template|Pull Request Template]]
 - [[_COMMUNITY_lucide-react|lucide-react]]
-- [[_COMMUNITY_react|react]]
 - [[_COMMUNITY_svg2pdf.js|svg2pdf.js]]
 - [[_COMMUNITY_CLAUDE|CLAUDE.md]]
 - [[_COMMUNITY_.claudeCLAUDE|.claude/CLAUDE.md]]
 - [[_COMMUNITY_extraction-spec|extraction-spec.md]]
-- [[_COMMUNITY_Landing Proof Strip|Landing Proof Strip]]
 - [[_COMMUNITY_typedTaskPaint.ts|typedTaskPaint.ts]]
 - [[_COMMUNITY_semanticsession.ts|semantic/session.ts]]
 - [[_COMMUNITY_Graphify Incremental Update|Graphify Incremental Update]]
 - [[_COMMUNITY_Product UI Contract|Product UI Contract]]
-- [[_COMMUNITY_Page Title Helper|Page Title Helper]]
 - [[_COMMUNITY_Graphify GitHub Merge|Graphify GitHub Merge]]
 - [[_COMMUNITY_Graphify Media Transcription|Graphify Media Transcription]]
 - [[_COMMUNITY_BPMN Vendor Types|BPMN Vendor Types]]
@@ -159,7 +156,7 @@
 - [[_COMMUNITY_Lighthouse Server Script|Lighthouse Server Script]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `Process` - 52 edges
+1. `SemanticProcess` - 51 edges
 2. `createProcess()` - 45 edges
 3. `createFromComponent()` - 43 edges
 4. `addTask()` - 37 edges
@@ -171,30 +168,30 @@
 10. `happyPathIds()` - 23 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `lint()` --calls--> `lintProcess()`  [EXTRACTED]
+  apps/web/src/components/process-list/listQuality.test.ts → packages/rules/src/lintProcess.ts
 - `initializeDatabase()` --calls--> `migrate()`  [EXTRACTED]
   api/index.ts → packages/db/src/migrate.ts
 - `locate()` --calls--> `allRegions()`  [EXTRACTED]
   apps/web/src/components/bpmn-editor/architect/agentScope.ts → packages/semantic-core/src/graph.ts
 - `resolveAgentContext()` --calls--> `allRegions()`  [EXTRACTED]
   apps/web/src/components/bpmn-editor/architect/agentScope.ts → packages/semantic-core/src/graph.ts
-- `applyAssistantResult()` --calls--> `parseToolPlan()`  [EXTRACTED]
-  apps/web/src/components/bpmn-editor/architect/applyAssistant.ts → packages/agent-tools/src/tools.ts
-- `editorNoticeText()` --calls--> `userFacingPlanError()`  [EXTRACTED]
-  apps/web/src/components/bpmn-editor/editorNotice.ts → packages/agent-tools/src/errors.ts
+- `applyAssistantResult()` --calls--> `semanticDiff()`  [EXTRACTED]
+  apps/web/src/components/bpmn-editor/architect/applyAssistant.ts → packages/agent-tools/src/diff.ts
 
 ## Import Cycles
 - 1-file cycle: `packages/api-server/src/index.ts -> packages/api-server/src/index.ts`
 - 1-file cycle: `packages/domain/src/index.ts -> packages/domain/src/index.ts`
 
-## Communities (154 total, 11 thin omitted)
+## Communities (151 total, 10 thin omitted)
 
 ### Community 0 - "layout.ts"
-Cohesion: 0.06
-Nodes (58): BPMN_COMPONENT_CATALOG, ARTIFACTS, DATA, FLOWS, PARTICIPANTS, sequenceLike(), ACTIVITY_SET, ACTIVITY_TYPES (+50 more)
+Cohesion: 0.07
+Nodes (54): BPMN_COMPONENT_CATALOG, ARTIFACTS, DATA, FLOWS, PARTICIPANTS, sequenceLike(), ACTIVITY_SET, ACTIVITY_TYPES (+46 more)
 
 ### Community 1 - "architectPosition.ts"
 Cohesion: 0.06
-Nodes (68): attrs(), BpmnPreview, collapseSubprocesses(), collectProcessBodies(), collectTags(), EVENT_TAGS, fallbackLabel(), Flow (+60 more)
+Nodes (69): attrs(), BpmnPreview, collapseSubprocesses(), collectProcessBodies(), collectTags(), EVENT_TAGS, fallbackLabel(), Flow (+61 more)
 
 ### Community 2 - "describeProcess.ts"
 Cohesion: 0.05
@@ -206,11 +203,11 @@ Nodes (43): friendlyAiError(), isConfigError(), isUpstreamError(), createGeminiC
 
 ### Community 4 - "assistant.ts"
 Cohesion: 0.08
-Nodes (45): attachCookies(), clearOAuthStateCookie(), clearSessionCookie(), parseCookieHeader(), setOAuthStateCookie(), setSessionCookie(), AuthConfigurationError, configuredAuthOrigin() (+37 more)
+Nodes (42): attachCookies(), clearOAuthStateCookie(), clearSessionCookie(), parseCookieHeader(), setOAuthStateCookie(), setSessionCookie(), AuthConfigurationError, GoogleAuthConfig (+34 more)
 
 ### Community 5 - "preserve.ts"
-Cohesion: 0.07
-Nodes (47): LaneNameField(), applyInspectorNameKey(), commitInspectorName(), inspectorNameKeyAction, GROUP_ORDER, GROUP_TITLE, PreservedBpmnFieldsProps, applyPreservedValue() (+39 more)
+Cohesion: 0.10
+Nodes (38): bpmnTypeOf(), commitPreservedChange(), isActivityType(), isTimerElement(), PreservedChange, PreservedField, preservedFieldsFor(), apply() (+30 more)
 
 ### Community 6 - "Process"
 Cohesion: 0.09
@@ -218,55 +215,55 @@ Nodes (42): ElementInspector(), ElementInspectorProps, InspectorLintFooter(), em
 
 ### Community 7 - "define.ts"
 Cohesion: 0.08
-Nodes (40): Branch, SequenceFlow, StructuredRegion, components(), extractSubgraph(), PasteApplied, pasteSubgraph(), SemanticClip (+32 more)
+Nodes (41): Branch, SequenceFlow, StructuredRegion, components(), extractSubgraph(), PasteApplied, pasteSubgraph(), SemanticClip (+33 more)
 
 ### Community 8 - "catalogPresentation.ts"
-Cohesion: 0.09
-Nodes (24): xorXml(), withSplit(), editorWithTwoPools(), createIntoLane(), createSemanticEditor(), MODELER_REMOUNT_KEYS, pathNames(), resolveEnd() (+16 more)
+Cohesion: 0.17
+Nodes (17): area(), contains(), cy(), dropSlot, laneForDrop(), lastNodeLeftOf(), pickBranch(), reorderSlot() (+9 more)
 
 ### Community 9 - "bpmnPreview.ts"
 Cohesion: 0.09
-Nodes (28): catalogEnterTarget(), enabledCatalogItems(), flattenCatalogItems(), stepCatalogHighlight(), CatalogFlyout(), CatalogFlyoutProps, CATEGORY_ICON, SUGGESTED (+20 more)
+Nodes (27): catalogEnterTarget(), enabledCatalogItems(), flattenCatalogItems(), stepCatalogHighlight(), CatalogFlyout(), CatalogFlyoutProps, CATEGORY_ICON, SUGGESTED (+19 more)
 
 ### Community 10 - "create.ts"
-Cohesion: 0.10
-Nodes (32): assignCreatedToLane(), createdLaneTargets(), DiagramWriter, ImportXmlOptions, SemanticEditor, addAfter(), addBefore(), addBranch() (+24 more)
+Cohesion: 0.07
+Nodes (42): buildParallel(), xorXml(), withSplit(), twoLaneTasks(), assignCreatedToLane(), createdLaneTargets(), createIntoLane(), DiagramWriter (+34 more)
 
 ### Community 11 - "semantic-xml.ts"
-Cohesion: 0.10
-Nodes (32): BpmnCanvas, BpmnEditorProps, CanvasService, Dragging, ElementRegistry, EventBus, HandTool, MovedShape (+24 more)
+Cohesion: 0.17
+Nodes (20): applySpacePanDown(), applySpacePanUp(), bindKeyboardToHost(), CanvasNavigationKey, canvasNavigationTarget(), createSpacePanHold(), EditorTool, isCanvasNavigationKey() (+12 more)
 
 ### Community 12 - "domain/src/index.ts"
-Cohesion: 0.13
-Nodes (31): ProcessConflictError, ProcessValidationError, sendProcessError(), assertPatch(), assertPersisted(), BUILTIN_TEMPLATE_BY_ID, BUILTIN_TEMPLATES, builtinTemplateRows() (+23 more)
+Cohesion: 0.14
+Nodes (28): ProcessConflictError, assertPatch(), assertPersisted(), BUILTIN_TEMPLATE_BY_ID, BUILTIN_TEMPLATES, builtinTemplateRows(), createProcess(), createTemplateFromProcess() (+20 more)
 
 ### Community 13 - "ops.ts"
 Cohesion: 0.09
 Nodes (30): advanceShowcasePlayback(), BRANCH_Y, buildShowcaseGeometry(), left(), NODE_HEIGHT, NODE_WIDTH, pointAtShowcasePath(), right() (+22 more)
 
 ### Community 14 - "getNode"
-Cohesion: 0.11
-Nodes (28): processes, sessions, users, processes, sessions, users, AppDb, createDb() (+20 more)
+Cohesion: 0.12
+Nodes (25): processes, sessions, users, AppDb, createDb(), DbQueryClient, getDb(), getDbDriver() (+17 more)
 
 ### Community 15 - "ProcessListPage.tsx"
-Cohesion: 0.10
-Nodes (22): BpmnZoomControls(), BpmnZoomControlsProps, DuplicateProcessDialog(), DuplicateProcessDialogProps, DuplicateDialogDecision, duplicateRequestFromDialog(), RenameProcessDialog(), RenameProcessDialogProps (+14 more)
+Cohesion: 0.12
+Nodes (17): BpmnZoomControls(), BpmnZoomControlsProps, RenameProcessDialogProps, Avatar(), AvatarProps, ConfirmDialog(), ConfirmDialogProps, DialogActions() (+9 more)
 
 ### Community 16 - "lintProcess.ts"
-Cohesion: 0.15
-Nodes (24): Process, ProcessMiniPreview, ProcessQualitySummary, WorkflowDocument, ProcessStatus, WorkflowEdge, CORE_WORKFLOW_NODE_TYPES, WorkflowNode (+16 more)
+Cohesion: 0.13
+Nodes (27): ProcessValidationError, sendProcessError(), ProcessStatus, ProcessMiniPreview, ProcessQualitySummary, StoredProcess, WorkflowDocument, ValidationIssue (+19 more)
 
 ### Community 17 - "scope.ts"
-Cohesion: 0.10
-Nodes (25): area(), contains(), cy(), dropSlot, laneForDrop(), lastNodeLeftOf(), pickBranch(), reorderSlot() (+17 more)
+Cohesion: 0.11
+Nodes (18): allOrthogonal(), assertNoLabelLabelIntersections(), assertNoLabelNodeIntersections(), expectDistinctBands(), overlaps(), attachBoundaryError(), attachBoundaryEvent(), attachBoundaryTimer() (+10 more)
 
 ### Community 18 - "semantic-core/src/index.ts"
-Cohesion: 0.14
-Nodes (34): allRegions(), findBranch(), findRegion(), applyScopeDefaults(), assertLocksIntact(), assertMutationAllowed(), assertOutsideScopeIntact(), branchById() (+26 more)
+Cohesion: 0.13
+Nodes (31): findRegion(), applyScopeDefaults(), assertLocksIntact(), assertMutationAllowed(), assertOutsideScopeIntact(), branchById(), branchMutable(), canInsertAfter() (+23 more)
 
 ### Community 19 - "api.ts"
-Cohesion: 0.12
-Nodes (32): applyLaneBands(), artifactSize(), bandStack(), bbox(), ChainItem, clearOfObstacles(), collaborationFlowGap(), collectLabels() (+24 more)
+Cohesion: 0.16
+Nodes (18): clearOfObstacles(), collaborationFlowGap(), collectLabels(), externalLabelBox(), flowLabelBox(), hasCollaboration(), hostLanes(), labelSize() (+10 more)
 
 ### Community 20 - "inspectorOps.ts"
 Cohesion: 0.06
@@ -274,103 +271,103 @@ Nodes (34): dependencies, @bpmn/agent-tools, @bpmn/bpmn-adapter, @bpmn/domain, b
 
 ### Community 21 - "useModal"
 Cohesion: 0.12
-Nodes (28): looksLikeBpmn(), readBpmnFile(), archiveMessage(), BPMN_20_NS, BpmnImportCode, BpmnImportError, BpmnSniffResult, bpmnXmlShapeError() (+20 more)
+Nodes (27): looksLikeBpmn(), readBpmnFile(), archiveMessage(), BpmnImportCode, BpmnImportError, BpmnSniffResult, bpmnXmlShapeError(), CONVENTIONAL (+19 more)
 
 ### Community 22 - "BpmnComponentRegistry"
-Cohesion: 0.12
-Nodes (28): ScoreChips(), ScoreChipsProps, executionScore(), clamp(), contains(), formatScores(), intentionalNodeOverlap(), isDecisionGateway() (+20 more)
+Cohesion: 0.19
+Nodes (19): executionScore(), clamp(), contains(), intentionalNodeOverlap(), isDecisionGateway(), isEventDef(), isExclusiveXor(), kindTitle() (+11 more)
 
 ### Community 23 - "bpmn-adapter/src/index.ts"
-Cohesion: 0.12
-Nodes (22): addAssociation(), addDataObject(), addDataStore(), addGroup(), addTextAnnotation(), apply(), resolveAssociationEnds(), addMessageInteraction() (+14 more)
+Cohesion: 0.16
+Nodes (21): addAssociation(), addDataObject(), addDataStore(), addGroup(), addTextAnnotation(), apply(), resolveAssociationEnds(), addMessageInteraction() (+13 more)
 
 ### Community 24 - "BpmnEditor.tsx"
 Cohesion: 0.12
 Nodes (27): findMatchingReplaceTarget(), ReplaceTargetShape, applyFlowKind(), applyViewerLabel(), attachBoundary(), BpmnFactory, BpmnReplace, canDeleteElement() (+19 more)
 
 ### Community 25 - "contextFilter.ts"
-Cohesion: 0.12
-Nodes (29): Canvas, createTokenView(), Modeler, Overlays, TokenView, isEventSubProcess(), asRecord(), choiceKind() (+21 more)
+Cohesion: 0.17
+Nodes (24): isEventSubProcess(), asRecord(), choiceKind(), completedCount(), createTokenSimulation(), describeSimulation(), describeSimulationError(), exceptionHint() (+16 more)
 
 ### Community 26 - "processService.ts"
-Cohesion: 0.13
-Nodes (26): AssistantData, AssistantStep, clip(), llmTools(), loadProcess(), resultsOf(), runAssistant(), truthfulNoEditMessage() (+18 more)
+Cohesion: 0.14
+Nodes (25): AssistantData, AssistantStep, clip(), llmTools(), loadProcess(), resultsOf(), runAssistant(), truthfulNoEditMessage() (+17 more)
 
 ### Community 27 - "model.ts"
-Cohesion: 0.16
-Nodes (28): isExclusiveXor(), layerStyle(), ACTION_VERBS, asEndState(), asQuestion(), asStartState(), asTask(), capitalize() (+20 more)
+Cohesion: 0.19
+Nodes (25): ACTION_VERBS, asEndState(), asQuestion(), asStartState(), asTask(), capitalize(), elementKind(), firstMeaningful() (+17 more)
 
 ### Community 28 - "naming.ts"
 Cohesion: 0.12
 Nodes (26): attrs(), Bounds, bpmnTypeFromTag(), cancelActivityFrom(), CORE_TYPE, decode(), emptyModel(), fromCoreNode() (+18 more)
 
 ### Community 29 - "runAssistant.ts"
-Cohesion: 0.15
-Nodes (26): tryAfter(), adoptLane(), BranchTarget, defaultInsertAfter(), detachLinear(), dropFromLanes(), flowAfter(), flowBefore() (+18 more)
+Cohesion: 0.10
+Nodes (37): adoptLane(), branchTailAfter(), BranchTarget, detachLinear(), dropFromLanes(), findBranch(), flowAfter(), flowBefore() (+29 more)
 
 ### Community 30 - "simulate.ts"
 Cohesion: 0.07
 Nodes (26): dependencies, @bpmn/agent-tools, @bpmn/bpmn-adapter, @bpmn/db, @bpmn/domain, @bpmn/rules, @bpmn/semantic-core, dotenv (+18 more)
 
 ### Community 31 - "DuplicateProcessDialog.tsx"
-Cohesion: 0.15
-Nodes (18): isBpmnType(), editorNoticeText(), visibleEditorChrome(), catalogGroup(), createKind(), catalogForFlyout(), contextReason(), FilterContext (+10 more)
+Cohesion: 0.12
+Nodes (24): isBpmnType(), catalogGroup(), createKind(), catalogForFlyout(), contextReason(), FilterContext, isActivity(), isPoolOrLane() (+16 more)
 
 ### Community 32 - "ProcessRow.tsx"
-Cohesion: 0.10
-Nodes (20): processNameFromDescription(), BpmnSchematic(), BpmnSchematicProps, labelLines(), NodeShape(), positioned(), PositionedNode, captureOutline() (+12 more)
+Cohesion: 0.20
+Nodes (9): MobileProcessCapture(), MobileProcessCaptureProps, Recognition, RecognitionConstructor, RecognitionEvent, TEMPLATE_LABELS, ProcessComposer(), ProcessComposerProps (+1 more)
 
 ### Community 33 - "agent-tools/src/index.ts"
-Cohesion: 0.14
-Nodes (20): absoluteDate, absoluteTime(), currentNow, listeners, relativeTime(), relativeTimeServerSnapshot(), relativeTimeSnapshot(), subscribeRelativeTime() (+12 more)
+Cohesion: 0.12
+Nodes (22): absoluteDate, absoluteTime(), currentNow, listeners, relativeTime(), relativeTimeServerSnapshot(), relativeTimeSnapshot(), subscribeRelativeTime() (+14 more)
 
 ### Community 34 - "devDependencies"
 Cohesion: 0.12
-Nodes (24): applyXmlns(), ARTIFACT_TYPES, decodeValue(), fromPlain(), guessUri(), isArtifactType(), isRef(), Moddle (+16 more)
+Nodes (30): appendExtras(), applyPreserve(), ARTIFACT_TYPES, createModdle(), decodeValue(), fromPlain(), guessUri(), isArtifactType() (+22 more)
 
 ### Community 35 - "@bpmn/bpmn-adapter"
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
 ### Community 36 - "bpmn-adapter/package.json"
-Cohesion: 0.19
-Nodes (24): idOf(), isType(), snapshotExtensions(), xmlnsAttrs(), asGraph(), attachExtras(), collectFlowExtras(), DEFAULT_BPMN (+16 more)
+Cohesion: 0.15
+Nodes (32): applyXmlns(), idOf(), isType(), refOf(), setRecordValue(), snapshotExtensions(), snapshotPreserve(), toPlain() (+24 more)
 
 ### Community 37 - "ArchitectPanel.tsx"
-Cohesion: 0.16
-Nodes (20): branchView(), inspectBranchView(), inspectRegionView(), nodeView(), regionView(), AGENT_SCOPE_KINDS, AgentScopeKind, BranchView (+12 more)
+Cohesion: 0.17
+Nodes (19): branchView(), inspectBranchView(), inspectRegionView(), nodeView(), regionView(), AGENT_SCOPE_KINDS, AgentScopeKind, BranchView (+11 more)
 
 ### Community 38 - "selectMarquee.ts"
-Cohesion: 0.13
-Nodes (15): emptyCopy(), MobileFilter, ProcessListPageProps, ImportBpmnButton, ImportBpmnButtonHandle, ImportBpmnButtonProps, ProcessEmptyState(), ProcessEmptyStateProps (+7 more)
+Cohesion: 0.14
+Nodes (13): BpmnSchematic(), BpmnSchematicProps, labelLines(), NodeShape(), positioned(), PositionedNode, ProcessEmptyState(), ProcessEmptyStateProps (+5 more)
 
 ### Community 39 - "package.json"
 Cohesion: 0.17
 Nodes (11): dependencies, @bpmn/db, express, engines, node, license, name, packageManager (+3 more)
 
 ### Community 40 - "moddle.ts"
-Cohesion: 0.15
-Nodes (19): ProcessListPage(), ListKindTabs(), ListKindTabsProps, lastListPage(), LIST_SORTS, LIST_TAB_ID, LIST_TAB_LABEL, LIST_TABS (+11 more)
+Cohesion: 0.11
+Nodes (27): emptyCopy(), MobileFilter, ProcessListPage(), ProcessListPageProps, ListKindTabs(), ListKindTabsProps, ListPaginationFooter(), lastListPage() (+19 more)
 
 ### Community 41 - "routes/auth.ts"
-Cohesion: 0.17
-Nodes (17): AGENT_SCOPE_OPTIONS, AgentContext, buildAssistantScope(), locate(), resolveAgentContext(), scopeOptionEnabled(), ArchitectPanel(), ArchitectPanelProps (+9 more)
+Cohesion: 0.16
+Nodes (15): AGENT_SCOPE_OPTIONS, AgentContext, buildAssistantScope(), locate(), resolveAgentContext(), scopeOptionEnabled(), AssistantApplyResult, ArchitectComposeKey (+7 more)
 
 ### Community 42 - "tools.ts"
-Cohesion: 0.14
-Nodes (15): csrfProtection(), normaliseOrigin(), SAFE_METHODS, servers, attachSession(), isPublicApiPath(), requireAuth(), readSession() (+7 more)
+Cohesion: 0.16
+Nodes (14): csrfProtection(), normaliseOrigin(), SAFE_METHODS, servers, configuredAuthOrigin(), googleCallbackUrl(), normalizeOrigin(), publicOrigin() (+6 more)
 
 ### Community 43 - "db/src/index.ts"
-Cohesion: 0.13
-Nodes (14): ANCESTORS, DiagramElement, PreservedBpmnFields(), STRESS, CONTINUE_ACTIONS, ContinueAction, ContinueWithProps, BranchChoice (+6 more)
+Cohesion: 0.11
+Nodes (15): ANCESTORS, DiagramElement, LaneNameField(), applyInspectorNameKey(), commitInspectorName(), inspectorNameKeyAction, GROUP_ORDER, GROUP_TITLE (+7 more)
 
 ### Community 44 - "dependencies"
-Cohesion: 0.11
-Nodes (17): createSelectMarqueeModule(), DiagramNode, EditorTool, EventBus, HandTool, isMarqueeSurface(), LassoTool, MouseDownEvent (+9 more)
+Cohesion: 0.14
+Nodes (13): createSelectMarqueeModule(), DiagramNode, EditorTool, EventBus, HandTool, isMarqueeSurface(), LassoTool, MouseDownEvent (+5 more)
 
 ### Community 45 - "subprocess.ts"
-Cohesion: 0.13
-Nodes (16): detectStructure(), reload(), CASES, FIXTURES, graphKey(), semanticGraph(), createModdle(), parseDefinitions() (+8 more)
+Cohesion: 0.15
+Nodes (16): detectStructure(), reload(), layoutProcess(), CASES, FIXTURES, graphKey(), semanticGraph(), emptyProcess() (+8 more)
 
 ### Community 46 - "P2 — polish"
 Cohesion: 0.06
@@ -386,27 +383,27 @@ Nodes (13): compilerOptions, declaration, declarationMap, esModuleInterop, isola
 
 ### Community 49 - "dependencies"
 Cohesion: 0.13
-Nodes (16): AiStatus, api, ApiClient, ApiError, AssistantResponse, ChatTurn, fetchAiStatus(), fetchProcess() (+8 more)
+Nodes (15): AiStatus, api, ApiClient, ApiError, AssistantResponse, fetchAiStatus(), fetchProcess(), ProcessListKind (+7 more)
 
 ### Community 50 - "AuthGate.tsx"
 Cohesion: 0.23
 Nodes (18): canReach(), compatibleJoin(), containsSplit(), findJoin(), isContainerKind(), isSplitType(), KIND, Memo (+10 more)
 
 ### Community 51 - "semanticGeometry.ts"
-Cohesion: 0.18
-Nodes (17): addAfter(), addBefore(), addTask(), ARG_ALIASES, branchesArg(), componentDef(), GATEWAY_TOOLS, HANDLERS (+9 more)
+Cohesion: 0.12
+Nodes (25): named(), NODE, REGION, semanticDiff(), allRegions(), branchTargetsAfter(), addAfter(), addBefore() (+17 more)
 
 ### Community 52 - "exportDiagram.ts"
-Cohesion: 0.16
-Nodes (15): ADD_TASK_LAYOUT, attrCount(), STRESS, stressCounters(), tagCount(), splitInclusive(), assessWithTimeoutAndEscalation(), implicitStartSubprocess() (+7 more)
+Cohesion: 0.08
+Nodes (25): BpmnCanvas, BpmnEditorProps, CanvasService, Dragging, ElementRegistry, EventBus, HandTool, MovedShape (+17 more)
 
 ### Community 53 - "app.ts"
-Cohesion: 0.15
-Nodes (10): GoogleSignInAction(), GoogleSignInActionProps, LandingFooter(), LandingHeader(), LandingHeaderProps, LandingHero(), LandingSignInPanel(), LandingSignInPanelProps (+2 more)
+Cohesion: 0.10
+Nodes (17): GoogleSignInAction(), GoogleSignInActionProps, LandingFooter(), LandingHeader(), LandingHeaderProps, LandingHero(), controls, LandingProofStrip() (+9 more)
 
 ### Community 54 - "execution.ts"
-Cohesion: 0.18
-Nodes (13): cache, extent(), Kind, kindOf(), layoutToSvg(), n(), previewLayoutSvg(), resolved (+5 more)
+Cohesion: 0.21
+Nodes (12): cache, extent(), Kind, kindOf(), layoutToSvg(), n(), previewLayoutSvg(), shapeMarkup() (+4 more)
 
 ### Community 55 - "simulate/package.json"
 Cohesion: 0.14
@@ -425,8 +422,8 @@ Cohesion: 0.12
 Nodes (15): dependencies, @bpmn/domain, @bpmn/layout-engine, bpmn-moddle, @bpmn/semantic-core, moddle-xml, devDependencies, typescript (+7 more)
 
 ### Community 59 - "api-server/tsconfig.json"
-Cohesion: 0.19
-Nodes (11): ListPaginationFooter(), ListPaginationFooterProps, Button(), ButtonProps, minimumBusyDelay(), useMinimumBusy(), ChromeMenuItemProps, ChromeMenuProps (+3 more)
+Cohesion: 0.11
+Nodes (15): ListPaginationFooterProps, App(), AppErrorBoundary, AppErrorBoundaryProps, AppErrorBoundaryState, Button(), ButtonProps, minimumBusyDelay() (+7 more)
 
 ### Community 60 - "applyXmlToViewer.ts"
 Cohesion: 0.13
@@ -437,8 +434,8 @@ Cohesion: 0.23
 Nodes (12): AuthContext, AuthContextValue, AuthProvider(), SignInPage, AuthBootstrap, AuthStatus, clearOAuthHandoffFragment(), completeOAuthHandoff() (+4 more)
 
 ### Community 62 - "processListQuery.ts"
-Cohesion: 0.26
-Nodes (9): BpmnEditor, BpmnEditorHandle, bpmnDownloadFilename(), downloadBlob(), downloadBpmnXml(), downloadFilename(), downloadStem(), downloadText() (+1 more)
+Cohesion: 0.16
+Nodes (14): useAuth(), BpmnEditor, BpmnEditorHandle, bpmnDownloadFilename(), downloadBlob(), downloadBpmnXml(), downloadFilename(), downloadStem() (+6 more)
 
 ### Community 63 - "domain/package.json"
 Cohesion: 0.13
@@ -457,8 +454,8 @@ Cohesion: 0.13
 Nodes (14): dependencies, @bpmn/layout-engine, @bpmn/semantic-core, devDependencies, typescript, vitest, exports, name (+6 more)
 
 ### Community 67 - "api-server/src/index.ts"
-Cohesion: 0.13
-Nodes (16): app, initializeDatabase(), resetDatabaseInitializationForTests(), authed(), postProcess(), postXml(), mocks, createApp() (+8 more)
+Cohesion: 0.19
+Nodes (11): app, initializeDatabase(), resetDatabaseInitializationForTests(), mocks, createApp(), __dirname, PORT, repoRoot (+3 more)
 
 ### Community 68 - "BpmnModdle"
 Cohesion: 0.23
@@ -477,8 +474,8 @@ Cohesion: 0.11
 Nodes (17): Acceptance, Architecture — Semantic BPMN 2.0 Builder, Build order, Catalog groups (discoverable vocabulary), Compact toolbar = catalog navigation, Context filtering, First creatable slice (`canCreate=true`), Five rule layers (+9 more)
 
 ### Community 72 - "CatalogFlyout.tsx"
-Cohesion: 0.22
-Nodes (12): applyAssistantResult(), AssistantApplyResult, AssistantApplySession, AssistantPayload, lastMutatingId(), mutating(), named(), NODE (+4 more)
+Cohesion: 0.39
+Nodes (7): applyAssistantResult(), AssistantApplySession, AssistantPayload, lastMutatingId(), mutating(), isSemanticProcess(), isReadOnlyTool()
 
 ### Community 73 - "tsconfig.json"
 Cohesion: 0.29
@@ -493,8 +490,8 @@ Cohesion: 0.14
 Nodes (13): [0.2.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.1.0...bpmn-builder-v0.2.0) (2026-08-20), [0.3.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.2.0...bpmn-builder-v0.3.0) (2026-08-21), [0.4.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.3.0...bpmn-builder-v0.4.0) (2026-08-21), [0.5.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.4.0...bpmn-builder-v0.5.0) (2026-08-22), Bug Fixes, Changelog, Changelog, Features (+5 more)
 
 ### Community 76 - "onboardingStorage.ts"
-Cohesion: 0.14
-Nodes (13): dependencies, @bpmn/semantic-core, devDependencies, typescript, vitest, exports, name, private (+5 more)
+Cohesion: 0.17
+Nodes (11): devDependencies, typescript, vitest, exports, name, private, scripts, build (+3 more)
 
 ### Community 77 - "diagramElement.ts"
 Cohesion: 0.14
@@ -513,8 +510,8 @@ Cohesion: 0.24
 Nodes (14): branchItems(), buildMainChain(), containerEvents(), emptyBranch(), isEventContainer(), measureChain(), measureRegion(), measureSubprocess() (+6 more)
 
 ### Community 81 - "bpmn-adapter/tsconfig.json"
-Cohesion: 0.24
-Nodes (13): fanUnplaced(), fanUnplacedSources(), findCommonSuccessor(), placeBoundaryEvents(), placeChain(), placeOpenBranches(), placeOrphans(), placeRegion() (+5 more)
+Cohesion: 0.15
+Nodes (24): artifactSize(), bandStack(), bbox(), ChainItem, Ctx, Extent, fanUnplaced(), fanUnplacedSources() (+16 more)
 
 ### Community 82 - "db/tsconfig.json"
 Cohesion: 0.29
@@ -533,20 +530,20 @@ Cohesion: 0.17
 Nodes (11): devDependencies, typescript, vitest, exports, name, private, scripts, build (+3 more)
 
 ### Community 86 - "semantic-core/tsconfig.json"
-Cohesion: 0.22
-Nodes (4): App(), AppErrorBoundary, AppErrorBoundaryProps, AppErrorBoundaryState
+Cohesion: 0.19
+Nodes (13): ScoreChips(), ScoreChipsProps, formatScores(), scoreParts(), NameSuggestion, ExecutionProfile, Finding, FindingSeverity (+5 more)
 
 ### Community 87 - "simulate/tsconfig.json"
-Cohesion: 0.36
-Nodes (11): appendExtras(), applyPreserve(), many(), registerEl(), registerTree(), applyExt(), createNodeEl(), orderedNodes() (+3 more)
+Cohesion: 0.47
+Nodes (7): assistantTimeoutLabel(), diagramImportError(), isAbortError(), mapAssistantError(), mergeTimeoutSignal(), timeoutFailure(), waitOrAbort()
 
 ### Community 88 - "vercel.json"
-Cohesion: 0.18
-Nodes (10): @vercel/functions, maxDuration, buildCommand, functions, api/index.ts, headers, outputDirectory, regions (+2 more)
+Cohesion: 0.20
+Nodes (9): maxDuration, buildCommand, functions, api/index.ts, headers, outputDirectory, regions, rewrites (+1 more)
 
 ### Community 89 - "userFacingPlanError"
-Cohesion: 0.36
-Nodes (6): lintLiveBpmnXml(), counted(), listQualitySignal, signal(), lint(), lintProcess()
+Cohesion: 0.52
+Nodes (5): registerAssistantRoutes(), registerAuthRoutes(), registerHealthRoutes(), registerRoutes(), registerProcessRoutes()
 
 ### Community 90 - "createTokenView"
 Cohesion: 0.20
@@ -573,8 +570,8 @@ Cohesion: 0.25
 Nodes (6): Commands, Deployment, Environment, Operational & Governance Policies, Rules, Stack
 
 ### Community 97 - "architectRequest.test.ts"
-Cohesion: 0.46
-Nodes (3): hasStartEvent(), usableXml(), useLiveBpmnXml()
+Cohesion: 0.31
+Nodes (4): lintLiveBpmnXml(), hasStartEvent(), usableXml(), useLiveBpmnXml()
 
 ### Community 98 - "vite-env.d.ts"
 Cohesion: 0.46
@@ -589,12 +586,12 @@ Cohesion: 0.25
 Nodes (5): authoredStyles, componentSources, srcDir, tokenCss, uiDir
 
 ### Community 101 - "jspdf"
-Cohesion: 0.36
-Nodes (5): FOCUSABLE, focusableIn(), trapTabKey(), UseModalOptions, wrapFocusIndex()
+Cohesion: 0.14
+Nodes (14): DuplicateProcessDialog(), DuplicateProcessDialogProps, DuplicateDialogDecision, duplicateRequestFromDialog(), RenameProcessDialog(), copyProcessName(), ProcessSummary, ModalHarness() (+6 more)
 
 ### Community 102 - "agent-tools/vitest.config.ts"
-Cohesion: 0.38
-Nodes (4): useAuth(), UserMenu(), Avatar(), AvatarProps
+Cohesion: 0.50
+Nodes (3): ImportBpmnButton, ImportBpmnButtonHandle, ImportBpmnButtonProps
 
 ### Community 103 - "svg2pdf.js"
 Cohesion: 0.43
@@ -609,16 +606,16 @@ Cohesion: 0.29
 Nodes (6): Accepted dependency risks, GHSA-jmr9-qjv8-65gv / CVE-2026-56876, Reporting a vulnerability, Response targets, Security policy, Supported versions
 
 ### Community 106 - "graphify reference: extra exports and benchmark"
-Cohesion: 0.33
-Nodes (7): clusterOwners(), emptyBranchRailY(), flattenRegions(), flowBandIndex(), index(), isContainerRegion(), routeSequenceFlows()
+Cohesion: 0.25
+Nodes (9): applyLaneBands(), clusterOwners(), emptyBranchRailY(), flattenRegions(), flowBandIndex(), index(), isContainerRegion(), laneIndexByShape() (+1 more)
 
 ### Community 107 - "geometry.ts"
 Cohesion: 0.33
 Nodes (5): compilerOptions, outDir, exclude, extends, include
 
 ### Community 108 - "compactChrome.test.ts"
-Cohesion: 0.47
-Nodes (4): ArchitectComposeKey, isArchitectComposeSubmitKey(), isImeComposing(), enter
+Cohesion: 0.60
+Nodes (3): authed(), postProcess(), postXml()
 
 ### Community 109 - "Design QA — BPMN palette and Architect mascot"
 Cohesion: 0.13
@@ -677,24 +674,16 @@ Cohesion: 0.40
 Nodes (4): Operational impact, Verification, What changed, Why
 
 ### Community 124 - "lucide-react"
-Cohesion: 0.90
-Nodes (3): formatVersionInfo(), getBuildVersionInfo(), resolveCommitSha()
-
-### Community 125 - "react"
-Cohesion: 0.40
-Nodes (3): mergeLatestProcessWithPendingPatch(), ProcessEditorPage(), mocks
+Cohesion: 0.50
+Nodes (3): processes, sessions, users
 
 ### Community 126 - "svg2pdf.js"
-Cohesion: 0.60
-Nodes (4): assertNoGeometry(), GEOMETRY_KEYS, looksLikeBpmnXml(), walk()
+Cohesion: 0.21
+Nodes (10): ToolPlanError, userFacingPlanError(), assertNoGeometry(), GEOMETRY_KEYS, looksLikeBpmnXml(), walk(), xorProcess(), executePlan() (+2 more)
 
 ### Community 129 - "extraction-spec.md"
 Cohesion: 0.40
 Nodes (3): repositoryRoot, rootPackageJson, rootPackageJsonPath
-
-### Community 130 - "Landing Proof Strip"
-Cohesion: 0.50
-Nodes (3): controls, LandingProofStrip(), workflow
 
 ### Community 131 - "typedTaskPaint.ts"
 Cohesion: 0.50
@@ -713,24 +702,24 @@ Cohesion: 0.50
 Nodes (3): Primitives, Product UI contract, Rules
 
 ## Knowledge Gaps
-- **792 isolated node(s):** `graphify-mcp`, `app`, `name`, `version`, `private` (+787 more)
+- **783 isolated node(s):** `graphify-mcp`, `app`, `name`, `version`, `private` (+778 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **10 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Process` connect `catalogPresentation.ts` to `architectPosition.ts`, `preserve.ts`, `Process`, `define.ts`, `create.ts`, `scope.ts`, `semantic-core/src/index.ts`, `api.ts`, `useModal`, `BpmnComponentRegistry`, `bpmn-adapter/src/index.ts`, `contextFilter.ts`, `processService.ts`, `naming.ts`, `runAssistant.ts`, `bpmn-adapter/package.json`, `ArchitectPanel.tsx`, `routes/auth.ts`, `db/src/index.ts`, `subprocess.ts`, `AuthGate.tsx`, `semanticGeometry.ts`, `exportDiagram.ts`, `execution.ts`, `App.tsx`, `CatalogFlyout.tsx`?**
+- **Why does `SemanticProcess` connect `create.ts` to `architectPosition.ts`, `preserve.ts`, `Process`, `define.ts`, `catalogPresentation.ts`, `scope.ts`, `semantic-core/src/index.ts`, `useModal`, `BpmnComponentRegistry`, `bpmn-adapter/src/index.ts`, `contextFilter.ts`, `processService.ts`, `naming.ts`, `runAssistant.ts`, `DuplicateProcessDialog.tsx`, `bpmn-adapter/package.json`, `ArchitectPanel.tsx`, `routes/auth.ts`, `db/src/index.ts`, `subprocess.ts`, `AuthGate.tsx`, `semanticGeometry.ts`, `exportDiagram.ts`, `execution.ts`, `App.tsx`, `CatalogFlyout.tsx`, `bpmn-adapter/tsconfig.json`?**
   _High betweenness centrality (0.152) - this node is a cross-community bridge._
-- **Why does `lintProcess()` connect `userFacingPlanError` to `api-server/src/index.ts`, `domain/src/index.ts`, `scope.ts`, `semanticGeometry.ts`, `BpmnComponentRegistry`, `createSemanticEditor`, `model.ts`, `naming.ts`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `AgentScope` connect `routes/auth.ts` to `ArchitectPanel.tsx`, `CatalogFlyout.tsx`, `create.ts`, `semantic-xml.ts`, `dependencies`, `semantic-core/src/index.ts`, `processService.ts`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `lintProcess()` connect `BpmnComponentRegistry` to `architectRequest.test.ts`, `agent-tools/src/index.ts`, `create.ts`, `compactChrome.test.ts`, `domain/src/index.ts`, `semanticGeometry.ts`, `semantic-core/tsconfig.json`, `createSemanticEditor`, `naming.ts`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `AgentScope` connect `routes/auth.ts` to `ArchitectPanel.tsx`, `CatalogFlyout.tsx`, `create.ts`, `dependencies`, `semantic-core/src/index.ts`, `exportDiagram.ts`, `processService.ts`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **What connects `graphify-mcp`, `app`, `name` to the rest of the system?**
-  _792 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _783 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `layout.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06390977443609022 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06963470319634703 - nodes in this community are weakly interconnected._
 - **Should `architectPosition.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05707450444292549 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.055944055944055944 - nodes in this community are weakly interconnected._
 - **Should `describeProcess.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.05405405405405406 - nodes in this community are weakly interconnected._
