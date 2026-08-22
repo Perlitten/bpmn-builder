@@ -63,6 +63,18 @@ describe('agent tools', () => {
     expect(plan.inverse(plan.process)).toEqual(origin);
   });
 
+  it('keeps $last on the previous mutation across inspect and lint steps', () => {
+    const plan = executePlan(createProcess(), [
+      { name: 'addAfter', args: { after: 'StartEvent_1', name: 'Review' } },
+      { name: 'inspectProcess', args: {} },
+      { name: 'lint', args: {} },
+      { name: 'renameElement', args: { id: '$last', name: 'Approve request' } },
+    ]);
+
+    expect(getNode(plan.process, plan.steps[0]!.id).name).toBe('Approve request');
+    expect(plan.id).toBe(plan.steps[0]!.id);
+  });
+
   it('lint returns @bpmn/rules findings without mutating', () => {
     const origin = createProcess();
     const withTask = executePlan(origin, [{ name: 'addTask', args: { name: 'Customer record' } }]).process;

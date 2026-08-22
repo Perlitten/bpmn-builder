@@ -179,6 +179,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   const [hasParticipant, setHasParticipant] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [lintXml, setLintXml] = useState(currentXml);
   const [onboarding, setOnboarding] = useState(() => !readEditorOnboardingSeen());
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
   const [canvasAnnouncement, setCanvasAnnouncement] = useState('');
@@ -581,6 +582,11 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
   }, [emit]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setLintXml(currentXml), 250);
+    return () => window.clearTimeout(timer);
+  }, [currentXml]);
+
+  useEffect(() => {
     simulationLock.on = simulating;
     const session = sessionRef.current;
     if (!simulating || !session) {
@@ -741,10 +747,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(function
     [selection],
   );
 
-  const lint = useMemo(
-    () => lintLiveBpmnXml(currentXml),
-    [currentXml, graphRev],
-  );
+  const lint = useMemo(() => lintLiveBpmnXml(lintXml), [lintXml]);
 
   const poolLanes = useMemo(() => {
     if (selection?.type !== 'bpmn:Participant') return [];

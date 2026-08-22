@@ -87,6 +87,7 @@ const DEFAULT_BPMN: Record<FlowNodeType, string> = {
   eventBasedGateway: 'bpmn:EventBasedGateway',
   complexGateway: 'bpmn:ComplexGateway',
   intermediateCatch: 'bpmn:IntermediateCatchEvent',
+  intermediateThrow: 'bpmn:IntermediateThrowEvent',
   boundaryEvent: 'bpmn:BoundaryEvent',
 };
 
@@ -131,6 +132,7 @@ function mapNode(el: ModdleEl): FlowNode | null {
   else if (isType(el, 'bpmn:EventBasedGateway')) node = { ...base, type: 'eventBasedGateway' };
   else if (isType(el, 'bpmn:ComplexGateway')) node = { ...base, type: 'complexGateway' };
   else if (isType(el, 'bpmn:IntermediateCatchEvent')) node = { ...base, type: 'intermediateCatch' };
+  else if (isType(el, 'bpmn:IntermediateThrowEvent')) node = { ...base, type: 'intermediateThrow' };
   else if (isType(el, 'bpmn:BoundaryEvent')) {
     const attachedTo = idOf(el.get('attachedToRef'));
     const cancelActivity = el.get('cancelActivity');

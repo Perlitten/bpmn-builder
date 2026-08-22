@@ -4,6 +4,7 @@ import {
   addTextAnnotation,
   createFromComponent,
   createProcess,
+  setFlowKind,
   splitExclusive,
   type Process,
 } from './index.js';
@@ -31,6 +32,21 @@ describe('catalog flows (slice 2)', () => {
     const p = createProcess();
     expect(() => createFromComponent(p, 'flow.sequence')).toThrow(/no semantic create op/);
     expect(() => createFromComponent(p, 'flow.conditional')).toThrow(/Select a sequence flow/);
+  });
+
+  it('keeps a sibling default when another outgoing flow becomes conditional', () => {
+    let p = addTask(createProcess(), { name: 'Review' }).process;
+    p = splitExclusive(p, { after: named(p, 'Review') }).process;
+    const [defaultFlow, conditionalFlow] = p.flows.filter((flow) => flow.source === p.regions[0]!.split);
+
+    p = setFlowKind(p, defaultFlow!.id, 'default').process;
+    p = setFlowKind(p, conditionalFlow!.id, 'conditional', '${needsReview}').process;
+
+    expect(p.flows.find((flow) => flow.id === defaultFlow!.id)?.isDefault).toBe(true);
+    expect(p.flows.find((flow) => flow.id === conditionalFlow!.id)).toMatchObject({
+      isDefault: false,
+      condition: '${needsReview}',
+    });
   });
 
   it('associates a text annotation to a selected task', () => {

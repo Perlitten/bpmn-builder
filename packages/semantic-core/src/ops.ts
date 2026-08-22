@@ -401,13 +401,20 @@ const BPMN_TO_KIND: Record<string, FlowNodeType> = {
   'bpmn:EventBasedGateway': 'eventBasedGateway',
   'bpmn:ComplexGateway': 'complexGateway',
   'bpmn:IntermediateCatchEvent': 'intermediateCatch',
+  'bpmn:IntermediateThrowEvent': 'intermediateThrow',
   'bpmn:BoundaryEvent': 'boundaryEvent',
   'bpmn:Transaction': 'subProcess',
   'bpmn:AdHocSubProcess': 'subProcess',
 };
 
 function family(type: FlowNodeType): 'event' | 'task' | 'gateway' | 'subprocess' {
-  if (type === 'start' || type === 'end' || type === 'intermediateCatch' || type === 'boundaryEvent') return 'event';
+  if (
+    type === 'start' ||
+    type === 'end' ||
+    type === 'intermediateCatch' ||
+    type === 'intermediateThrow' ||
+    type === 'boundaryEvent'
+  ) return 'event';
   if (
     type === 'exclusiveGateway' ||
     type === 'parallelGateway' ||
@@ -480,10 +487,10 @@ export function setFlowKind(
   return apply(process, (draft) => {
     const flow = draft.flows.find((f) => f.id === flowId);
     if (!flow) throw new Error(`unknown flow: ${flowId}`);
-    for (const other of draft.flows) {
-      if (other.source === flow.source) other.isDefault = false;
-    }
     if (kind === 'default') {
+      for (const other of draft.flows) {
+        if (other.source === flow.source) other.isDefault = false;
+      }
       flow.isDefault = true;
       flow.condition = undefined;
     } else if (kind === 'conditional') {

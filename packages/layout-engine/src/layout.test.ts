@@ -675,6 +675,19 @@ describe('layout', () => {
     for (const name of ['Submit', 'Review']) {
       expect(di.shapes[node(name)]!.x, name).toBe(oneLane.shapes[node(name)]!.x);
     }
+    for (const flow of process.flows) {
+      const points = di.edges[flow.id]!;
+      const source = di.shapes[flow.source]!;
+      const target = di.shapes[flow.target]!;
+      expect(points[0], `${flow.id} source waypoint`).toEqual({
+        x: source.x + source.width,
+        y: centerY(source),
+      });
+      expect(points.at(-1), `${flow.id} target waypoint`).toEqual({
+        x: target.x,
+        y: centerY(target),
+      });
+    }
     allOrthogonal(di);
   });
 

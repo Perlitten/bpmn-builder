@@ -95,6 +95,7 @@ export async function createSession(userId: string, ttlMs = SESSION_TTL_MS): Pro
   const token = generateSessionToken();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + ttlMs).toISOString();
+  await db.delete(table).where(and(eq(table.userId, userId), lt(table.expiresAt, now.toISOString())));
   await db.insert(table).values({
     id: hashSessionToken(token),
     userId,
@@ -138,6 +139,5 @@ export async function readSession(
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
     await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
   }
-  await db.delete(sessions).where(and(eq(sessions.userId, user.id), lt(sessions.expiresAt, new Date().toISOString())));
   return toAuthUser(user);
 }

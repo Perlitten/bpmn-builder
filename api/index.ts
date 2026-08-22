@@ -8,12 +8,21 @@ const app: Express = express();
 app.disable('x-powered-by');
 
 let databaseReady: Promise<void> | null = null;
-function initializeDatabase(): Promise<void> {
-  databaseReady ??= migrate().then(async () => {
-    await seedIfEmpty();
-    await repairEmptyDiagrams();
-  });
+export function initializeDatabase(): Promise<void> {
+  databaseReady ??= migrate()
+    .then(async () => {
+      await seedIfEmpty();
+      await repairEmptyDiagrams();
+    })
+    .catch((error: unknown) => {
+      databaseReady = null;
+      throw error;
+    });
   return databaseReady;
+}
+
+export function resetDatabaseInitializationForTests(): void {
+  databaseReady = null;
 }
 
 app.use(async (_req, res, next) => {

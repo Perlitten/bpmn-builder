@@ -96,6 +96,7 @@ const CORE_TYPE: Record<string, FlowNodeType> = {
   transaction: 'task',
   boundaryevent: 'boundaryEvent',
   intermediatecatchevent: 'intermediateCatch',
+  intermediatethrowevent: 'intermediateThrow',
 };
 
 const NODE_ALT = Object.keys(NODE_KIND).join('|');
@@ -161,6 +162,7 @@ function kindFromBpmn(coreType: string, bpmnType?: string, triggeredByEvent?: bo
   if (
     coreType === 'boundaryEvent' ||
     coreType === 'intermediateCatch' ||
+    coreType === 'intermediateThrow' ||
     (tag.includes('event') && !tag.endsWith('gateway'))
   ) {
     return 'event';

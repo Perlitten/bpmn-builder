@@ -8,6 +8,7 @@ import {
   innerScope,
   outgoingFlows,
   splitExclusive,
+  wrapInSubprocess,
   type Process,
 } from '@bpmn/semantic-core';
 import { describe, expect, it } from 'vitest';
@@ -78,6 +79,37 @@ describe('token simulation', () => {
     expect(completedCount(afterB)).toBe(1);
     expect(afterB.completed.End).toBe(1);
     expect(afterB.joinWait).toEqual({});
+  });
+
+  it('passes through an intermediate throw event without parking a token', () => {
+    let p = addTask(createProcess(), { name: 'Notify' }).process;
+    p = {
+      ...p,
+      nodes: p.nodes.map((node) => node.name === 'Notify'
+        ? { ...node, type: 'intermediateThrow', bpmnType: 'bpmn:IntermediateThrowEvent' }
+        : node),
+    };
+    const sim = createTokenSimulation(p);
+
+    const result = sim.signal('StartEvent_1');
+
+    expect(result.tokens).toEqual({});
+    expect(result.completed.EndEvent_1).toBe(1);
+  });
+
+  it('enters a normal subprocess and resumes the parent flow after its inner end', () => {
+    let p = addTask(createProcess(), { name: 'Review' }).process;
+    const reviewId = p.nodes.find((node) => node.name === 'Review')!.id;
+    p = wrapInSubprocess(p, [reviewId], { name: 'Review subprocess' }).process;
+    const sim = createTokenSimulation(p);
+
+    const inside = sim.signal('StartEvent_1');
+    expect(inside.tokens[reviewId]).toBe(1);
+    expect(completedCount(inside)).toBe(0);
+
+    const done = sim.signal(reviewId);
+    expect(done.tokens).toEqual({});
+    expect(done.completed.EndEvent_1).toBe(1);
   });
 
   it('exclusive split takes one branch', () => {

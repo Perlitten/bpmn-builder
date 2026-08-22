@@ -21,6 +21,7 @@ const NODE: Record<FlowNodeType, string> = {
   eventBasedGateway: 'event-based',
   complexGateway: 'complex',
   intermediateCatch: 'catch event',
+  intermediateThrow: 'throw event',
   boundaryEvent: 'boundary timer',
 };
 

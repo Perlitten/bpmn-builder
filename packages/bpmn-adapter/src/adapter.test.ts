@@ -115,6 +115,26 @@ const ADD_TASK_LAYOUT = {
 };
 
 describe('XML ⇄ graph ⇄ XML', () => {
+  it('keeps intermediate throw events as event nodes with event geometry', async () => {
+    const xml = LINEAR
+      .replace(
+        '<bpmn:task id="Activity_1" name="Task" />',
+        '<bpmn:intermediateThrowEvent id="Throw_1" name="Notify"><bpmn:signalEventDefinition id="SignalDef_1" /></bpmn:intermediateThrowEvent>',
+      )
+      .replaceAll('Activity_1', 'Throw_1');
+    const process = await xmlToProcess(xml);
+    const event = process.nodes.find((node) => node.id === 'Throw_1')!;
+
+    expect(event.type).toBe('intermediateThrow');
+    expect(event.bpmnType).toBe('bpmn:IntermediateThrowEvent');
+    expect(event.eventDefinition).toBe('SignalEventDefinition');
+    expect(layoutProcess(process).shapes.Throw_1).toMatchObject(TOKENS.event);
+
+    const exported = exportProcessXml(process);
+    expect(exported).toContain('<bpmn:intermediateThrowEvent');
+    expect((await xmlToProcess(exported)).nodes.find((node) => node.id === 'Throw_1')?.type).toBe('intermediateThrow');
+  });
+
   it('round-trips ids/types/flows for the first slice', async () => {
     const g1 = await xmlToProcess(SLICE);
     expect(g1.nodes.map((n) => n.type).sort()).toEqual(

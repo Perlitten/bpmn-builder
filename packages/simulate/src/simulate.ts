@@ -4,6 +4,7 @@ import {
   innerScope,
   isEventSubProcess,
   outgoingFlows,
+  scopeOf,
   type FlowNode,
   type Process,
   type SequenceFlow,
@@ -54,6 +55,14 @@ function innerStart(process: Process, ownerId: string): FlowNode | undefined {
   if (!scope) return undefined;
   const starts = process.nodes.filter((n) => n.type === 'start' && scope.nodeIds.includes(n.id));
   return starts.find((n) => n.eventDefinition) ?? starts[0];
+}
+
+function hasExecutableInnerGraph(process: Process, ownerId: string): boolean {
+  const scope = innerScope(process, ownerId);
+  return Boolean(scope?.nodeIds.some((id) => {
+    const node = process.nodes.find((item) => item.id === id);
+    return node && node.type !== 'start' && node.type !== 'end';
+  }));
 }
 
 function ownerSubtreeIds(process: Process, ownerId: string): string[] {
@@ -184,7 +193,23 @@ export function createTokenSimulation(process: Process): TokenSimulation {
   function arrive(nodeId: string, via: string): void {
     const node = getNode(process, nodeId);
     if (node.type === 'end') {
+      const ownerId = scopeOf(process, nodeId).ownerId;
+      const owner = ownerId ? process.nodes.find((item) => item.id === ownerId) : undefined;
+      if (owner?.type === 'subProcess' && !owner.triggeredByEvent) {
+        emitAll(outgoingFlows(process, owner.id));
+        return;
+      }
       bump(completed, nodeId);
+      return;
+    }
+    if (node.type === 'subProcess' && !node.triggeredByEvent && hasExecutableInnerGraph(process, node.id)) {
+      const start = innerStart(process, node.id);
+      if (!start) throw new Error(`subprocess ${node.id} has no start event`);
+      emitAll(outgoingFlows(process, start.id));
+      return;
+    }
+    if (node.type === 'intermediateThrow') {
+      emitAll(outgoingFlows(process, nodeId));
       return;
     }
     if (node.type === 'parallelGateway') {

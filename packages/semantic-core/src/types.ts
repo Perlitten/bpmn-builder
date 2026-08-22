@@ -9,6 +9,7 @@ export const FLOW_NODE_TYPES = [
   'eventBasedGateway',
   'complexGateway',
   'intermediateCatch',
+  'intermediateThrow',
   'boundaryEvent',
 ] as const;
 
@@ -29,6 +30,7 @@ export const DEFAULT_BPMN_TYPE: Record<FlowNodeType, string> = {
   eventBasedGateway: 'bpmn:EventBasedGateway',
   complexGateway: 'bpmn:ComplexGateway',
   intermediateCatch: 'bpmn:IntermediateCatchEvent',
+  intermediateThrow: 'bpmn:IntermediateThrowEvent',
   boundaryEvent: 'bpmn:BoundaryEvent',
 };
 
