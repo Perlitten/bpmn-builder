@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.6.0...bpmn-builder-v0.6.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* close audited workflow and feedback paths ([b8ed7c7](https://github.com/Perlitten/bpmn-builder/commit/b8ed7c7d070ad42a0bbd51e3fc881ce6c9f92aaa))
+* close wave three audit gaps ([c840920](https://github.com/Perlitten/bpmn-builder/commit/c840920d92a7bc2dd2375839b1fae70e3ac5bc93))
+* complete remaining workflow audit items ([#53](https://github.com/Perlitten/bpmn-builder/issues/53)) ([5743429](https://github.com/Perlitten/bpmn-builder/commit/57434294a58336f88ecbe8abe1fc93bb3e5700d4))
+
 ## [0.6.0](https://github.com/Perlitten/bpmn-builder/compare/bpmn-builder-v0.5.0...bpmn-builder-v0.6.0) (2026-08-22)
 
 
